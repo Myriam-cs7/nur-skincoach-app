@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type Lang = 'fr' | 'en' | 'ar';
+export type Lang = 'fr' | 'en' | 'ar' | 'es' | 'it' | 'de' | 'ru';
 const LANG_KEY = 'nur.lang';
 
 type Dict = Record<string, string>;
@@ -120,6 +120,49 @@ const FR: Dict = {
 
   'days.mon': 'Lun', 'days.tue': 'Mar', 'days.wed': 'Mer', 'days.thu': 'Jeu', 'days.fri': 'Ven', 'days.sat': 'Sam', 'days.sun': 'Dim',
   'days.full.mon': 'Lundi', 'days.full.tue': 'Mardi', 'days.full.wed': 'Mercredi', 'days.full.thu': 'Jeudi', 'days.full.fri': 'Vendredi', 'days.full.sat': 'Samedi', 'days.full.sun': 'Dimanche',
+
+  // Discover funnel (lead capture pre-purchase)
+  'discover.cta_welcome': 'Découvrir mon pré-diagnostic clinique',
+  'discover.intro.kicker': 'NŪR · PRÉ-DIAGNOSTIC',
+  'discover.intro.title': 'Votre clinique de beauté commence ici',
+  'discover.intro.sub': 'Trois questions cliniques. Une prescription IA personnalisée. Découvrez ce que votre peau réclame vraiment.',
+  'discover.intro.b1': 'Évaluation par notre IA Nūr entraînée sur la photobiomodulation',
+  'discover.intro.b2': 'Prescription LED 630nm + 830nm adaptée à votre cas',
+  'discover.intro.b3': 'Gratuit et confidentiel',
+  'discover.intro.start': 'Commencer mon pré-diagnostic',
+
+  'discover.q1.title': 'Test de récupération cellulaire',
+  'discover.q1.question': "Au réveil, observez la résilience de votre peau. Les marques de sommeil, les rougeurs ou les zones d'ombre mettent-elles visiblement plus de temps à s'estomper qu'il y a quelques années ?",
+  'discover.q1.a': 'Oui, ma peau manque cruellement de rebond le matin',
+  'discover.q1.b': "Légèrement, je sens une perte d'élasticité en fin de journée",
+  'discover.q1.c': 'Non, la récupération est encore rapide',
+
+  'discover.q2.title': 'Diagnostic Tech Neck',
+  'discover.q2.question': "Le visage est souvent sur-traité, mais le cou révèle ce que le visage cache. Observez la zone sous votre mâchoire : remarquez-vous des lignes horizontales (le « Tech Neck » dû aux écrans) ou un relâchement naissant ?",
+  'discover.q2.a': 'Oui, des lignes horizontales commencent à se creuser',
+  'discover.q2.b': 'Je remarque surtout un léger relâchement sous le menton',
+  'discover.q2.c': "Pas encore, mais je n'ai aucune routine pour cette zone",
+
+  'discover.q3.title': 'Le plafond de verre',
+  'discover.q3.question': "Quel a été votre plus grand obstacle clinique pour obtenir des résultats transformateurs à domicile ?",
+  'discover.q3.a': "Le « placard » : j'achète des outils coûteux, mais j'abandonne faute de suivi",
+  'discover.q3.b': 'Le « plafond » : mes sérums actuels ne donnent plus de résultats visibles',
+  'discover.q3.c': "L'incertitude : je ne sais pas quelle combinaison utiliser ni quand",
+
+  'discover.email.title': 'Votre prescription est prête',
+  'discover.email.sub': 'Recevez votre analyse complète et votre protocole personnalisé.',
+  'discover.email.placeholder': 'votre@email.com',
+  'discover.email.name_placeholder': 'Votre prénom',
+  'discover.email.consent': "J'accepte de recevoir mon analyse et les conseils Nūr Protocol par email. Données chiffrées, jamais partagées.",
+  'discover.email.cta': 'Recevoir ma prescription',
+
+  'discover.prescription.kicker': 'PRESCRIPTION CLINIQUE NŪR',
+  'discover.prescription.diagnosis': 'Bilan',
+  'discover.prescription.axes': 'Axes prioritaires',
+  'discover.prescription.protocol': 'Votre protocole sur mesure',
+  'discover.prescription.cta': "Débloquer mon protocole — {discount}% offert",
+  'discover.prescription.promo': 'Code privé : {code}',
+  'discover.prescription.foot': 'Votre code WELCOM10 est aussi enregistré dans votre email.',
 };
 
 const EN: Dict = {
@@ -303,8 +346,6 @@ const AR: Dict = {
   'days.full.mon': 'الإثنين', 'days.full.tue': 'الثلاثاء', 'days.full.wed': 'الأربعاء', 'days.full.thu': 'الخميس', 'days.full.fri': 'الجمعة', 'days.full.sat': 'السبت', 'days.full.sun': 'الأحد',
 };
 
-const DICTS: Record<Lang, Dict> = { fr: FR, en: EN, ar: AR };
-
 let currentLang: Lang = 'fr';
 const listeners = new Set<() => void>();
 
@@ -315,6 +356,10 @@ function detectLang(): Lang {
   const code = (locales[0]?.languageCode || 'fr').toLowerCase();
   if (code === 'ar') return 'ar';
   if (code === 'en') return 'en';
+  if (code === 'es') return 'es';
+  if (code === 'it') return 'it';
+  if (code === 'de') return 'de';
+  if (code === 'ru') return 'ru';
   return 'fr';
 }
 
@@ -354,9 +399,215 @@ export function useT() {
   return { t, lang: currentLang, setLang };
 }
 
+
 // Concern key → translation
 export const CONCERN_LABELS: Record<Lang, Record<string, string>> = {
   fr: { acne: 'Acné', rides: 'Rides', taches: 'Taches', rougeurs: 'Rougeurs', pores: 'Pores dilatés', ternissement: 'Teint terne', sensibilite: 'Sensibilité', cicatrices: 'Cicatrices' },
   en: { acne: 'Acne', rides: 'Wrinkles', taches: 'Dark spots', rougeurs: 'Redness', pores: 'Enlarged pores', ternissement: 'Dull complexion', sensibilite: 'Sensitivity', cicatrices: 'Scars' },
   ar: { acne: 'حب الشباب', rides: 'تجاعيد', taches: 'بقع داكنة', rougeurs: 'احمرار', pores: 'مسام واسعة', ternissement: 'بشرة باهتة', sensibilite: 'حساسية', cicatrices: 'ندبات' },
+  es: { acne: 'Acné', rides: 'Arrugas', taches: 'Manchas', rougeurs: 'Rojeces', pores: 'Poros dilatados', ternissement: 'Tez apagada', sensibilite: 'Sensibilidad', cicatrices: 'Cicatrices' },
+  it: { acne: 'Acne', rides: 'Rughe', taches: 'Macchie', rougeurs: 'Rossori', pores: 'Pori dilatati', ternissement: 'Colorito spento', sensibilite: 'Sensibilità', cicatrices: 'Cicatrici' },
+  de: { acne: 'Akne', rides: 'Falten', taches: 'Flecken', rougeurs: 'Rötungen', pores: 'Vergrößerte Poren', ternissement: 'Fahler Teint', sensibilite: 'Empfindlichkeit', cicatrices: 'Narben' },
+  ru: { acne: 'Акне', rides: 'Морщины', taches: 'Пятна', rougeurs: 'Покраснения', pores: 'Расширенные поры', ternissement: 'Тусклый цвет', sensibilite: 'Чувствительность', cicatrices: 'Шрамы' },
 };
+
+const ES: Dict = {
+  'welcome.kicker': '© NŪR PROTOCOL · AT-HOME CLINIC',
+  'welcome.title': 'At-Home Clinic',
+  'welcome.subtitle': 'Tu espacio de belleza privado.\nDiagnóstico IA y ritual LED a medida.',
+  'welcome.cta': 'Escanear mi código QR',
+  'welcome.link': 'Introducir un código de activación',
+  'welcome.footnote': 'EXCLUSIVO PARA PROPIETARIOS DEL DISPOSITIVO NŪR',
+  'welcome.privacy': 'Tus datos permanecen privados y cifrados. Nunca los compartimos.',
+  'discover.cta_welcome': 'Descubrir mi pre-diagnóstico clínico',
+  'discover.intro.kicker': 'NŪR · PRE-DIAGNÓSTICO',
+  'discover.intro.title': 'Tu clínica de belleza empieza aquí',
+  'discover.intro.sub': 'Tres preguntas clínicas. Una prescripción IA personalizada.',
+  'discover.intro.b1': 'Evaluación por nuestra IA Nūr entrenada en fotobiomodulación',
+  'discover.intro.b2': 'Prescripción LED 630nm + 830nm adaptada a tu caso',
+  'discover.intro.b3': 'Gratuito y confidencial',
+  'discover.intro.start': 'Comenzar mi pre-diagnóstico',
+  'discover.q1.title': 'Test de recuperación celular',
+  'discover.q1.question': '¿Las marcas del sueño tardan visiblemente más en desaparecer que antes?',
+  'discover.q1.a': 'Sí, mi piel carece de rebote por la mañana',
+  'discover.q1.b': 'Ligeramente, pérdida de elasticidad al final del día',
+  'discover.q1.c': 'No, la recuperación sigue siendo rápida',
+  'discover.q2.title': 'Diagnóstico Tech Neck',
+  'discover.q2.question': 'Observa la zona bajo tu mandíbula: ¿líneas horizontales o relajamiento?',
+  'discover.q2.a': 'Sí, líneas horizontales empiezan a marcarse',
+  'discover.q2.b': 'Ligero relajamiento bajo el mentón',
+  'discover.q2.c': 'Aún no, pero no tengo rutina para esta zona',
+  'discover.q3.title': 'El techo de cristal',
+  'discover.q3.question': '¿Cuál ha sido tu mayor obstáculo para resultados transformadores en casa?',
+  'discover.q3.a': 'El armario: compro herramientas caras pero abandono',
+  'discover.q3.b': 'El techo: mis sueros ya no dan resultados visibles',
+  'discover.q3.c': 'Incertidumbre: no sé qué combinación usar',
+  'discover.email.title': 'Tu prescripción está lista',
+  'discover.email.sub': 'Recibe tu análisis y tu protocolo personalizado.',
+  'discover.email.placeholder': 'tu@email.com',
+  'discover.email.name_placeholder': 'Tu nombre',
+  'discover.email.consent': 'Acepto recibir mi análisis por email. Datos cifrados, nunca compartidos.',
+  'discover.email.cta': 'Recibir mi prescripción',
+  'discover.prescription.kicker': 'PRESCRIPCIÓN CLÍNICA NŪR',
+  'discover.prescription.diagnosis': 'Diagnóstico',
+  'discover.prescription.axes': 'Ejes prioritarios',
+  'discover.prescription.protocol': 'Tu protocolo a medida',
+  'discover.prescription.cta': 'Desbloquear mi protocolo — {discount}% incluido',
+  'discover.prescription.promo': 'Código privado: {code}',
+  'discover.prescription.foot': 'Tu código WELCOM10 también está guardado en tu email.',
+  'profile.language': 'Idioma',
+  'analyzing.kicker': 'NŪR · IA BELLEZA',
+  'analyzing.title': 'Evaluación en curso',
+};
+
+const IT: Dict = {
+  'welcome.kicker': '© NŪR PROTOCOL · AT-HOME CLINIC',
+  'welcome.title': 'At-Home Clinic',
+  'welcome.subtitle': 'Il tuo spazio bellezza privato.\nDiagnosi IA e rituale LED su misura.',
+  'welcome.cta': 'Scansiona il mio codice QR',
+  'welcome.link': 'Inserire un codice di attivazione',
+  'welcome.footnote': 'ESCLUSIVO PER POSSESSORI DI DISPOSITIVO NŪR',
+  'welcome.privacy': 'I tuoi dati restano privati e cifrati. Non li condividiamo mai.',
+  'discover.cta_welcome': 'Scopri la mia pre-diagnosi clinica',
+  'discover.intro.kicker': 'NŪR · PRE-DIAGNOSI',
+  'discover.intro.title': 'La tua clinica di bellezza inizia qui',
+  'discover.intro.sub': 'Tre domande cliniche. Una prescrizione IA personalizzata. Scopri ciò che la tua pelle desidera davvero.',
+  'discover.intro.b1': 'Valutazione dalla nostra IA Nūr formata sulla fotobiomodulazione',
+  'discover.intro.b2': 'Prescrizione LED 630nm + 830nm adatta al tuo caso',
+  'discover.intro.b3': 'Gratuita e confidenziale',
+  'discover.intro.start': 'Iniziare la mia pre-diagnosi',
+  'discover.q1.title': 'Test di recupero cellulare',
+  'discover.q1.question': 'Al risveglio, osserva la resilienza della tua pelle. Le impronte del sonno, gli arrossamenti o le ombre impiegano visibilmente più tempo a sparire rispetto a qualche anno fa?',
+  'discover.q1.a': 'Sì, la mia pelle manca crudelmente di rimbalzo al mattino',
+  'discover.q1.b': 'Leggermente, sento una perdita di elasticità a fine giornata',
+  'discover.q1.c': 'No, il recupero è ancora rapido',
+  'discover.q2.title': 'Diagnosi Tech Neck',
+  'discover.q2.question': 'Il viso è spesso super-trattato, ma il collo rivela ciò che il viso nasconde. Osserva la zona sotto la mascella: noti linee orizzontali (il "Tech Neck" dovuto agli schermi) o un cedimento iniziale?',
+  'discover.q2.a': 'Sì, linee orizzontali iniziano a formarsi',
+  'discover.q2.b': 'Noto soprattutto un leggero cedimento sotto il mento',
+  'discover.q2.c': 'Non ancora, ma non ho routine per questa zona',
+  'discover.q3.title': 'Il soffitto di vetro',
+  'discover.q3.question': 'Qual è stato il tuo maggiore ostacolo clinico per ottenere risultati trasformativi a casa?',
+  'discover.q3.a': "L'armadio: compro strumenti costosi ma abbandono per mancanza di costanza",
+  'discover.q3.b': 'Il tetto: i miei sieri attuali non danno più risultati visibili',
+  'discover.q3.c': "L'incertezza: non so quale combinazione usare né quando",
+  'discover.email.title': 'La tua prescrizione è pronta',
+  'discover.email.sub': 'Ricevi la tua analisi completa e il tuo protocollo personalizzato.',
+  'discover.email.placeholder': 'tua@email.com',
+  'discover.email.name_placeholder': 'Il tuo nome',
+  'discover.email.consent': 'Accetto di ricevere la mia analisi e i consigli Nūr Protocol via email. Dati cifrati, mai condivisi.',
+  'discover.email.cta': 'Ricevere la mia prescrizione',
+  'discover.prescription.kicker': 'PRESCRIZIONE CLINICA NŪR',
+  'discover.prescription.diagnosis': 'Diagnosi',
+  'discover.prescription.axes': 'Assi prioritari',
+  'discover.prescription.protocol': 'Il tuo protocollo su misura',
+  'discover.prescription.cta': 'Sbloccare il mio protocollo — {discount}% incluso',
+  'discover.prescription.promo': 'Codice privato: {code}',
+  'discover.prescription.foot': 'Il tuo codice WELCOM10 è anche salvato nella tua email.',
+  'profile.language': 'Lingua',
+  'analyzing.kicker': 'NŪR · IA BELLEZZA',
+  'analyzing.title': 'Valutazione in corso',
+};
+
+const DE: Dict = {
+  'welcome.kicker': '© NŪR PROTOCOL · AT-HOME CLINIC',
+  'welcome.title': 'At-Home Clinic',
+  'welcome.subtitle': 'Ihr privater Beauty-Raum.\nKI-Diagnose und maßgeschneidertes LED-Ritual.',
+  'welcome.cta': 'QR-Code scannen',
+  'welcome.link': 'Aktivierungscode eingeben',
+  'welcome.footnote': 'EXKLUSIV FÜR NŪR-GERÄTEBESITZER',
+  'welcome.privacy': 'Ihre Daten bleiben privat und verschlüsselt. Wir teilen sie nie.',
+  'discover.cta_welcome': 'Meine klinische Vor-Diagnose entdecken',
+  'discover.intro.kicker': 'NŪR · VOR-DIAGNOSE',
+  'discover.intro.title': 'Ihre Beauty-Klinik beginnt hier',
+  'discover.intro.sub': 'Drei klinische Fragen. Eine personalisierte KI-Verschreibung. Entdecken Sie, was Ihre Haut wirklich braucht.',
+  'discover.intro.b1': 'Bewertung durch unsere Nūr-KI, geschult auf Photobiomodulation',
+  'discover.intro.b2': 'LED-Verschreibung 630nm + 830nm angepasst an Ihren Fall',
+  'discover.intro.b3': 'Kostenlos und vertraulich',
+  'discover.intro.start': 'Vor-Diagnose starten',
+  'discover.q1.title': 'Zellerneuerungs-Test',
+  'discover.q1.question': 'Beobachten Sie beim Aufwachen die Widerstandsfähigkeit Ihrer Haut. Brauchen Schlafabdrücke, Rötungen oder Schatten sichtbar länger zum Verschwinden als vor einigen Jahren?',
+  'discover.q1.a': 'Ja, meiner Haut fehlt morgens deutlich die Spannkraft',
+  'discover.q1.b': 'Leicht, ich spüre einen Elastizitätsverlust am Tagesende',
+  'discover.q1.c': 'Nein, die Regeneration ist noch schnell',
+  'discover.q2.title': 'Tech Neck Diagnose',
+  'discover.q2.question': 'Das Gesicht wird oft überpflegt, aber der Hals offenbart, was das Gesicht verbirgt. Beobachten Sie die Zone unter Ihrem Kiefer: Bemerken Sie horizontale Linien ("Tech Neck" durch Bildschirme) oder beginnende Erschlaffung?',
+  'discover.q2.a': 'Ja, horizontale Linien zeichnen sich ab',
+  'discover.q2.b': 'Ich bemerke vor allem eine leichte Erschlaffung unter dem Kinn',
+  'discover.q2.c': 'Noch nicht, aber ich habe keine Routine für diese Zone',
+  'discover.q3.title': 'Die gläserne Decke',
+  'discover.q3.question': 'Was war Ihr größtes klinisches Hindernis, um transformative Ergebnisse zuhause zu erzielen?',
+  'discover.q3.a': 'Der "Schrank": ich kaufe teure Geräte, gebe aber mangels Begleitung auf',
+  'discover.q3.b': 'Die "Decke": meine aktuellen Seren zeigen keine sichtbaren Ergebnisse mehr',
+  'discover.q3.c': 'Die Unsicherheit: ich weiß nicht, welche Kombination wann anzuwenden',
+  'discover.email.title': 'Ihre Verschreibung ist bereit',
+  'discover.email.sub': 'Erhalten Sie Ihre vollständige Analyse und Ihr personalisiertes Protokoll.',
+  'discover.email.placeholder': 'ihre@email.com',
+  'discover.email.name_placeholder': 'Ihr Vorname',
+  'discover.email.consent': 'Ich akzeptiere, meine Analyse und Nūr Protocol-Tipps per E-Mail zu erhalten. Daten verschlüsselt, niemals geteilt.',
+  'discover.email.cta': 'Meine Verschreibung erhalten',
+  'discover.prescription.kicker': 'NŪR KLINISCHE VERSCHREIBUNG',
+  'discover.prescription.diagnosis': 'Diagnose',
+  'discover.prescription.axes': 'Prioritätsachsen',
+  'discover.prescription.protocol': 'Ihr maßgeschneidertes Protokoll',
+  'discover.prescription.cta': 'Mein Protokoll freischalten — {discount}% inklusive',
+  'discover.prescription.promo': 'Privater Code: {code}',
+  'discover.prescription.foot': 'Ihr WELCOM10-Code ist auch in Ihrer E-Mail gespeichert.',
+  'profile.language': 'Sprache',
+  'analyzing.kicker': 'NŪR · BEAUTY KI',
+  'analyzing.title': 'Bewertung läuft',
+};
+
+const RU: Dict = {
+  'welcome.kicker': '© NŪR PROTOCOL · AT-HOME CLINIC',
+  'welcome.title': 'At-Home Clinic',
+  'welcome.subtitle': 'Ваше приватное пространство красоты.\nИИ-диагностика и LED-ритуал на заказ.',
+  'welcome.cta': 'Сканировать QR-код',
+  'welcome.link': 'Ввести код активации',
+  'welcome.footnote': 'ТОЛЬКО ДЛЯ ВЛАДЕЛЬЦЕВ УСТРОЙСТВА NŪR',
+  'welcome.privacy': 'Ваши данные остаются приватными и зашифрованными. Мы никогда не делимся ими.',
+  'discover.cta_welcome': 'Открыть мою клиническую пре-диагностику',
+  'discover.intro.kicker': 'NŪR · ПРЕ-ДИАГНОСТИКА',
+  'discover.intro.title': 'Ваша клиника красоты начинается здесь',
+  'discover.intro.sub': 'Три клинических вопроса. Персональный ИИ-протокол. Узнайте, что действительно нужно вашей коже.',
+  'discover.intro.b1': 'Оценка нашим Nūr ИИ, обученным на фотобиомодуляции',
+  'discover.intro.b2': 'LED-протокол 630нм + 830нм, адаптированный под вас',
+  'discover.intro.b3': 'Бесплатно и конфиденциально',
+  'discover.intro.start': 'Начать мою пре-диагностику',
+  'discover.q1.title': 'Тест клеточного восстановления',
+  'discover.q1.question': 'При пробуждении наблюдайте за устойчивостью вашей кожи. Следы сна, покраснения или тени исчезают заметно дольше, чем несколько лет назад?',
+  'discover.q1.a': 'Да, моей коже сильно не хватает упругости утром',
+  'discover.q1.b': 'Слегка, я чувствую потерю эластичности к вечеру',
+  'discover.q1.c': 'Нет, восстановление всё ещё быстрое',
+  'discover.q2.title': 'Диагностика Tech Neck',
+  'discover.q2.question': 'Лицо часто чрезмерно ухаживают, но шея раскрывает то, что лицо скрывает. Посмотрите на зону под челюстью: замечаете ли вы горизонтальные линии ("Tech Neck" от экранов) или начало обвисания?',
+  'discover.q2.a': 'Да, начинают проявляться горизонтальные линии',
+  'discover.q2.b': 'Я замечаю прежде всего лёгкое обвисание под подбородком',
+  'discover.q2.c': 'Пока нет, но у меня нет рутины для этой зоны',
+  'discover.q3.title': 'Стеклянный потолок',
+  'discover.q3.question': 'Какое было ваше главное клиническое препятствие для трансформирующих результатов дома?',
+  'discover.q3.a': '"Шкаф": покупаю дорогие приборы, но бросаю из-за отсутствия сопровождения',
+  'discover.q3.b': '"Потолок": мои текущие сыворотки больше не дают видимых результатов',
+  'discover.q3.c': 'Неуверенность: не знаю, какую комбинацию использовать и когда',
+  'discover.email.title': 'Ваш протокол готов',
+  'discover.email.sub': 'Получите полный анализ и персональный протокол.',
+  'discover.email.placeholder': 'ваш@email.com',
+  'discover.email.name_placeholder': 'Ваше имя',
+  'discover.email.consent': 'Я согласна получать анализ и советы Nūr Protocol по email. Зашифрованные данные, никогда не передаются.',
+  'discover.email.cta': 'Получить мой протокол',
+  'discover.prescription.kicker': 'КЛИНИЧЕСКИЙ ПРОТОКОЛ NŪR',
+  'discover.prescription.diagnosis': 'Диагностика',
+  'discover.prescription.axes': 'Приоритетные оси',
+  'discover.prescription.protocol': 'Ваш протокол на заказ',
+  'discover.prescription.cta': 'Разблокировать мой протокол — {discount}% включено',
+  'discover.prescription.promo': 'Приватный код: {code}',
+  'discover.prescription.foot': 'Ваш код WELCOM10 также сохранён в email.',
+  'profile.language': 'Язык',
+  'analyzing.kicker': 'NŪR · ИИ КРАСОТЫ',
+  'analyzing.title': 'Оценка в процессе',
+};
+
+
+
+const DICTS: Record<Lang, Dict> = { fr: FR, en: EN, ar: AR, es: ES, it: IT, de: DE, ru: RU };
+

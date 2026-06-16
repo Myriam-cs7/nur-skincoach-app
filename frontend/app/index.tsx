@@ -93,6 +93,10 @@ export default function Welcome() {
             <Feather name="maximize" size={16} color={theme.color.onBrand} />
             <Text style={styles.ctaText}>{t('welcome.cta')}</Text>
           </Pressable>
+          <Pressable onPress={() => router.push('/discover')} testID="discover-button" style={styles.secondaryCta}>
+            <Feather name="zap" size={14} color={theme.color.brand} />
+            <Text style={styles.secondaryCtaText}>{t('discover.cta_welcome')}</Text>
+          </Pressable>
           <Pressable onPress={onActivate} testID="manual-code-button">
             <Text style={styles.linkText}>{t('welcome.link')}</Text>
           </Pressable>
@@ -170,6 +174,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
   },
   ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sans, letterSpacing: 1 },
+  secondaryCta: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: 12, paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1, borderColor: theme.color.borderGold,
+    backgroundColor: 'rgba(201,169,97,0.06)',
+  },
+  secondaryCtaText: { color: theme.color.brand, fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
   linkText: { color: theme.color.onSurfaceSecondary, fontSize: 12, textDecorationLine: 'underline', letterSpacing: 0.5 },
   privacyRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: theme.spacing.sm, paddingHorizontal: theme.spacing.xl },
   privacyText: { color: theme.color.onSurfaceSecondary, fontSize: 10, opacity: 0.7, flex: 1, textAlign: 'center', letterSpacing: 0.3 },

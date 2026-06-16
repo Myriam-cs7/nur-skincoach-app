@@ -11,6 +11,10 @@ import { useT, setLang, getLang, Lang } from '../../src/i18n';
 const LANGS: { code: Lang; label: string }[] = [
   { code: 'fr', label: 'Français' },
   { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
+  { code: 'it', label: 'Italiano' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'ru', label: 'Русский' },
   { code: 'ar', label: 'العربية' },
 ];
 

@@ -109,4 +109,9 @@ export const api = {
   logSession: (id: string, body: { led_color_id: string; duration_minutes: number; notes?: string }) =>
     request<any>(`/users/${id}/sessions`, { method: 'POST', body: JSON.stringify(body) }),
   resetUser: (id: string) => request<any>(`/users/${id}`, { method: 'DELETE' }),
+  leadPrescription: (body: { email: string; name?: string; age_range?: string; answers: { q1: string; q2: string; q3: string }; lang: string }) =>
+    request<{ ok: boolean; lead_id: string; prescription: { headline: string; diagnosis: string; axes: string[]; protocol_summary: string; cta_text: string }; shop: { url: string; promo_code: string; discount: number } }>('/lead-prescription', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
