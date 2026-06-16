@@ -1,0 +1,183 @@
+{
+  "app_name": "Nūr Protocol AI Skincoach",
+  "personality": "6 Glass / Luxe DARK",
+  "personality_one_liner": "A cinematic, deeply luxurious clinical companion anchored in dark obsidian, accented by luminous LED spectral glows and elegant typography.",
+  "color": {
+    "surface": "#09090C",
+    "onSurface": "#F5F5F5",
+    "surfaceSecondary": "#141419",
+    "onSurfaceSecondary": "#A1A1A5",
+    "surfaceTertiary": "#1C1C24",
+    "onSurfaceTertiary": "#D4D4D8",
+    "surfaceInverse": "#FFFFFF",
+    "onSurfaceInverse": "#09090C",
+    "brand": "#C9A961",
+    "brandPrimary": "#C9A961",
+    "onBrandPrimary": "#09090C",
+    "brandSecondary": "#8C713B",
+    "onBrandSecondary": "#F5F5F5",
+    "brandTertiary": "#2E2413",
+    "onBrandTertiary": "#E5CD92",
+    "success": "#34C759",
+    "onSuccess": "#000000",
+    "warning": "#FFD60A",
+    "onWarning": "#000000",
+    "error": "#FF3B30",
+    "onError": "#FFFFFF",
+    "info": "#32ADE6",
+    "onInfo": "#000000",
+    "border": "#21212B",
+    "borderStrong": "#3A3A4A",
+    "divider": "#16161D",
+    "ledRed": "#FF4A4A",
+    "ledBlue": "#3399FF",
+    "ledGreen": "#34C759",
+    "ledYellow": "#FFCC00",
+    "ledCyan": "#32ADE6",
+    "ledViolet": "#BF5AF2"
+  },
+  "typography": {
+    "displayFontFamily": "Cormorant Garamond",
+    "textFontFamily": "Satoshi",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous editorial spacing. Avoid cramming cards. Let negative space breathe. Safe areas respected strictly. Thumb-friendly layout.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "bottom_tabs",
+  "icon_set": "Feather",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use heavy glass panels over dark/blurred imagery for an expensive, high-end feel.",
+      "Bottom tabs and sticky CTA bars must have glass backdrop.",
+      "Featured cards over background glows should use frosted glass to separate layers."
+    ],
+    "dont's": [
+      "Never apply glass on form inputs or dense text areas.",
+      "Don't stack more than 2 glass surfaces."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Welcome",
+      "purpose": "Scan the QR code from the Nūr Protocol box to activate the dedicated Skincoach.",
+      "states": {
+        "loading": "Centered glowing gold indicator",
+        "empty": "Camera viewfinder waiting for QR",
+        "error": "QR invalid, text with 'Réessayer' button"
+      },
+      "layout": "Cinematic full-bleed dark screen. The Nūr Protocol logo sits at the top (with a top fade-shadow scrim for readability). A subtle glowing animated frame acts as the QR viewfinder. A glass CTA 'Scanner le QR code' sits sticky at the bottom."
+    },
+    {
+      "name": "Onboarding",
+      "purpose": "Intake form for skin type, age, climate, and lifestyle to tailor the protocol.",
+      "states": {
+        "loading": "Spinner during save",
+        "empty": "Initial question state",
+        "error": "Please select an option to continue"
+      },
+      "layout": "Single-column editorial flow. Large Cormorant Garamond headings ('Quel est votre type de peau ?'). Options presented as generous surfaceTertiary chips or lists. Sticky glass primary button 'Continuer' at bottom."
+    },
+    {
+      "name": "FaceScan",
+      "purpose": "Capture face photo with guidance for AI skin diagnosis.",
+      "states": {
+        "loading": "Processing scan with an animated gradient sweep",
+        "empty": "Live camera view",
+        "error": "Face not detected or poor lighting. 'Reprendre' button."
+      },
+      "layout": "Full-screen camera viewfinder. Overlay features a dashed facial alignment guide. A bottom glass sheet displays lighting tips ('Évitez les contre-jours'). Center shutter button is styled with a gold accent ring."
+    },
+    {
+      "name": "DiagnosisResult",
+      "purpose": "Show AI evaluation scores and detected skin concerns.",
+      "states": {
+        "loading": "Analyzing...",
+        "empty": "No scan data",
+        "error": "Analysis failed, retry button"
+      },
+      "layout": "Hero layout with the captured face deeply blurred and overlaid with abstract data points. Below, a scrollable grid of metric cards (Hydration, Pores, Redness) in glass. A primary sticky CTA 'Découvrir mon protocole' at the bottom."
+    },
+    {
+      "name": "HomeTracker",
+      "purpose": "Daily summary, today's LED session, and reminder status.",
+      "states": {
+        "loading": "Skeleton of today's plan",
+        "empty": "Welcome state, no protocol started",
+        "error": "Unable to load plan"
+      },
+      "layout": "Greeting with the date. 'Aujourd'hui' features a large premium hero card indicating the required LED color for the day (e.g., subtle ledRed orb glowing behind frosted glass). 'Démarrer la session' action. A progress streak widget below."
+    },
+    {
+      "name": "ProtocolLibrary",
+      "purpose": "Present the personalized LED sequence and reference library for all 6 LED treatments.",
+      "states": {
+        "loading": "Skeleton list",
+        "empty": "Library available",
+        "error": "Failed to load library"
+      },
+      "layout": "Two sections: 1. 'Votre Protocole' (a timeline view of the tailored routine). 2. 'Bibliothèque LED' (a 2-column or list view of cards, each tinted with one of the 6 LED tokens, showing the benefit of Red, Blue, Green, Yellow, Cyan, Violet light)."
+    }
+  ],
+  "images": {
+    "logo": {
+      "url": "https://customer-assets.emergentagent.com/job_nur-protocol-skin/artifacts/kjxgkh4j_Nur%20Protocol-%20Logo.png",
+      "alt": "Nūr Protocol Logo"
+    },
+    "hero_abstract": {
+      "url": "https://images.unsplash.com/photo-1610659128929-fa69328744e2?crop=entropy&cs=srgb&fm=jpg&w=800&q=85",
+      "alt": "Dark moody skin aesthetic"
+    },
+    "led_glow_placeholder": {
+      "url": "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800&auto=format&fit=crop",
+      "alt": "Abstract neon glow on dark background"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the 'Luxe et Clinique' dark theme. Avoid pure black (#000000), use the provided obsidian tokens (#09090C).",
+    "Typography must be elegant. Use Cormorant Garamond for main headings (weight 400 or 500 max) and Satoshi for readable UI text.",
+    "Implement the 6 LED color tokens (ledRed, ledBlue, ledGreen, ledYellow, ledCyan, ledViolet) as subtle background glowing orbs behind glassmorphism cards, not as solid opaque backgrounds. The UI must remain dominantly dark.",
+    "Always apply vertical gradient scrims under text that overlays images.",
+    "Ensure safe-area padding is respected, especially with the full-screen camera and QR scan overlays.",
+    "Do NOT use emojis anywhere in the system UI.",
+    "Add fluid, slow-paced cinematic animations (fade-ins, soft scales) to match the luxury feel."
+  ],
+  "haptics": {
+    "primary_button_press": "impactLight",
+    "scan_success": "notificationSuccess",
+    "tab_change": "selection"
+  }
+}
