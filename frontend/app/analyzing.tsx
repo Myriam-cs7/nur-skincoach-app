@@ -6,41 +6,39 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { theme } from '../src/theme';
 import { api, getStoredUserId } from '../src/api';
-
-const STEPS = [
-  'Lecture du grain de peau…',
-  'Repérage des zones à sublimer…',
-  'Évaluation de l\'éclat et du teint…',
-  'Conception de votre rituel LED sur-mesure…',
-];
+import { useT, getLang } from '../src/i18n';
+import { Wordmark } from '../src/ui';
 
 const { width } = Dimensions.get('window');
 
 export default function Analyzing() {
   const router = useRouter();
-  const { b64 } = useLocalSearchParams<{ b64: string }>();
+  const { t } = useT();
+  const { b64 } = useLocalSearchParams<{ b64?: string }>();
   const [stepIdx, setStepIdx] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  const STEPS = [t('analyzing.s1'), t('analyzing.s2'), t('analyzing.s3'), t('analyzing.s4')];
+
   const rotate = useSharedValue(0);
   useEffect(() => {
-    rotate.value = withRepeat(withTiming(1, { duration: 4000, easing: Easing.linear }), -1);
+    rotate.value = withRepeat(withTiming(1, { duration: 4500, easing: Easing.linear }), -1);
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setStepIdx((i) => (i < STEPS.length - 1 ? i + 1 : i)), 3500);
-    return () => clearInterval(t);
+    const t2 = setInterval(() => setStepIdx((i) => (i < STEPS.length - 1 ? i + 1 : i)), 3500);
+    return () => clearInterval(t2);
   }, []);
 
   useEffect(() => {
     (async () => {
       try {
         const uid = await getStoredUserId();
-        if (!uid || !b64) throw new Error('Missing data');
-        await api.diagnose(uid, b64 as string);
+        if (!uid) throw new Error('Missing user');
+        await api.diagnose(uid, (b64 as string) || undefined, 'image/jpeg', getLang());
         router.replace('/diagnosis');
       } catch (e: any) {
-        setError(e?.message || 'Erreur inconnue');
+        setError(e?.message || t('common.error'));
       }
     })();
   }, []);
@@ -51,7 +49,7 @@ export default function Analyzing() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#1a1407', '#09090C', '#0b0d1a']} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#0e0a04', '#06060A', '#04040A']} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.center}>
           <Animated.View style={[styles.orbWrap, orbStyle]}>
@@ -63,8 +61,8 @@ export default function Analyzing() {
             <View style={[styles.orb, { backgroundColor: theme.color.ledViolet, top: '20%', left: 0 }]} />
           </Animated.View>
           <View style={styles.centerInner}>
-            <Text style={styles.kicker}>NŪR · IA BEAUTÉ</Text>
-            <Text style={styles.title} testID="analyzing-title">Bilan en cours</Text>
+            <Wordmark label={t('analyzing.kicker')} />
+            <Text style={styles.title} testID="analyzing-title">{t('analyzing.title')}</Text>
           </View>
         </View>
 
@@ -92,25 +90,14 @@ const styles = StyleSheet.create({
   safe: { flex: 1, justifyContent: 'space-between', padding: theme.spacing.xl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   orbWrap: { width: ORB, height: ORB, position: 'absolute' },
-  orb: {
-    position: 'absolute',
-    width: 22,
-    height: 22,
-    borderRadius: 999,
-    opacity: 0.85,
-    shadowOpacity: 0.9,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
-    shadowColor: '#fff',
-  },
-  centerInner: { alignItems: 'center', gap: 8 },
-  kicker: { color: theme.color.brand, letterSpacing: 3, fontSize: 11, fontWeight: '600' },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30 },
+  orb: { position: 'absolute', width: 22, height: 22, borderRadius: 999, opacity: 0.85, shadowOpacity: 0.9, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, shadowColor: '#fff' },
+  centerInner: { alignItems: 'center', gap: 12 },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 32, letterSpacing: -0.3 },
   steps: { gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-  stepDot: { width: 6, height: 6, borderRadius: 999, backgroundColor: theme.color.border },
+  stepDot: { width: 5, height: 5, borderRadius: 999, backgroundColor: theme.color.border },
   stepDotActive: { backgroundColor: theme.color.brand },
-  stepTxt: { color: theme.color.onSurfaceSecondary, fontSize: 13 },
+  stepTxt: { color: theme.color.onSurfaceSecondary, fontSize: 13, letterSpacing: 0.2 },
   stepTxtActive: { color: theme.color.onSurface },
   error: { color: theme.color.error, textAlign: 'center' },
 });

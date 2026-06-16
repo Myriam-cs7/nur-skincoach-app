@@ -118,7 +118,7 @@ class Intake(BaseModel):
     age_range: str
     gender: Optional[str] = None
     skin_type: str  # "seche" | "grasse" | "mixte" | "normale" | "sensible"
-    location: str  # city / country
+    location: Optional[str] = None  # optional
     climate: str  # "tempere" | "sec" | "humide" | "froid" | "tropical"
     sun_exposure: str  # "faible" | "moyenne" | "forte"
     lifestyle: str  # "sedentaire" | "actif" | "tres_actif"
@@ -130,8 +130,9 @@ class Intake(BaseModel):
 
 
 class DiagnoseRequest(BaseModel):
-    photo_base64: str  # raw base64 (no data: prefix)
+    photo_base64: Optional[str] = None  # optional — questionnaire-only flow supported
     mime_type: str = "image/jpeg"
+    lang: str = "fr"  # "fr" | "en" | "ar"
 
 
 class ProtocolDay(BaseModel):
@@ -172,103 +173,98 @@ async def _get_user_or_404(user_id: str) -> dict:
 
 
 # ---------- LLM diagnosis ----------
-SYSTEM_PROMPT_FR = """Tu es un coach beauté expert pour la marque de luminothérapie LED Nūr Protocol.
-Tu analyses la photo de visage et les informations du client pour produire un bilan beauté personnalisé
-et un rituel de luminothérapie LED hebdomadaire utilisant exclusivement les 6 couleurs disponibles :
-- red  (rouge, 630-660nm)  : anti-âge, collagène, rides, fermeté
-- blue (bleu, 415-450nm)   : anti-acné, peau grasse, bactéries
-- green (vert, 520-550nm)  : taches, hyperpigmentation, unifie le teint
-- yellow (jaune, 570-590nm): éclat, rougeurs légères, teint terne
-- cyan (cyan, 490-515nm)   : peau sensible, anti-inflammatoire, couperose
-- violet (violet, 380-415nm): cicatrices, régénération, grain de peau
+SYSTEM_PROMPTS = {
+    "fr": """Tu es un coach beauté expert pour la marque de luminothérapie LED Nūr Protocol.
+Tu produis un bilan beauté personnalisé et un rituel LED hebdomadaire utilisant exclusivement les 6 couleurs disponibles :
+- red (rouge, 630-660nm), blue (bleu, 415-450nm), green (vert, 520-550nm), yellow (jaune, 570-590nm), cyan (490-515nm), violet (380-415nm)
 
-TU DOIS RÉPONDRE STRICTEMENT EN JSON VALIDE (sans markdown, sans ```), avec ce schéma exact :
-{
-  "scores": {
-    "hydration": <int 0-100>,
-    "oil": <int 0-100>,
-    "pores": <int 0-100>,
-    "redness": <int 0-100>,
-    "sensitivity": <int 0-100>,
-    "pigmentation": <int 0-100>,
-    "wrinkles": <int 0-100>,
-    "glow": <int 0-100>
-  },
-  "primary_concerns": ["concern1","concern2","concern3"],
-  "summary": "Bilan beauté court (2-3 phrases) en français — vocabulaire cosmétique uniquement, jamais médical",
-  "routine_advice": ["Conseil rituel beauté 1","Conseil 2","Conseil 3","Conseil 4"],
-  "lifestyle_advice": ["Conseil bien-être 1","Conseil 2","Conseil 3"],
-  "protocol": {
-    "weekly_schedule": [
-      {"day":1,"led_color_id":"red","session_minutes":15,"intensity":"moyenne","notes":"Lundi - Anti-âge"},
-      {"day":2,"led_color_id":"blue","session_minutes":12,"intensity":"faible","notes":"Mardi - Purification"},
-      {"day":3,"led_color_id":null,"session_minutes":null,"intensity":null,"notes":"Repos"},
-      {"day":4,"led_color_id":"green","session_minutes":15,"intensity":"moyenne","notes":"Jeudi - Anti-taches"},
-      {"day":5,"led_color_id":"yellow","session_minutes":12,"intensity":"faible","notes":"Vendredi - Éclat"},
-      {"day":6,"led_color_id":"violet","session_minutes":15,"intensity":"forte","notes":"Samedi - Régénération"},
-      {"day":7,"led_color_id":null,"session_minutes":null,"intensity":null,"notes":"Repos"}
-    ],
-    "total_weeks": 8,
-    "expected_results": "Description claire des résultats attendus en 8 semaines"
-  }
+TU DOIS RÉPONDRE STRICTEMENT EN JSON VALIDE (sans markdown), avec ce schéma :
+{"scores":{"hydration":int,"oil":int,"pores":int,"redness":int,"sensitivity":int,"pigmentation":int,"wrinkles":int,"glow":int},
+"primary_concerns":["c1","c2","c3"],
+"summary":"Bilan beauté court (2-3 phrases) en français",
+"routine_advice":["1","2","3","4"],
+"lifestyle_advice":["1","2","3"],
+"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"texte court"}...],"total_weeks":int,"expected_results":"texte"}}
+
+RÈGLES :
+- 4 à 6 séances par semaine MAX, au moins 1 jour de repos (led_color_id=null, intensity=null)
+- intensity adaptée : "faible" pour peau sensible/débutante, "moyenne" usage standard, "forte" pour besoins ciblés
+- VOCABULAIRE BEAUTÉ/COSMÉTIQUE UNIQUEMENT, jamais médical (interdit : "diagnostic", "dermatologique", "traitement", "soigner", "guérir", "clinique", "pathologie")
+- Utiliser : "bilan beauté", "rituel", "soin", "confort cutané", "éclat", "apparence", "grain de peau"
+- Aucune allégation thérapeutique. Tout en français.""",
+    "en": """You are an expert beauty coach for the Nūr Protocol LED light therapy brand.
+You produce a personalised beauty assessment and weekly LED ritual using only the 6 available colours:
+- red (630-660nm), blue (415-450nm), green (520-550nm), yellow (570-590nm), cyan (490-515nm), violet (380-415nm)
+
+REPLY STRICTLY IN VALID JSON (no markdown):
+{"scores":{"hydration":int,"oil":int,"pores":int,"redness":int,"sensitivity":int,"pigmentation":int,"wrinkles":int,"glow":int},
+"primary_concerns":["c1","c2","c3"],
+"summary":"Short beauty summary (2-3 sentences) in English",
+"routine_advice":["1","2","3","4"],
+"lifestyle_advice":["1","2","3"],
+"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"short text"}...],"total_weeks":int,"expected_results":"text"}}
+
+RULES:
+- MAX 4-6 sessions per week, at least 1 rest day (led_color_id=null, intensity=null)
+- intensity: "faible" sensitive/beginner, "moyenne" standard, "forte" targeted needs (keep these French values for consistency across languages)
+- BEAUTY/COSMETIC LEXICON ONLY, never medical (forbidden: "diagnosis", "dermatological", "treatment", "heal", "cure", "clinical", "pathology")
+- Use: "beauty assessment", "ritual", "care", "skin comfort", "glow", "appearance", "skin texture"
+- No therapeutic claims. Entirely in English.""",
+    "ar": """أنتِ مدربة جمال خبيرة لعلامة نُور بروتوكول للعلاج بالضوء LED.
+تنتجين تقييماً جمالياً مخصصاً وروتيناً أسبوعياً LED باستخدام الألوان الستة المتاحة فقط:
+- red (أحمر، 630-660nm)، blue (أزرق، 415-450nm)، green (أخضر، 520-550nm)، yellow (أصفر، 570-590nm)، cyan (سماوي، 490-515nm)، violet (بنفسجي، 380-415nm)
+
+أجيبي بصيغة JSON صالحة فقط (بدون markdown):
+{"scores":{"hydration":int,"oil":int,"pores":int,"redness":int,"sensitivity":int,"pigmentation":int,"wrinkles":int,"glow":int},
+"primary_concerns":["c1","c2","c3"],
+"summary":"ملخص جمالي قصير (2-3 جمل) بالعربية",
+"routine_advice":["1","2","3","4"],
+"lifestyle_advice":["1","2","3"],
+"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"نص قصير"}...],"total_weeks":int,"expected_results":"نص"}}
+
+القواعد:
+- 4-6 جلسات أسبوعياً كحد أقصى، يوم راحة واحد على الأقل (led_color_id=null, intensity=null)
+- intensity: "faible" للبشرة الحساسة، "moyenne" استخدام عادي، "forte" احتياجات محددة (احتفظي بهذه القيم الفرنسية للاتساق)
+- استخدمي مفردات الجمال/التجميل فقط، تجنبي مطلقاً المصطلحات الطبية
+- استخدمي: "تقييم جمالي"، "روتين"، "عناية"، "راحة البشرة"، "إشراق"، "مظهر"
+- لا ادعاءات علاجية. كل شيء بالعربية.""",
 }
 
-Règles pour intensity :
-- "faible" pour peau sensible / débutante / zones réactives
-- "moyenne" pour usage standard
-- "forte" pour besoins ciblés (anti-âge marqué, régénération profonde, peau tolérante)
-- null pour les jours de repos
 
-Règles importantes :
-- Adapte le rituel aux préoccupations beauté détectées sur la photo ET au questionnaire (climat, mode de vie, sommeil, stress).
-- 4 à 6 séances par semaine maximum (jamais 7), prévoir au moins 1 jour de repos.
-- led_color_id doit être null pour les jours de repos.
-- Les couleurs LED doivent être pertinentes pour les préoccupations beauté détectées.
-- Tu écris en FRANÇAIS uniquement. Ne mets PAS de markdown.
-- IMPORTANT - VOCABULAIRE COSMÉTIQUE UNIQUEMENT : tu es un coach beauté/bien-être, PAS un médecin ni dermatologue.
-- INTERDICTION ABSOLUE des termes médicaux : ne dis JAMAIS « diagnostic », « traitement », « dermatologique », « pathologie », « soigner », « guérir », « clinique ». 
-- Utilise UNIQUEMENT le lexique beauté/cosmétique : « bilan beauté », « rituel », « soin », « confort cutané », « éclat », « apparence », « grain de peau », « routine ».
-- Pour les préoccupations : préfère « zones d'irrégularité », « teint inégal », « manque d'éclat », « confort » plutôt que des termes pathologiques.
-- Ne fais AUCUNE allégation thérapeutique ni promesse médicale. Reste descriptif et cosmétique."""
-
-
-async def run_diagnosis(intake: dict, image_b64: str, mime_type: str, session_id: str) -> dict:
+async def run_diagnosis(intake: dict, image_b64: Optional[str], mime_type: str, session_id: str, lang: str = "fr") -> dict:
+    system_prompt = SYSTEM_PROMPTS.get(lang, SYSTEM_PROMPTS["fr"])
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=session_id,
-        system_message=SYSTEM_PROMPT_FR,
+        system_message=system_prompt,
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
-    user_text = (
-        "Voici les informations du client (questionnaire beauté) et sa photo de visage.\n"
-        f"Profil:\n{json.dumps(intake, ensure_ascii=False, indent=2)}\n\n"
-        "Observe la photo en détail (apparence visible du grain de peau, pores, zones d'inégalité, "
-        "éclat, uniformité du teint, niveau d'hydratation apparente) puis produis le JSON demandé "
-        "en respectant strictement le lexique beauté/cosmétique (jamais médical)."
-    )
+    intro = {
+        "fr": "Voici les informations du client (questionnaire beauté)" + (" et sa photo de visage" if image_b64 else " — pas de photo fournie, base ton bilan uniquement sur le questionnaire") + ".\n",
+        "en": "Here is the client's information (beauty questionnaire)" + (" and their face photo" if image_b64 else " — no photo provided, base your assessment on the questionnaire only") + ".\n",
+        "ar": "إليكِ معلومات العميلة (استبيان الجمال)" + (" وصورة وجهها" if image_b64 else " — لا توجد صورة، استندي إلى الاستبيان فقط") + ".\n",
+    }
+    user_text = intro.get(lang, intro["fr"]) + f"Profil:\n{json.dumps(intake, ensure_ascii=False, indent=2)}"
 
-    image = ImageContent(image_base64=image_b64)
-    msg = UserMessage(text=user_text, file_contents=[image])
+    file_contents = []
+    if image_b64:
+        file_contents.append(ImageContent(image_base64=image_b64))
+
+    msg = UserMessage(text=user_text, file_contents=file_contents if file_contents else None)
 
     raw = await chat.send_message(msg)
     text = raw if isinstance(raw, str) else str(raw)
-
-    # Strip code fences if present
     text = text.strip()
     if text.startswith("```"):
         text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
         text = re.sub(r"\n?```$", "", text)
-
-    # Try to find JSON object
     try:
-        data = json.loads(text)
+        return json.loads(text)
     except json.JSONDecodeError:
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if not match:
             raise HTTPException(status_code=502, detail="LLM did not return valid JSON")
-        data = json.loads(match.group(0))
-
-    return data
+        return json.loads(match.group(0))
 
 
 # ---------- Routes ----------
@@ -332,12 +328,12 @@ async def diagnose(user_id: str, req: DiagnoseRequest):
     if not user.get("intake"):
         raise HTTPException(status_code=400, detail="Intake form must be completed first")
 
-    if not req.photo_base64 or len(req.photo_base64) < 100:
-        raise HTTPException(status_code=400, detail="Photo data missing or invalid")
+    # Photo is OPTIONAL — questionnaire-only flow is fully supported
+    image_b64 = req.photo_base64 if (req.photo_base64 and len(req.photo_base64) > 100) else None
 
     session_id = f"diag-{user_id}"
     try:
-        diag = await run_diagnosis(user["intake"], req.photo_base64, req.mime_type, session_id)
+        diag = await run_diagnosis(user["intake"], image_b64, req.mime_type, session_id, req.lang)
     except HTTPException:
         raise
     except Exception as e:
@@ -348,7 +344,7 @@ async def diagnose(user_id: str, req: DiagnoseRequest):
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "created_at": utc_now_iso(),
-        "photo_thumbnail_b64": req.photo_base64[:200000],  # cap stored size
+        "photo_thumbnail_b64": (req.photo_base64[:200000] if req.photo_base64 else None),  # cap stored size
         "data": diag,
     }
     await db.users.update_one({"id": user_id}, {"$set": {"diagnosis": diag_record}})

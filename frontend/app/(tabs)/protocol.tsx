@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { theme, LED_COLORS, DAYS_FR } from '../../src/theme';
+import { theme, LED_COLORS } from '../../src/theme';
 import { api, getStoredUserId, DiagnosisRecord } from '../../src/api';
 
 const DAY_FULL = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];

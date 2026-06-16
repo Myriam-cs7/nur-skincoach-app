@@ -98,10 +98,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(intake),
     }),
-  diagnose: (id: string, photoB64: string, mime = 'image/jpeg') =>
+  diagnose: (id: string, photoB64?: string, mime = 'image/jpeg', lang = 'fr') =>
     request<{ ok: boolean; diagnosis: DiagnosisRecord }>(`/users/${id}/diagnose`, {
       method: 'POST',
-      body: JSON.stringify({ photo_base64: photoB64, mime_type: mime }),
+      body: JSON.stringify({ photo_base64: photoB64 || null, mime_type: mime, lang }),
     }),
   getDiagnosis: (id: string) => request<DiagnosisRecord>(`/users/${id}/diagnosis`),
   ledLibrary: () => request<{ colors: LedColor[] }>('/led-library'),

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import { theme, LED_COLORS, DAYS_FR } from '../src/theme';
+import { theme, LED_COLORS } from '../src/theme';
 import { api, getStoredUserId, DiagnosisRecord } from '../src/api';
 
 const SCORE_LABELS: Record<string, string> = {
@@ -88,7 +88,7 @@ export default function Diagnosis() {
               const c = d.led_color_id ? LED_COLORS[d.led_color_id] : null;
               return (
                 <View key={d.day} style={styles.dayCol}>
-                  <Text style={styles.dayLabel}>{DAYS_FR[d.day - 1]}</Text>
+                  <Text style={styles.dayLabel}>{['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'][d.day - 1]}</Text>
                   <View
                     style={[
                       styles.dayOrb,

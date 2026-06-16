@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Dimensions, Image as RNImage } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -8,19 +8,21 @@ import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../src/theme';
+import { useT } from '../src/i18n';
 
 const { width } = Dimensions.get('window');
 
 export default function Scan() {
   const router = useRouter();
+  const { t } = useT();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (!permission) return;
-    if (!permission.granted) requestPermission();
-  }, [permission]);
+  const goAnalyze = (b64?: string) => {
+    if (b64) router.replace({ pathname: '/analyzing', params: { b64 } });
+    else router.replace('/analyzing');
+  };
 
   const onCapture = async () => {
     if (!cameraRef.current || busy) return;
@@ -28,16 +30,11 @@ export default function Scan() {
     try {
       const pic = await cameraRef.current.takePictureAsync({ base64: false, quality: 0.7, skipProcessing: true });
       const manipulated = await ImageManipulator.manipulateAsync(
-        pic.uri,
-        [{ resize: { width: 768 } }],
+        pic.uri, [{ resize: { width: 768 } }],
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
-      const b64 = manipulated.base64!;
-      router.replace({ pathname: '/analyzing', params: { b64 } });
-    } catch (e) {
-      console.warn(e);
-      setBusy(false);
-    }
+      goAnalyze(manipulated.base64!);
+    } catch (e) { console.warn(e); setBusy(false); }
   };
 
   const onPickGallery = async () => {
@@ -46,42 +43,60 @@ export default function Scan() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) { setBusy(false); return; }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.7,
-      });
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
       if (result.canceled) { setBusy(false); return; }
-      const asset = result.assets[0];
       const manipulated = await ImageManipulator.manipulateAsync(
-        asset.uri,
-        [{ resize: { width: 768 } }],
+        result.assets[0].uri, [{ resize: { width: 768 } }],
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
-      router.replace({ pathname: '/analyzing', params: { b64: manipulated.base64! } });
-    } catch (e) {
-      console.warn(e);
-      setBusy(false);
-    }
+      goAnalyze(manipulated.base64!);
+    } catch (e) { console.warn(e); setBusy(false); }
   };
 
-  if (!permission) {
-    return (
-      <View style={[styles.root, styles.center]}>
-        <ActivityIndicator color={theme.color.brand} />
-      </View>
-    );
-  }
+  const onSkip = () => goAnalyze();
 
-  if (!permission.granted) {
+  // No-permission / not-granted state — show the choice clearly (not blocking)
+  if (!permission || !permission.granted) {
     return (
-      <SafeAreaView style={[styles.root, styles.center]} edges={['top', 'bottom']}>
-        <Feather name="camera-off" size={48} color={theme.color.brand} />
-        <Text style={styles.title}>Caméra requise</Text>
-        <Text style={styles.subtle}>Nous avons besoin de votre caméra pour votre bilan beauté.</Text>
-        <Pressable style={styles.cta} onPress={requestPermission} testID="grant-camera">
-          <Text style={styles.ctaText}>Autoriser la caméra</Text>
-        </Pressable>
-      </SafeAreaView>
+      <View style={styles.root}>
+        <LinearGradient colors={['#0e0a04', '#06060A']} locations={[0, 0.5]} style={StyleSheet.absoluteFill} />
+        <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()} hitSlop={12} testID="scan-back">
+              <Feather name="chevron-left" size={24} color={theme.color.onSurface} />
+            </Pressable>
+            <Text style={styles.kicker}>{t('scan.kicker')}</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <View style={styles.permCenter}>
+            <View style={styles.iconCircle}>
+              <Feather name="camera" size={28} color={theme.color.brand} />
+            </View>
+            <Text style={styles.title}>{t('scan.perm.title')}</Text>
+            <Text style={styles.subtitle}>{t('scan.perm.sub')}</Text>
+
+            <View style={styles.privacyBox}>
+              <Feather name="lock" size={12} color={theme.color.brand} />
+              <Text style={styles.privacyText}>{t('welcome.privacy')}</Text>
+            </View>
+          </View>
+
+          <View style={styles.bottomPanel}>
+            <Pressable style={styles.cta} onPress={async () => { await requestPermission(); }} testID="grant-camera">
+              <Feather name="camera" size={16} color={theme.color.onBrand} />
+              <Text style={styles.ctaText}>{t('scan.perm.allow')}</Text>
+            </Pressable>
+            <Pressable onPress={onPickGallery} testID="gallery-button">
+              <Text style={styles.linkText}>{t('scan.gallery')}</Text>
+            </Pressable>
+            <Pressable onPress={onSkip} style={styles.skipBtn} testID="skip-button">
+              <Text style={styles.skipText}>{t('scan.skip')}</Text>
+              <Feather name="arrow-right" size={14} color={theme.color.brand} />
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
@@ -89,24 +104,25 @@ export default function Scan() {
     <View style={styles.root}>
       <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" />
       <LinearGradient
-        colors={['rgba(9,9,12,0.9)', 'transparent', 'transparent', 'rgba(9,9,12,0.95)']}
-        locations={[0, 0.2, 0.65, 1]}
+        colors={['rgba(6,6,10,0.95)', 'transparent', 'transparent', 'rgba(6,6,10,0.98)']}
+        locations={[0, 0.22, 0.6, 1]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.headerRow}>
+        <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} testID="scan-back">
-            <Feather name="x" size={24} color={theme.color.onSurface} />
+            <Feather name="x" size={22} color={theme.color.onSurface} />
           </Pressable>
-          <Text style={styles.kicker}>BILAN BEAUTÉ</Text>
-          <View style={{ width: 24 }} />
+          <Text style={styles.kicker}>{t('scan.kicker')}</Text>
+          <Pressable onPress={onSkip} hitSlop={12} testID="skip-top">
+            <Text style={styles.skipTopText}>{t('common.skip')}</Text>
+          </Pressable>
         </View>
 
         <View style={styles.guideContainer} pointerEvents="none">
           <View style={styles.faceGuide}>
-            {/* Corner ticks */}
             <View style={[styles.corner, styles.tl]} />
             <View style={[styles.corner, styles.tr]} />
             <View style={[styles.corner, styles.bl]} />
@@ -116,12 +132,12 @@ export default function Scan() {
 
         <View style={styles.bottomPanel}>
           <View style={styles.tipRow}>
-            <Feather name="sun" size={14} color={theme.color.brand} />
-            <Text style={styles.tip}>Lumière naturelle de face</Text>
+            <Feather name="sun" size={12} color={theme.color.brand} />
+            <Text style={styles.tip}>{t('scan.tip1')}</Text>
           </View>
           <View style={styles.tipRow}>
-            <Feather name="smile" size={14} color={theme.color.brand} />
-            <Text style={styles.tip}>Sans maquillage, visage propre</Text>
+            <Feather name="smile" size={12} color={theme.color.brand} />
+            <Text style={styles.tip}>{t('scan.tip2')}</Text>
           </View>
 
           <Pressable onPress={onCapture} disabled={busy} style={[styles.shutter, busy && { opacity: 0.5 }]} testID="capture-button">
@@ -131,9 +147,16 @@ export default function Scan() {
               </View>
             </View>
           </Pressable>
-          <Pressable onPress={onPickGallery} disabled={busy} testID="gallery-button">
-            <Text style={styles.galleryLink}>Choisir depuis la galerie</Text>
-          </Pressable>
+
+          <View style={styles.bottomActions}>
+            <Pressable onPress={onPickGallery} disabled={busy} testID="gallery-button">
+              <Text style={styles.linkText}>{t('scan.gallery')}</Text>
+            </Pressable>
+            <Text style={styles.sep}>·</Text>
+            <Pressable onPress={onSkip} disabled={busy} testID="skip-button">
+              <Text style={styles.linkText}>{t('scan.skip')}</Text>
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
     </View>
@@ -144,14 +167,27 @@ const GUIDE = width * 0.7;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.color.surface },
-  center: { alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xl },
   safe: { flex: 1, justifyContent: 'space-between' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm },
-  kicker: { color: theme.color.brand, fontSize: 11, letterSpacing: 3, fontWeight: '600' },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 26, marginTop: theme.spacing.lg },
-  subtle: { color: theme.color.onSurfaceSecondary, fontSize: 14, textAlign: 'center', marginTop: theme.spacing.sm },
-  cta: { backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingHorizontal: theme.spacing.xl, paddingVertical: 14, marginTop: theme.spacing.xl },
-  ctaText: { color: theme.color.onBrand, fontWeight: '700' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm },
+  kicker: { color: theme.color.brand, fontSize: 10, letterSpacing: 3, fontWeight: '600' },
+  skipTopText: { color: theme.color.brand, fontSize: 12, fontWeight: '500' },
+  permCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: theme.spacing.xl, gap: theme.spacing.md },
+  iconCircle: {
+    width: 80, height: 80, borderRadius: 999,
+    backgroundColor: theme.color.brandTint,
+    borderWidth: 1, borderColor: theme.color.brand,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: theme.color.brand, shadowOpacity: 0.4, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
+  },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, marginTop: theme.spacing.lg, letterSpacing: -0.3, textAlign: 'center' },
+  subtitle: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: theme.spacing.sm },
+  privacyBox: {
+    flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
+    marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.lg, paddingVertical: 12,
+    borderRadius: theme.radius.md, backgroundColor: theme.color.surfaceSecondary,
+    borderWidth: 1, borderColor: theme.color.borderGold,
+  },
+  privacyText: { color: theme.color.onSurfaceTertiary, fontSize: 11, flex: 1, letterSpacing: 0.2 },
   guideContainer: { alignItems: 'center', justifyContent: 'center' },
   faceGuide: { width: GUIDE, height: GUIDE * 1.3, borderRadius: GUIDE },
   corner: { position: 'absolute', width: 32, height: 32, borderColor: theme.color.brand },
@@ -161,9 +197,20 @@ const styles = StyleSheet.create({
   br: { bottom: 0, right: 0, borderBottomWidth: 2, borderRightWidth: 2, borderBottomRightRadius: 8 },
   bottomPanel: { paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.lg, gap: theme.spacing.sm, alignItems: 'center' },
   tipRow: { flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center' },
-  tip: { color: theme.color.onSurfaceTertiary, fontSize: 13 },
+  tip: { color: theme.color.onSurfaceTertiary, fontSize: 12 },
+  cta: {
+    backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingHorizontal: theme.spacing.xl,
+    paddingVertical: 16, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
+    minWidth: width * 0.78, justifyContent: 'center',
+    shadowColor: theme.color.brand, shadowOpacity: 0.4, shadowRadius: 22, shadowOffset: { width: 0, height: 6 },
+  },
+  ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
+  linkText: { color: theme.color.onSurfaceSecondary, fontSize: 13, textDecorationLine: 'underline' },
+  sep: { color: theme.color.onSurfaceSecondary, fontSize: 13 },
+  bottomActions: { flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
   shutter: { marginTop: theme.spacing.lg },
-  shutterRing: { width: 78, height: 78, borderRadius: 999, borderWidth: 2, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
-  shutterCore: { width: 62, height: 62, borderRadius: 999, backgroundColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
-  galleryLink: { color: theme.color.onSurfaceSecondary, fontSize: 13, textDecorationLine: 'underline', marginTop: theme.spacing.md },
+  shutterRing: { width: 76, height: 76, borderRadius: 999, borderWidth: 2, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
+  shutterCore: { width: 60, height: 60, borderRadius: 999, backgroundColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
+  skipBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
+  skipText: { color: theme.color.brand, fontSize: 13, fontWeight: '600' },
 });

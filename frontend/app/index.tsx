@@ -5,16 +5,12 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 
 import { theme } from '../src/theme';
+import { Wordmark, GoldDivider } from '../src/ui';
 import { api, getStoredUserId, setStoredUser } from '../src/api';
+import { useT } from '../src/i18n';
 
 const LOGO_URL =
   'https://customer-assets.emergentagent.com/job_nur-protocol-skin/artifacts/vlelvply_Nur%20Logo.png?v=2';
@@ -23,11 +19,11 @@ const { width } = Dimensions.get('window');
 
 export default function Welcome() {
   const router = useRouter();
+  const { t } = useT();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
-    pulse.value = withRepeat(withTiming(1, { duration: 2800, easing: Easing.inOut(Easing.ease) }), -1, true);
-    // auto-route if user already exists
+    pulse.value = withRepeat(withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.ease) }), -1, true);
     (async () => {
       const uid = await getStoredUserId();
       if (uid) {
@@ -36,16 +32,13 @@ export default function Welcome() {
           if (u?.diagnosis) router.replace('/(tabs)/home');
           else if (u?.intake) router.replace('/scan');
           else router.replace('/onboarding');
-        } catch {
-          // stay on welcome
-        }
+        } catch {}
       }
     })();
   }, []);
 
   const haloStyle = useAnimatedStyle(() => ({
-    opacity: 0.25 + pulse.value * 0.55,
-    transform: [{ scale: 0.9 + pulse.value * 0.15 }],
+    opacity: 0.35 + pulse.value * 0.45,
   }));
 
   const onActivate = async () => {
@@ -61,39 +54,34 @@ export default function Welcome() {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={['#1a1407', '#09090C', '#0b0d1a']}
-        locations={[0, 0.5, 1]}
+        colors={['#0e0a04', '#06060A', '#04040A']}
+        locations={[0, 0.55, 1]}
         style={StyleSheet.absoluteFill}
       />
-      {/* LED color ring */}
-      <View style={styles.ledRing} pointerEvents="none">
-        {[theme.color.ledRed, theme.color.ledYellow, theme.color.ledGreen, theme.color.ledCyan, theme.color.ledBlue, theme.color.ledViolet].map((c, i) => (
-          <Animated.View key={i} style={[styles.ledDot, { backgroundColor: c, shadowColor: c }, haloStyle]} />
-        ))}
-      </View>
+      {/* Subtle gold vignette */}
+      <View style={styles.vignette} pointerEvents="none" />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <Text style={styles.kicker} testID="welcome-kicker">© NŪR PROTOCOL · AT-HOME CLINIC</Text>
+        <View style={styles.topRow}>
+          <Text style={styles.kicker} testID="welcome-kicker">{t('welcome.kicker')}</Text>
+        </View>
+
+        {/* LED color ring */}
+        <View style={styles.ledRing}>
+          {[theme.color.ledRed, theme.color.ledYellow, theme.color.ledGreen, theme.color.ledCyan, theme.color.ledBlue, theme.color.ledViolet].map((c, i) => (
+            <Animated.View key={i} style={[styles.ledDot, { backgroundColor: c, shadowColor: c }, haloStyle]} />
+          ))}
         </View>
 
         <View style={styles.centerBlock}>
-          <Animated.View style={[styles.logoHalo, haloStyle]} />
-          <Image
-            source={{ uri: LOGO_URL }}
-            style={styles.logo}
-            contentFit="contain"
-            transition={400}
-          />
-          <View style={styles.wordmarkWrap}>
-            <View style={styles.hairline} />
-            <Text style={styles.wordmark}>NŪR PROTOCOL</Text>
-            <View style={styles.hairline} />
+          <Animated.View style={[styles.logoOuterGlow, haloStyle]} />
+          <View style={styles.logoStage}>
+            <Image source={{ uri: LOGO_URL }} style={styles.logo} contentFit="contain" transition={500} />
           </View>
-          <Text style={styles.title} testID="welcome-title">At-Home Clinic</Text>
-          <Text style={styles.subtitle}>
-            Votre espace beauté privatisé.{'\n'}Bilan IA et rituel LED sur-mesure.
-          </Text>
+          <Wordmark label="NŪR PROTOCOL" />
+          <Text style={styles.title} testID="welcome-title">{t('welcome.title')}</Text>
+          <GoldDivider marginV={theme.spacing.md} />
+          <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
         </View>
 
         <View style={styles.bottom}>
@@ -102,93 +90,88 @@ export default function Welcome() {
             style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
             testID="activate-button"
           >
-            <Feather name="maximize" size={18} color={theme.color.onBrand} />
-            <Text style={styles.ctaText}>Scanner mon QR code</Text>
+            <Feather name="maximize" size={16} color={theme.color.onBrand} />
+            <Text style={styles.ctaText}>{t('welcome.cta')}</Text>
           </Pressable>
           <Pressable onPress={onActivate} testID="manual-code-button">
-            <Text style={styles.linkText}>Entrer un code d&apos;activation</Text>
+            <Text style={styles.linkText}>{t('welcome.link')}</Text>
           </Pressable>
-          <Text style={styles.footnote}>RÉSERVÉ AUX DÉTENTEURS D&apos;UN APPAREIL NŪR</Text>
+          <View style={styles.privacyRow}>
+            <Feather name="lock" size={10} color={theme.color.brand} />
+            <Text style={styles.privacyText}>{t('welcome.privacy')}</Text>
+          </View>
+          <Text style={styles.footnote}>{t('welcome.footnote')}</Text>
         </View>
       </SafeAreaView>
     </View>
   );
 }
 
+const LOGO_SIZE = width * 0.55;
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.color.surface },
+  vignette: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(201,169,97,0.04)' },
   safe: { flex: 1, paddingHorizontal: theme.spacing.xl },
-  header: { paddingTop: theme.spacing.sm, alignItems: 'center' },
-  kicker: {
-    color: theme.color.brand,
-    letterSpacing: 4,
-    fontSize: 11,
-    fontFamily: theme.font.sans,
-    fontWeight: '600',
-  },
+  topRow: { alignItems: 'center', paddingTop: theme.spacing.sm },
+  kicker: { color: theme.color.brand, letterSpacing: 4, fontSize: 10, fontWeight: '600', fontFamily: theme.font.sans },
+  ledRing: { flexDirection: 'row', justifyContent: 'space-around', marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.huge },
+  ledDot: { width: 6, height: 6, borderRadius: 999, shadowOpacity: 1, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   centerBlock: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  logoHalo: {
+  logoOuterGlow: {
     position: 'absolute',
-    width: width * 0.95,
-    height: width * 0.95,
+    width: width * 0.9,
+    height: width * 0.9,
     borderRadius: width,
-    backgroundColor: 'transparent',
     shadowColor: theme.color.brand,
     shadowOpacity: 0.55,
-    shadowRadius: 90,
+    shadowRadius: 100,
     shadowOffset: { width: 0, height: 0 },
-    borderWidth: 1,
-    borderColor: 'rgba(201,169,97,0.08)',
+    backgroundColor: 'transparent',
   },
-  logo: { width: width * 0.62, height: width * 0.62 },
-  wordmarkWrap: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, marginTop: theme.spacing.lg },
-  hairline: { width: 32, height: 1, backgroundColor: theme.color.brandSoft, opacity: 0.6 },
-  wordmark: { color: theme.color.brand, letterSpacing: 6, fontSize: 12, fontWeight: '600', fontFamily: theme.font.sans },
+  logoStage: {
+    width: LOGO_SIZE + 40,
+    height: LOGO_SIZE + 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: { width: LOGO_SIZE, height: LOGO_SIZE },
   title: {
     color: theme.color.onSurface,
     fontFamily: theme.font.serif,
-    fontSize: 34,
+    fontSize: 38,
     marginTop: theme.spacing.lg,
     letterSpacing: 0.5,
+    textAlign: 'center',
   },
   subtitle: {
     color: theme.color.onSurfaceSecondary,
     fontFamily: theme.font.sans,
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
     lineHeight: 22,
+    letterSpacing: 0.3,
   },
-  bottom: { gap: theme.spacing.lg, alignItems: 'center', paddingBottom: theme.spacing.lg },
+  bottom: { gap: theme.spacing.md, alignItems: 'center', paddingBottom: theme.spacing.md },
   cta: {
     backgroundColor: theme.color.brand,
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: theme.spacing.xl,
     borderRadius: theme.radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    minWidth: width * 0.75,
+    gap: theme.spacing.sm,
+    minWidth: width * 0.78,
     justifyContent: 'center',
+    shadowColor: theme.color.brand,
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
   },
-  ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 15, fontFamily: theme.font.sans, letterSpacing: 0.3 },
-  linkText: { color: theme.color.onSurfaceSecondary, fontSize: 13, textDecorationLine: 'underline' },
-  footnote: { color: theme.color.onSurfaceSecondary, opacity: 0.45, fontSize: 10, letterSpacing: 2, textAlign: 'center' },
-  ledRing: {
-    position: 'absolute',
-    top: 100,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: theme.spacing.xxxl,
-  },
-  ledDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-  },
+  ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sans, letterSpacing: 1 },
+  linkText: { color: theme.color.onSurfaceSecondary, fontSize: 12, textDecorationLine: 'underline', letterSpacing: 0.5 },
+  privacyRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: theme.spacing.sm, paddingHorizontal: theme.spacing.xl },
+  privacyText: { color: theme.color.onSurfaceSecondary, fontSize: 10, opacity: 0.7, flex: 1, textAlign: 'center', letterSpacing: 0.3 },
+  footnote: { color: theme.color.brand, opacity: 0.5, fontSize: 9, letterSpacing: 2.5, textAlign: 'center', fontWeight: '600' },
 });

@@ -1,57 +1,57 @@
 # Nūr Protocol — AI Skincoach (PRD)
 
 ## Vision
-Application mobile compagnon de la gamme LED Nūr Protocol — positionnée comme **"At-Home Clinic"** : un espace beauté numérique privatisé, luxueux et scientifique. Le client scanne le QR code de sa boîte et atterrit directement sur son **tableau de bord** (pas un chat), complète son profil beauté, prend un selfie, et reçoit un **bilan beauté personnalisé** + un **rituel LED hebdomadaire sur-mesure** utilisant les 6 couleurs de luminothérapie (rouge, bleu, vert, jaune, cyan, violet), chaque séance étant qualifiée d'une **intensité** (faible / moyenne / forte) selon la tolérance et les besoins.
+Application mobile compagnon premium "At-Home Clinic" pour la gamme LED Nūr Protocol — un espace beauté privatisé, luxueux et scientifique. Le client scanne le QR code de sa boîte et accède directement à son tableau de bord, complète son profil beauté, prend optionnellement un selfie, et reçoit un bilan beauté + un rituel LED hebdomadaire sur-mesure utilisant les 6 couleurs (rouge, bleu, vert, jaune, cyan, violet), chaque séance avec couleur, durée et intensité (faible/moyenne/forte).
 
-**Positionnement strictement beauté / bien-être** — pas de vocabulaire médical ni dermatologique (cadre réglementaire UE 2017/745).
+**Positionnement strictement beauté/bien-être** — pas de vocabulaire médical (UE 2017/745).
 
-## Parcours utilisateur
-1. **Welcome** — Halo doré + 6 points LED multicolores → "Scanner mon QR code"
-2. **Onboarding** (12 étapes) — prénom, âge, type de peau, ville/climat, soleil, mode de vie, sommeil, stress, hydratation, préoccupations
-3. **Scan** — selfie via expo-camera face avant + guide d'alignement doré, ou choix depuis la galerie
-4. **Analyzing** — orbes LED multicolores en rotation, étapes d'analyse
-5. **Diagnosis** — résumé + scores beauté (hydratation, éclat, pores…) + rituel LED 7 jours
-6. **Tabs**:
-   - **Aujourd'hui** — hero séance du jour, streak, rappels (notifications locales 20h)
-   - **Rituel** — timeline hebdomadaire colorée
-   - **Lumières** — bibliothèque des 6 LED (effets, indications, durée)
-   - **Profil** — données, refaire bilan, réinitialiser
+## Internationalisation
+- Trilingue : Français, English, العربية
+- Auto-détection via `expo-localization` (locale de l'appareil — paramètres iOS/Android, pas l'app store)
+- Sélecteur manuel dans le profil
+- Backend Claude Sonnet 4.5 reçoit `lang` et répond dans la langue choisie
 
-## Stack
-- **Frontend**: Expo SDK 54 + Expo Router (file-based), React Native, expo-camera, expo-image-picker, expo-image-manipulator (resize/compress base64), expo-notifications (local), react-native-reanimated, expo-linear-gradient
-- **Backend**: FastAPI + Motor (MongoDB async), pydantic
-- **AI**: Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`) via `emergentintegrations` avec EMERGENT_LLM_KEY, vision (base64 image) + texte (intake)
-- **Storage**: AsyncStorage pour user_id local, MongoDB pour profil/bilan/séances
+## Parcours
+1. **Welcome** — Logo or transparent, halo lumineux, wordmark "NŪR PROTOCOL", titre "At-Home Clinic", ornement ◆, disclaimer confidentialité, CTA QR scan
+2. **Onboarding** (11 étapes, **city retirée**) — prénom optionnel, âge, genre, type peau, climat, soleil, mode de vie, sommeil, stress, hydratation, préoccupations
+3. **Scan optionnel** — Capture front-cam OU galerie OU "Continuer sans photo" (3 chemins parallèles, jamais bloquant)
+4. **Analyzing** — orbes LED multicolores en rotation, étapes en cours
+5. **Diagnosis** — résumé, scores, axes prioritaires, rituel hebdomadaire avec intensité, conseils
+6. **Tabs**: Aujourd'hui (dashboard hero + stats + rappels), Rituel (timeline), Lumières (6 couleurs LED), Profil (sélecteur de langue, confidentialité, refaire bilan, reset)
 
-## Modèle de données
-- `users` — id (uuid), activation_code (NUR-XXXX), intake{}, diagnosis{}
-- `sessions` — id, user_id, led_color_id, duration_minutes, date
+## Confidentialité
+- Disclaimer visible sur welcome ("Vos données restent confidentielles et chiffrées. Nous ne partageons rien.")
+- Disclaimer rappelé sur scan
+- Section dédiée "Confidentialité" dans profil avec explication détaillée
+- Suppression complète du compte à tout moment
 
-## API
-- `POST /api/activate` — crée/retrouve user via code QR
-- `POST /api/users/{id}/intake` — sauvegarde questionnaire
-- `POST /api/users/{id}/diagnose` — appelle Claude vision → JSON bilan complet
-- `GET /api/users/{id}/diagnosis` — récupère bilan
-- `GET /api/users/{id}/protocol` — récupère rituel
-- `GET /api/led-library` — référentiel 6 couleurs LED
-- `POST /api/users/{id}/sessions` — log séance complétée
-- `GET /api/users/{id}/sessions` — historique
-- `DELETE /api/users/{id}` — reset complet
-
-## Design
-- Palette **luxe & clinique sombre** : base obsidienne `#09090C`, accent or brand `#C9A961`, accents LED multicolores
-- Typo : Serif (Georgia) pour titres, System sans pour texte
-- Animations : halos pulsants, orbes en rotation, glow LED par couleur
-- Logo Nūr Protocol fourni par le client (calligraphie or)
-
-## Garde-fous réglementaires
-- Système prompt LLM : **interdiction absolue** des termes médicaux ("diagnostic", "traitement", "dermatologique", "pathologie", "soigner", "guérir", "clinique")
-- Lexique forcé : "bilan beauté", "rituel", "soin", "confort cutané", "éclat", "apparence", "grain de peau"
+## Garde-fous beauté/cosmétique
+- Prompt système LLM (FR/EN/AR) interdit absolument tout vocabulaire médical
+- Lexique forcé : bilan beauté, rituel, soin, confort cutané, éclat, apparence, grain de peau
 - Aucune allégation thérapeutique
 
-## Roadmap suggérée
-- Scanner QR réel (déeplink `nurprotocol://activate/{code}`) au lieu du bouton placebo
-- Historique de photos avant/après pour visualiser l'évolution
-- Notifications push Emergent (post-build, hors Expo Go)
-- E-commerce : recommandation de sérums complémentaires
-- Programme parrainage / fidélité
+## Stack
+- **Frontend**: Expo SDK 54, Expo Router, React Native, expo-camera (optionnelle), expo-image-picker, expo-image-manipulator, expo-notifications, expo-localization, react-native-reanimated
+- **Backend**: FastAPI + Motor MongoDB, Pydantic
+- **IA**: Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`) via emergentintegrations, multimodal (texte + image optionnelle)
+
+## Design (luxe & clinique)
+- Palette obsidienne profonde `#06060A` + or chaud `#C9A961` + accents LED 6 couleurs
+- Tokens UI : `Wordmark` (texte + hairlines), `GoldDivider` (◆ ornement), `SectionLabel`, `iconCircle` à halo doré
+- Typo serif Georgia pour titres, system sans pour texte, mono pour codes
+- Animations subtiles : pulse halo, rotation orbes LED, shadows dorées sur CTAs
+
+## API
+- `POST /api/activate` — crée user via QR code interne (`NUR-XXXX`)
+- `POST /api/users/{id}/intake` — sauvegarde questionnaire (location optionnelle)
+- `POST /api/users/{id}/diagnose` — photo **optionnelle**, lang (fr/en/ar) → Claude → diagnosis JSON
+- `GET /api/users/{id}/diagnosis|protocol|sessions` — lecture
+- `POST /api/users/{id}/sessions` — log séance
+- `GET /api/led-library` — référentiel 6 LED
+- `DELETE /api/users/{id}` — reset
+
+## Roadmap
+- QR scanner caméra avec deeplink `nurprotocol://activate/{code}`
+- Historique photos avant/après avec graphiques d'évolution
+- Notifications push Emergent (post-build)
+- Plus de langues (ES/IT/DE) sur demande
