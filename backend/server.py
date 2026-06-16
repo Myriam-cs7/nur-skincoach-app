@@ -138,6 +138,7 @@ class ProtocolDay(BaseModel):
     day: int  # 1-7 (Mon-Sun)
     led_color_id: Optional[str] = None
     session_minutes: Optional[int] = None
+    intensity: Optional[str] = None  # "faible" | "moyenne" | "forte"
     notes: Optional[str] = None
 
 
@@ -199,18 +200,24 @@ TU DOIS RÉPONDRE STRICTEMENT EN JSON VALIDE (sans markdown, sans ```), avec ce 
   "lifestyle_advice": ["Conseil bien-être 1","Conseil 2","Conseil 3"],
   "protocol": {
     "weekly_schedule": [
-      {"day":1,"led_color_id":"red","session_minutes":15,"notes":"Lundi - Anti-âge"},
-      {"day":2,"led_color_id":"blue","session_minutes":12,"notes":"Mardi - Purification"},
-      {"day":3,"led_color_id":null,"session_minutes":null,"notes":"Repos"},
-      {"day":4,"led_color_id":"green","session_minutes":15,"notes":"Jeudi - Anti-taches"},
-      {"day":5,"led_color_id":"yellow","session_minutes":12,"notes":"Vendredi - Éclat"},
-      {"day":6,"led_color_id":"violet","session_minutes":15,"notes":"Samedi - Régénération"},
-      {"day":7,"led_color_id":null,"session_minutes":null,"notes":"Repos"}
+      {"day":1,"led_color_id":"red","session_minutes":15,"intensity":"moyenne","notes":"Lundi - Anti-âge"},
+      {"day":2,"led_color_id":"blue","session_minutes":12,"intensity":"faible","notes":"Mardi - Purification"},
+      {"day":3,"led_color_id":null,"session_minutes":null,"intensity":null,"notes":"Repos"},
+      {"day":4,"led_color_id":"green","session_minutes":15,"intensity":"moyenne","notes":"Jeudi - Anti-taches"},
+      {"day":5,"led_color_id":"yellow","session_minutes":12,"intensity":"faible","notes":"Vendredi - Éclat"},
+      {"day":6,"led_color_id":"violet","session_minutes":15,"intensity":"forte","notes":"Samedi - Régénération"},
+      {"day":7,"led_color_id":null,"session_minutes":null,"intensity":null,"notes":"Repos"}
     ],
     "total_weeks": 8,
     "expected_results": "Description claire des résultats attendus en 8 semaines"
   }
 }
+
+Règles pour intensity :
+- "faible" pour peau sensible / débutante / zones réactives
+- "moyenne" pour usage standard
+- "forte" pour besoins ciblés (anti-âge marqué, régénération profonde, peau tolérante)
+- null pour les jours de repos
 
 Règles importantes :
 - Adapte le rituel aux préoccupations beauté détectées sur la photo ET au questionnaire (climat, mode de vie, sommeil, stress).

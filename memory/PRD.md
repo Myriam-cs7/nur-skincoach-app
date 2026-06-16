@@ -1,7 +1,7 @@
 # Nūr Protocol — AI Skincoach (PRD)
 
 ## Vision
-Application mobile compagnon de la gamme LED Nūr Protocol. Le client scanne le QR code de sa boîte, complète son profil beauté, prend un selfie, et reçoit un **bilan beauté personnalisé** + un **rituel LED hebdomadaire sur-mesure** utilisant les 6 couleurs de luminothérapie (rouge, bleu, vert, jaune, cyan, violet).
+Application mobile compagnon de la gamme LED Nūr Protocol — positionnée comme **"At-Home Clinic"** : un espace beauté numérique privatisé, luxueux et scientifique. Le client scanne le QR code de sa boîte et atterrit directement sur son **tableau de bord** (pas un chat), complète son profil beauté, prend un selfie, et reçoit un **bilan beauté personnalisé** + un **rituel LED hebdomadaire sur-mesure** utilisant les 6 couleurs de luminothérapie (rouge, bleu, vert, jaune, cyan, violet), chaque séance étant qualifiée d'une **intensité** (faible / moyenne / forte) selon la tolérance et les besoins.
 
 **Positionnement strictement beauté / bien-être** — pas de vocabulaire médical ni dermatologique (cadre réglementaire UE 2017/745).
 

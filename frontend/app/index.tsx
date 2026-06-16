@@ -17,7 +17,7 @@ import { theme } from '../src/theme';
 import { api, getStoredUserId, setStoredUser } from '../src/api';
 
 const LOGO_URL =
-  'https://customer-assets.emergentagent.com/job_nur-protocol-skin/artifacts/kjxgkh4j_Nur%20Protocol-%20Logo.png';
+  'https://customer-assets.emergentagent.com/job_nur-protocol-skin/artifacts/vlelvply_Nur%20Logo.png?v=2';
 
 const { width } = Dimensions.get('window');
 
@@ -74,7 +74,7 @@ export default function Welcome() {
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <Text style={styles.kicker} testID="welcome-kicker">© NŪR PROTOCOL</Text>
+          <Text style={styles.kicker} testID="welcome-kicker">© NŪR PROTOCOL · AT-HOME CLINIC</Text>
         </View>
 
         <View style={styles.centerBlock}>
@@ -85,9 +85,14 @@ export default function Welcome() {
             contentFit="contain"
             transition={400}
           />
-          <Text style={styles.title} testID="welcome-title">Votre Skincoach</Text>
+          <View style={styles.wordmarkWrap}>
+            <View style={styles.hairline} />
+            <Text style={styles.wordmark}>NŪR PROTOCOL</Text>
+            <View style={styles.hairline} />
+          </View>
+          <Text style={styles.title} testID="welcome-title">At-Home Clinic</Text>
           <Text style={styles.subtitle}>
-            Bilan beauté personnalisé{'\n'}et rituel LED sur-mesure
+            Votre espace beauté privatisé.{'\n'}Bilan IA et rituel LED sur-mesure.
           </Text>
         </View>
 
@@ -103,9 +108,7 @@ export default function Welcome() {
           <Pressable onPress={onActivate} testID="manual-code-button">
             <Text style={styles.linkText}>Entrer un code d&apos;activation</Text>
           </Pressable>
-          <Text style={styles.footnote}>
-            Inclus avec votre boîte Nūr Protocol
-          </Text>
+          <Text style={styles.footnote}>RÉSERVÉ AUX DÉTENTEURS D&apos;UN APPAREIL NŪR</Text>
         </View>
       </SafeAreaView>
     </View>
@@ -126,17 +129,21 @@ const styles = StyleSheet.create({
   centerBlock: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   logoHalo: {
     position: 'absolute',
-    width: width * 0.7,
-    height: width * 0.7,
+    width: width * 0.95,
+    height: width * 0.95,
     borderRadius: width,
-    backgroundColor: theme.color.brand,
-    opacity: 0.12,
+    backgroundColor: 'transparent',
     shadowColor: theme.color.brand,
-    shadowOpacity: 0.6,
-    shadowRadius: 60,
+    shadowOpacity: 0.55,
+    shadowRadius: 90,
     shadowOffset: { width: 0, height: 0 },
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,97,0.08)',
   },
-  logo: { width: width * 0.45, height: width * 0.45 },
+  logo: { width: width * 0.62, height: width * 0.62 },
+  wordmarkWrap: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, marginTop: theme.spacing.lg },
+  hairline: { width: 32, height: 1, backgroundColor: theme.color.brandSoft, opacity: 0.6 },
+  wordmark: { color: theme.color.brand, letterSpacing: 6, fontSize: 12, fontWeight: '600', fontFamily: theme.font.sans },
   title: {
     color: theme.color.onSurface,
     fontFamily: theme.font.serif,
@@ -166,7 +173,7 @@ const styles = StyleSheet.create({
   },
   ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 15, fontFamily: theme.font.sans, letterSpacing: 0.3 },
   linkText: { color: theme.color.onSurfaceSecondary, fontSize: 13, textDecorationLine: 'underline' },
-  footnote: { color: theme.color.onSurfaceSecondary, opacity: 0.5, fontSize: 11, letterSpacing: 1 },
+  footnote: { color: theme.color.onSurfaceSecondary, opacity: 0.45, fontSize: 10, letterSpacing: 2, textAlign: 'center' },
   ledRing: {
     position: 'absolute',
     top: 100,

@@ -115,7 +115,19 @@ export default function Home() {
                 <View style={[styles.heroOrb, { backgroundColor: todayColor.hex, shadowColor: todayColor.hex }]} />
                 <Text style={styles.heroKicker}>SÉANCE DU JOUR</Text>
                 <Text style={styles.heroTitle}>Lumière {todayColor.name}</Text>
-                <Text style={styles.heroSub}>{todayPlan?.session_minutes} minutes · {todayPlan?.notes}</Text>
+                <View style={styles.heroMetaRow}>
+                  <View style={styles.heroPill}>
+                    <Feather name="clock" size={11} color={theme.color.brand} />
+                    <Text style={styles.heroPillTxt}>{todayPlan?.session_minutes} min</Text>
+                  </View>
+                  {todayPlan?.intensity ? (
+                    <View style={styles.heroPill}>
+                      <Feather name="activity" size={11} color={theme.color.brand} />
+                      <Text style={styles.heroPillTxt}>Intensité {todayPlan.intensity}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.heroSub}>{todayPlan?.notes}</Text>
                 {completedToday ? (
                   <View style={styles.doneRow}>
                     <Feather name="check-circle" size={16} color={theme.color.success} />
@@ -242,6 +254,9 @@ const styles = StyleSheet.create({
   heroKicker: { color: theme.color.brand, letterSpacing: 2, fontSize: 10, fontWeight: '600' },
   heroTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 28 },
   heroSub: { color: theme.color.onSurfaceSecondary, fontSize: 13 },
+  heroMetaRow: { flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.sm, marginBottom: theme.spacing.xs },
+  heroPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.radius.pill, backgroundColor: theme.color.brandTint, borderWidth: 1, borderColor: theme.color.brand },
+  heroPillTxt: { color: theme.color.brand, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   heroCta: {
     marginTop: theme.spacing.md,
     flexDirection: 'row',

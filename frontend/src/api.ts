@@ -64,6 +64,7 @@ export type ProtocolDay = {
   day: number;
   led_color_id: string | null;
   session_minutes: number | null;
+  intensity?: 'faible' | 'moyenne' | 'forte' | null;
   notes?: string | null;
 };
 export type DiagnosisData = {

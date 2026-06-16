@@ -60,7 +60,8 @@ export default function Protocol() {
                     {c ? (
                       <>
                         <Text style={[styles.colorName, { color: c.hex }]}>Lumière {c.name}</Text>
-                        <Text style={styles.metaTxt}>{d.session_minutes} min · {d.notes}</Text>
+                        <Text style={styles.metaTxt}>{d.session_minutes} min{d.intensity ? ` · Intensité ${d.intensity}` : ''}</Text>
+                        <Text style={styles.metaTxt}>{d.notes}</Text>
                       </>
                     ) : (
                       <>
