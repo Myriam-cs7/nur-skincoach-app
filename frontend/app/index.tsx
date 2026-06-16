@@ -41,14 +41,8 @@ export default function Welcome() {
     opacity: 0.35 + pulse.value * 0.45,
   }));
 
-  const onActivate = async () => {
-    try {
-      const r = await api.activate();
-      await setStoredUser(r.user_id, r.activation_code);
-      router.push('/onboarding');
-    } catch (e) {
-      console.warn(e);
-    }
+  const onActivate = () => {
+    router.push('/activate');
   };
 
   return (
