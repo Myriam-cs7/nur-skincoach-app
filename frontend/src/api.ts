@@ -86,7 +86,27 @@ export type DiagnosisRecord = {
   data: DiagnosisData;
 };
 
+export type VerifyPurchaseResponse = ActivateResponse & {
+  first_name?: string | null;
+  order_ref?: string | null;
+};
+export type ProgressData = {
+  daily: { date: string; sessions: number }[];
+  weekly: { label: string; sessions: number; target: number }[];
+  per_color_minutes: Record<string, number>;
+  score_history: { created_at: string; scores: Record<string, number> }[];
+  total_sessions: number;
+  total_minutes: number;
+  target_per_week: number;
+};
+
 export const api = {
+  verifyPurchase: (email: string, lang = 'fr') =>
+    request<VerifyPurchaseResponse>('/verify-purchase', {
+      method: 'POST',
+      body: JSON.stringify({ email, lang }),
+    }),
+  progress: (id: string) => request<ProgressData>(`/users/${id}/progress`),
   activate: (code: string) =>
     request<ActivateResponse>('/activate', {
       method: 'POST',

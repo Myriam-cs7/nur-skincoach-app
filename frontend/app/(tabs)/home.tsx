@@ -1,13 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl, Switch, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import * as Notifications from 'expo-notifications';
 import { theme, LED_COLORS, LED_NAMES_BY_LANG } from '../../src/theme';
 import { Wordmark, GoldDivider } from '../../src/ui';
-import { api, getStoredUserId, DiagnosisRecord } from '../../src/api';
+import { api, getStoredUserId, DiagnosisRecord, ProgressData } from '../../src/api';
 import { useT, getLang } from '../../src/i18n';
+import ProgressCharts from '../../src/components/ProgressCharts';
+import {
+  loadPref, savePref, requestPerm, getPermState, scheduleDailyReminder,
+  cancelReminders, openSettings, remindersSupported, ReminderPref, DEFAULT_PREF,
+} from '../../src/notifications';
+
+const HOURS = [8, 12, 18, 20, 22];
 
 export default function Home() {
   const { t } = useT();
@@ -15,25 +21,36 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [diag, setDiag] = useState<DiagnosisRecord | null>(null);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [progress, setProgress] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [remindersOn, setRemindersOn] = useState(false);
+  const [pref, setPref] = useState<ReminderPref>(DEFAULT_PREF);
+  const [permBlocked, setPermBlocked] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const uid = await getStoredUserId();
       if (!uid) return;
-      const [u, d, s] = await Promise.all([
+      const [u, d, s, p] = await Promise.all([
         api.getUser(uid),
         api.getDiagnosis(uid).catch(() => null),
         api.listSessions(uid).catch(() => ({ sessions: [] })),
+        api.progress(uid).catch(() => null),
       ]);
       setUser(u);
       setDiag(d as DiagnosisRecord | null);
       setSessions(s?.sessions || []);
+      setProgress(p as ProgressData | null);
     } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    (async () => {
+      const p = await loadPref();
+      setPref(p);
+      setPermBlocked((await getPermState()) === 'blocked' && p.enabled);
+    })();
+  }, []);
 
   const todayIdx = new Date().getDay();
   const todayDay = todayIdx === 0 ? 7 : todayIdx;
@@ -53,17 +70,31 @@ export default function Home() {
     await load();
   };
 
+  const reminderContent = () => ({
+    title: t('notif.push_title'),
+    body: todayLedName && todayPlan?.session_minutes
+      ? t('notif.push_body', { color: todayLedName, minutes: todayPlan.session_minutes })
+      : t('notif.push_body_generic'),
+  });
+
+  const applyPref = async (next: ReminderPref) => {
+    setPref(next);
+    await savePref(next);
+    if (next.enabled) await scheduleDailyReminder(next.hour, next.minute, reminderContent());
+    else await cancelReminders();
+  };
+
   const toggleReminders = async (v: boolean) => {
-    setRemindersOn(v);
-    if (v) {
-      const perm = await Notifications.requestPermissionsAsync();
-      if (!perm.granted) { setRemindersOn(false); return; }
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      await Notifications.scheduleNotificationAsync({
-        content: { title: 'Nūr Protocol', body: 'Votre séance LED quotidienne vous attend.' },
-        trigger: Platform.OS === 'web' ? null : ({ hour: 20, minute: 0, repeats: true } as any),
-      });
-    } else { await Notifications.cancelAllScheduledNotificationsAsync(); }
+    if (!v) { setPermBlocked(false); await applyPref({ ...pref, enabled: false }); return; }
+    const state = await requestPerm();
+    if (state === 'granted') { setPermBlocked(false); await applyPref({ ...pref, enabled: true }); }
+    else if (state === 'blocked') { setPermBlocked(true); setPref({ ...pref, enabled: false }); }
+    else setPref({ ...pref, enabled: false });
+  };
+
+  const pickHour = async (h: number) => {
+    if (!pref.enabled) return;
+    await applyPref({ ...pref, hour: h, minute: 0 });
   };
 
   if (loading) return <View style={[styles.root, styles.center]}><ActivityIndicator color={theme.color.brand} /></View>;
@@ -133,15 +164,57 @@ export default function Home() {
             <Stat label={t('home.stat.week')} value={`${weekCount(sessions)}/${weeklyTarget(diag)}`} icon="calendar" />
           </View>
 
-          <View style={styles.card}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>{t('home.reminders.title')}</Text>
-              <Text style={styles.cardSub}>{t('home.reminders.sub')}</Text>
+          <View style={styles.reminderCard}>
+            <View style={styles.card2Row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{t('home.reminders.title')}</Text>
+                <Text style={styles.cardSub}>
+                  {remindersSupported ? t('notif.pre_sub') : t('notif.web_unsupported')}
+                </Text>
+              </View>
+              <Switch
+                value={pref.enabled}
+                onValueChange={toggleReminders}
+                disabled={!remindersSupported}
+                trackColor={{ true: theme.color.brand, false: theme.color.borderStrong }}
+                thumbColor={theme.color.onBrand}
+                testID="reminders-toggle"
+              />
             </View>
-            <Switch value={remindersOn} onValueChange={toggleReminders}
-              trackColor={{ true: theme.color.brand, false: theme.color.borderStrong }}
-              thumbColor={theme.color.onBrand} testID="reminders-toggle" />
+
+            {pref.enabled ? (
+              <View style={styles.hoursWrap}>
+                <Text style={styles.hoursLabel}>{t('notif.hour')}</Text>
+                <View style={styles.hoursRow}>
+                  {HOURS.map((h) => {
+                    const on = pref.hour === h;
+                    return (
+                      <Pressable
+                        key={h}
+                        onPress={() => pickHour(h)}
+                        style={[styles.hourChip, on && styles.hourChipOn]}
+                        testID={`reminder-hour-${h}`}
+                      >
+                        <Text style={[styles.hourTxt, on && styles.hourTxtOn]}>{`${h}h`}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
+            {permBlocked ? (
+              <View style={styles.blockedWrap}>
+                <Text style={styles.blockedTxt}>{t('notif.blocked')}</Text>
+                <Pressable style={styles.settingsBtn} onPress={openSettings} testID="open-notif-settings">
+                  <Feather name="settings" size={12} color={theme.color.brand} />
+                  <Text style={styles.settingsTxt}>{t('notif.open_settings')}</Text>
+                </Pressable>
+              </View>
+            ) : null}
           </View>
+
+          {progress ? <ProgressCharts data={progress} /> : null}
 
           {diag?.data?.summary ? (
             <View style={styles.card}>
@@ -228,4 +301,29 @@ const styles = StyleSheet.create({
   },
   cardTitle: { color: theme.color.onSurface, fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
   cardSub: { color: theme.color.onSurfaceSecondary, fontSize: 12, marginTop: 4, lineHeight: 18 },
+  reminderCard: {
+    marginTop: theme.spacing.lg, backgroundColor: theme.color.surfaceSecondary,
+    borderRadius: theme.radius.md, padding: theme.spacing.lg,
+    borderWidth: 1, borderColor: theme.color.borderGold,
+  },
+  card2Row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  hoursWrap: { marginTop: theme.spacing.lg, gap: theme.spacing.sm },
+  hoursLabel: { color: theme.color.brand, fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase' },
+  hoursRow: { flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' },
+  hourChip: {
+    paddingHorizontal: theme.spacing.lg, paddingVertical: 10, borderRadius: theme.radius.pill,
+    borderWidth: 1, borderColor: theme.color.borderStrong, backgroundColor: theme.color.surfaceTertiary,
+    minWidth: 54, alignItems: 'center',
+  },
+  hourChipOn: { borderColor: theme.color.brand, backgroundColor: theme.color.brandTint },
+  hourTxt: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontWeight: '600' },
+  hourTxtOn: { color: theme.color.brand },
+  blockedWrap: { marginTop: theme.spacing.md, gap: theme.spacing.sm },
+  blockedTxt: { color: theme.color.error, fontSize: 11, lineHeight: 16 },
+  settingsBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+    paddingHorizontal: theme.spacing.lg, paddingVertical: 12, borderRadius: theme.radius.pill,
+    borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: 'rgba(201,169,97,0.06)',
+  },
+  settingsTxt: { color: theme.color.brand, fontSize: 12, fontWeight: '600' },
 });

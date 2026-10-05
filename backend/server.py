@@ -3,11 +3,16 @@ import json
 import uuid
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
-from fastapi import FastAPI, APIRouter, HTTPException
+import io
+import httpx
+import qrcode
+from qrcode.constants import ERROR_CORRECT_H
+
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -21,6 +26,12 @@ load_dotenv(ROOT_DIR / ".env")
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
 EMERGENT_LLM_KEY = os.environ["EMERGENT_LLM_KEY"]
+
+SHOPIFY_STORE_DOMAIN = (os.environ.get("SHOPIFY_STORE_DOMAIN") or "").strip()
+SHOPIFY_ADMIN_TOKEN = (os.environ.get("SHOPIFY_ADMIN_TOKEN") or "").strip()
+SHOPIFY_API_VERSION = (os.environ.get("SHOPIFY_API_VERSION") or "2025-01").strip()
+ADMIN_PIN = (os.environ.get("ADMIN_PIN") or "NUR2026").strip()
+PUBLIC_APP_URL = (os.environ.get("PUBLIC_APP_URL") or "https://nurprotocol.com").strip()
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -327,6 +338,281 @@ async def activate(req: ActivateRequest):
     return ActivateResponse(user_id=user_id, activation_code=code, has_intake=False, has_diagnosis=False)
 
 
+# ---------- Shopify purchase verification (QR gate) ----------
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+SHOPIFY_ORDER_QUERY = """
+query findOrders($q: String!) {
+  orders(first: 10, query: $q, sortKey: CREATED_AT, reverse: true) {
+    edges {
+      node {
+        id
+        name
+        createdAt
+        email
+        displayFinancialStatus
+        displayFulfillmentStatus
+        customer { firstName lastName }
+      }
+    }
+  }
+}
+"""
+
+
+class VerifyPurchaseRequest(BaseModel):
+    email: str
+    lang: str = "fr"
+
+
+class VerifyPurchaseResponse(BaseModel):
+    user_id: str
+    activation_code: str
+    has_intake: bool
+    has_diagnosis: bool
+    first_name: Optional[str] = None
+    order_ref: Optional[str] = None
+
+
+def shopify_configured() -> bool:
+    return bool(SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_TOKEN)
+
+
+async def shopify_find_paid_order(email: str) -> Optional[dict]:
+    """Return the most recent paid/partially-paid order for this email, else None."""
+    url = f"https://{SHOPIFY_STORE_DOMAIN}/admin/api/{SHOPIFY_API_VERSION}/graphql.json"
+    headers = {
+        "X-Shopify-Access-Token": SHOPIFY_ADMIN_TOKEN,
+        "Content-Type": "application/json",
+    }
+    payload = {"query": SHOPIFY_ORDER_QUERY, "variables": {"q": f'email:"{email}"'}}
+
+    async with httpx.AsyncClient(timeout=20) as hc:
+        for attempt in range(3):
+            r = await hc.post(url, json=payload, headers=headers)
+            if r.status_code == 429:
+                await _sleep_backoff(attempt, r.headers.get("Retry-After"))
+                continue
+            if r.status_code in (401, 403):
+                logger.error("Shopify auth error %s: %s", r.status_code, r.text[:300])
+                raise HTTPException(status_code=502, detail="shopify_auth_error")
+            if r.status_code >= 500:
+                await _sleep_backoff(attempt, None)
+                continue
+            r.raise_for_status()
+            body = r.json()
+            if body.get("errors"):
+                logger.error("Shopify GraphQL errors: %s", body["errors"])
+                raise HTTPException(status_code=502, detail="shopify_query_error")
+            edges = (((body.get("data") or {}).get("orders") or {}).get("edges")) or []
+            for e in edges:
+                node = e.get("node") or {}
+                status = (node.get("displayFinancialStatus") or "").upper()
+                if status in ("PAID", "PARTIALLY_PAID", "PARTIALLY_REFUNDED", "AUTHORIZED"):
+                    return node
+            return None
+    raise HTTPException(status_code=502, detail="shopify_unavailable")
+
+
+async def _sleep_backoff(attempt: int, retry_after: Optional[str]):
+    import asyncio
+    delay = float(retry_after) if retry_after else min(2 ** attempt, 8)
+    await asyncio.sleep(delay)
+
+
+async def _user_response(user: dict, first_name: Optional[str] = None, order_ref: Optional[str] = None):
+    return VerifyPurchaseResponse(
+        user_id=user["id"],
+        activation_code=user.get("activation_code") or "",
+        has_intake=bool(user.get("intake")),
+        has_diagnosis=bool(user.get("diagnosis")),
+        first_name=first_name or (user.get("intake") or {}).get("name"),
+        order_ref=order_ref or user.get("order_ref"),
+    )
+
+
+@api.post("/verify-purchase", response_model=VerifyPurchaseResponse)
+async def verify_purchase(req: VerifyPurchaseRequest):
+    email = (req.email or "").strip().lower()
+    if not EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="invalid_email")
+
+    existing = await db.users.find_one({"shopify_email": email}, {"_id": 0})
+    if existing:
+        return await _user_response(existing)
+
+    # Manual allow-list (influencers, press, after-sales, gifts) — no Shopify order needed
+    allowed = await db.allowed_emails.find_one({"email": email}, {"_id": 0})
+    order_node = None
+    order_ref = None
+    first_name = None
+
+    if not allowed:
+        if not shopify_configured():
+            await db.access_requests.update_one(
+                {"email": email},
+                {"$setOnInsert": {"email": email, "created_at": utc_now_iso()}, "$set": {"last_try": utc_now_iso()}},
+                upsert=True,
+            )
+            raise HTTPException(status_code=503, detail="shopify_not_configured")
+        order_node = await shopify_find_paid_order(email)
+        if not order_node:
+            await db.access_requests.update_one(
+                {"email": email},
+                {"$setOnInsert": {"email": email, "created_at": utc_now_iso()}, "$set": {"last_try": utc_now_iso(), "reason": "no_paid_order"}},
+                upsert=True,
+            )
+            raise HTTPException(status_code=403, detail="no_order_found")
+        order_ref = order_node.get("name")
+        cust = order_node.get("customer") or {}
+        first_name = cust.get("firstName")
+    else:
+        order_ref = allowed.get("label") or "ACCES-NUR"
+        first_name = allowed.get("first_name")
+
+    user_id = str(uuid.uuid4())
+    doc = {
+        "id": user_id,
+        "activation_code": f"SHOPIFY-{order_ref}" if order_ref else "SHOPIFY",
+        "shopify_email": email,
+        "order_ref": order_ref,
+        "created_at": utc_now_iso(),
+        "language": req.lang,
+        "intake": None,
+        "diagnosis": None,
+    }
+    await db.users.insert_one(doc.copy())
+    return VerifyPurchaseResponse(
+        user_id=user_id,
+        activation_code=doc["activation_code"],
+        has_intake=False,
+        has_diagnosis=False,
+        first_name=first_name,
+        order_ref=order_ref,
+    )
+
+
+@api.get("/shopify-status")
+async def shopify_status():
+    return {"configured": shopify_configured(), "store": SHOPIFY_STORE_DOMAIN or None}
+
+
+# ---------- QR code generation (single artwork printed on every gold card) ----------
+@api.get("/qr")
+async def qr_png(
+    data: Optional[str] = Query(default=None, description="URL encoded in the QR"),
+    size: int = Query(default=1024, ge=256, le=3000),
+    margin: int = Query(default=2, ge=0, le=8),
+):
+    target = (data or f"{PUBLIC_APP_URL}/app").strip()
+    qr = qrcode.QRCode(error_correction=ERROR_CORRECT_H, box_size=20, border=margin)
+    qr.add_data(target)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+    img = img.resize((size, size))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return Response(
+        content=buf.getvalue(),
+        media_type="image/png",
+        headers={"Content-Disposition": f'inline; filename="nur-qr-{size}.png"'},
+    )
+
+
+# ---------- Admin (PIN protected) ----------
+def _check_pin(pin: str):
+    if (pin or "").strip() != ADMIN_PIN:
+        raise HTTPException(status_code=403, detail="invalid_pin")
+
+
+class AdminAllowRequest(BaseModel):
+    pin: str
+    email: str
+    label: Optional[str] = None
+    first_name: Optional[str] = None
+
+
+@api.post("/admin/allow-email")
+async def admin_allow_email(req: AdminAllowRequest):
+    _check_pin(req.pin)
+    email = (req.email or "").strip().lower()
+    if not EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="invalid_email")
+    await db.allowed_emails.update_one(
+        {"email": email},
+        {"$set": {"email": email, "label": req.label or "ACCES-MANUEL", "first_name": req.first_name, "created_at": utc_now_iso()}},
+        upsert=True,
+    )
+    await db.access_requests.delete_one({"email": email})
+    return {"ok": True, "email": email}
+
+
+@api.get("/admin/access-requests")
+async def admin_access_requests(pin: str = Query(...)):
+    _check_pin(pin)
+    items = await db.access_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=300)
+    allowed = await db.allowed_emails.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=300)
+    return {"requests": items, "allowed": allowed}
+
+
+# ---------- Progress (charts) ----------
+@api.get("/users/{user_id}/progress")
+async def user_progress(user_id: str):
+    user = await _get_user_or_404(user_id)
+    sessions = await db.sessions.find({"user_id": user_id}, {"_id": 0}).to_list(length=1000)
+
+    def parse(d: str) -> datetime:
+        try:
+            return datetime.fromisoformat((d or "").replace("Z", "+00:00"))
+        except Exception:
+            return datetime.now(timezone.utc)
+
+    now = datetime.now(timezone.utc)
+    day_keys = []
+    for i in range(27, -1, -1):
+        day_keys.append((now - timedelta(days=i)).date().isoformat())
+
+    per_day = {k: 0 for k in day_keys}
+    per_color: Dict[str, int] = {}
+    for s in sessions:
+        d = parse(s.get("date") or s.get("created_at")).date().isoformat()
+        if d in per_day:
+            per_day[d] += 1
+        cid = s.get("led_color_id") or "autre"
+        per_color[cid] = per_color.get(cid, 0) + int(s.get("duration_minutes") or 0)
+
+    # 4 weekly buckets (oldest → newest)
+    weekly = []
+    target_per_week = 0
+    diag = user.get("diagnosis")
+    if diag:
+        target_per_week = len([d for d in (diag.get("data", {}).get("protocol", {}).get("weekly_schedule") or []) if d.get("led_color_id")])
+    for w in range(4):
+        chunk = day_keys[w * 7:(w + 1) * 7]
+        weekly.append({
+            "label": f"S{w + 1}",
+            "sessions": sum(per_day[k] for k in chunk),
+            "target": target_per_week,
+        })
+
+    history = await db.diagnoses.find({"user_id": user_id}, {"_id": 0}).sort("created_at", 1).to_list(length=50)
+    score_history = [
+        {"created_at": h.get("created_at"), "scores": (h.get("data") or {}).get("scores") or {}}
+        for h in history
+    ]
+
+    total_minutes = sum(int(s.get("duration_minutes") or 0) for s in sessions)
+    return {
+        "daily": [{"date": k, "sessions": per_day[k]} for k in day_keys],
+        "weekly": weekly,
+        "per_color_minutes": per_color,
+        "score_history": score_history,
+        "total_sessions": len(sessions),
+        "total_minutes": total_minutes,
+        "target_per_week": target_per_week,
+    }
+
+
 @api.get("/users/{user_id}")
 async def get_user(user_id: str):
     user = await _get_user_or_404(user_id)
@@ -370,6 +656,7 @@ async def diagnose(user_id: str, req: DiagnoseRequest):
         "data": diag,
     }
     await db.users.update_one({"id": user_id}, {"$set": {"diagnosis": diag_record}})
+    await db.diagnoses.insert_one(diag_record.copy())
     return {"ok": True, "diagnosis": diag_record}
 
 
@@ -419,8 +706,8 @@ async def reset_user(user_id: str):
     await _get_user_or_404(user_id)
     await db.users.delete_one({"id": user_id})
     await db.sessions.delete_many({"user_id": user_id})
+    await db.diagnoses.delete_many({"user_id": user_id})
     return {"ok": True}
-
 
 # ---------- Lead funnel (pre-purchase mini diagnosis) ----------
 LEAD_PROMPTS = {

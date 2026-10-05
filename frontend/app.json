@@ -13,7 +13,12 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Capture votre visage pour le diagnostic IA",
         "NSPhotoLibraryUsageDescription": "Sélectionner une photo pour le diagnostic"
-      }
+      },
+      "bundleIdentifier": "com.emergent.nurprotocolskin.zl0vs4",
+      "associatedDomains": [
+        "applinks:nurprotocol.com",
+        "applinks:www.nurprotocol.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +30,18 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "POST_NOTIFICATIONS"
+      ],
+      "package": "com.emergent.nurprotocolskin.zl0vs4",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "nurprotocol.com", "pathPrefix": "/activate" },
+            { "scheme": "https", "host": "www.nurprotocol.com", "pathPrefix": "/activate" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {

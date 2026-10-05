@@ -101,3 +101,49 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+## Session — QR gate (Shopify order verification), QR generation, reminders, progress charts
+
+user_problem_statement: >
+  La cliente ouvre la boîte Nūr, trouve une carte gold avec UN SEUL QR code (même design sur
+  toutes les cartes, imprimé en Chine). Elle scanne → arrive sur l'app → doit prouver son achat.
+  Barrière retenue : vérification de l'e-mail de commande Shopify. Plus : rappels de soin
+  quotidiens (notifications locales) et graphiques de progression.
+
+backend:
+  - task: "POST /api/verify-purchase (Shopify order gate)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    comment: "Shopify GraphQL Admin API orders(query email:). Credentials NOT yet provided by user → SHOPIFY_STORE_DOMAIN/SHOPIFY_ADMIN_TOKEN vides. Attendu dans cet état : 503 shopify_not_configured + enregistrement dans db.access_requests. Allow-list db.allowed_emails doit fonctionner sans Shopify."
+  - task: "GET /api/qr (QR PNG for the gold card)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+  - task: "Admin endpoints (PIN=NUR2026): POST /api/admin/allow-email, GET /api/admin/access-requests"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+  - task: "GET /api/users/{id}/progress (charts data)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+
+frontend:
+  - task: "Gate e-mail de commande + bascule code d'invitation (/activate)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/activate.tsx"
+  - task: "Scanner QR intégré (/scan-qr)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/scan-qr.tsx"
+    comment: "Sur web : écran de repli attendu (caméra non supportée)."
+  - task: "Graphiques de progression (home)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/ProgressCharts.tsx"
+  - task: "Rappels quotidiens (notifications locales + choix de l'heure)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/notifications.ts"
+    comment: "Non testable sur web (switch désactivé) — vérifier seulement l'UI et l'absence de crash."

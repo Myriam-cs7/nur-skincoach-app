@@ -91,8 +91,8 @@ export default function Welcome() {
             <Feather name="zap" size={14} color={theme.color.brand} />
             <Text style={styles.secondaryCtaText}>{t('discover.cta_welcome')}</Text>
           </Pressable>
-          <Pressable onPress={onActivate} testID="manual-code-button">
-            <Text style={styles.linkText}>{t('welcome.link')}</Text>
+          <Pressable onPress={() => router.push('/scan-qr')} testID="manual-code-button">
+            <Text style={styles.linkText}>{t('gate.scan_card')}</Text>
           </Pressable>
           <View style={styles.privacyRow}>
             <Feather name="lock" size={10} color={theme.color.brand} />

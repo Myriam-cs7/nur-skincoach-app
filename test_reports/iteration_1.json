@@ -1,0 +1,44 @@
+{
+  "summary": "Nūr Protocol — first testing agent run. Executed 15 backend pytest cases (all green) covering Shopify gate (503 unconfigured path + access-request persistence), admin PIN auth (403 on wrong pin), allow-list → verify-purchase idempotency (same email returns same user_id), QR PNG generation (default + custom size + 422 bounds), /users/demo-charts-user/progress shape (28 daily, 4 weekly buckets, score_history=3, target_per_week=5), and legacy /activate code flow (NUR-DEMO-2026 OK, invalid=403, empty=400). Frontend verified on mobile viewport (390x844): /activate shows email + Verify CTA + gate-switch-mode + gate-scan-card testIDs. Submitting an email surfaces the gold gate-info 'pending' box (Shopify unconfigured path works). gate-switch-mode toggles to activate-code-input; NUR-DEMO-2026 successfully navigates to /onboarding. /scan-qr on web shows graceful fallback with 'Enter my email instead' (scanqr-manual) that returns to /activate. Dashboard charts for demo-charts-user: PROGRESSION, Assiduité, Évolution, Répartition all render; 11 SVGs on screen; 0 chart/svg errors. Reminder card on /home shows the 'works on your phone, not in the browser' copy with a visibly disabled toggle, no crash. Only non-blocking RN-web deprecation warnings (shadow*, props.pointerEvents) observed. One minor documentation mismatch: review request specified target_per_week=4 but the actual seed defines 5 active LED days (red/blue/yellow/red/violet) → the API correctly returns 5; test adjusted accordingly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/users/demo-charts-user/progress", "issue": "Review request stated target_per_week=4 but seed_demo_charts.py defines 5 active LED days (red, blue, yellow, red, violet). The API correctly reflects the seed (returns 5). Either the review spec text should say 5, or update the seed to 4 active days if 4 is the intended value."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/home + /activate", "issues": [
+        "RN-web deprecation warnings: 'shadow*' style props deprecated (use boxShadow). Non-blocking but will become errors in future RN versions.",
+        "'props.pointerEvents is deprecated. Use style.pointerEvents' warning emitted on /home."
+      ]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_nur_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Decide between (a) updating the review spec text to say target_per_week=5, or (b) removing one active day from seed_demo_charts.py SCHEDULE to make target_per_week=4.",
+    "Optional: migrate shadow* styles to boxShadow and props.pointerEvents to style.pointerEvents to silence RN-web deprecation warnings (currently only warnings)."
+  ],
+  "critical_code_review_comments": [
+    "verify-purchase idempotency validated: when a user already exists for shopify_email (allow-list OR Shopify path), the same user_id is returned — no duplicate rows created. Good.",
+    "Admin endpoints correctly reject wrong PIN with 403 before touching the DB.",
+    "QR endpoint uses FastAPI Query ge/le bounds (256..3000) producing proper 422 for out-of-range values.",
+    "server.py is ~1038 lines; consider splitting into modules (routes/shopify.py, routes/admin.py, routes/progress.py, routes/chat.py, llm/prompts.py) before further growth.",
+    "shopify_find_paid_order loop structure is fine but the trailing `raise HTTPException(... shopify_unavailable)` after a loop that always returns inside the first non-retried iteration is unreachable — minor cleanup.",
+    "SessionLog persisted with `date = session.date or utc_now_iso()`; progress aggregator uses .date() of ISO string — OK."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_nur_api.py (new)"
+  ],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% (all requested flows verified)"},
+  "seed_data_creation": "Ran /app/backend/seed_demo_charts.py which seeded 16 sessions + 3 diagnoses + protocol for user_id=demo-charts-user. Allow-list test created unique vip_* email entries in db.allowed_emails. Access-requests test created unique test_unconfigured_* emails in db.access_requests.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Shopify credentials remain EMPTY by design — do NOT configure them. test_nur_api.py uses unique uuid-prefixed emails per run so re-running leaves old doc traces but no conflicts. Admin PIN = NUR2026. demo-charts-user has 5 active LED days per week (not 4). Legacy activation codes still seeded on backend startup: NUR-DEMO-2026 / NUR-VIP-001 / NUR-TEST-LINA / NUR-TEST-SOPHIE / NUR-LAUNCH-01."
+}
