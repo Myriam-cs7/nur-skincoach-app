@@ -49,7 +49,7 @@ export default function Analyzing() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#0e0a04', '#06060A', '#04040A']} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={theme.gradient.page} locations={[0, 0.5, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.center}>
           <Animated.View style={[styles.orbWrap, orbStyle]}>

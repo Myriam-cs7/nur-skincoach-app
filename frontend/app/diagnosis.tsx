@@ -55,7 +55,7 @@ export default function Diagnosis() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#1a1407', '#09090C']} locations={[0, 0.4]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[theme.color.brandTint, theme.color.surface]} locations={[0, 0.4]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.headerRow}>
           <Text style={styles.kicker}>VOTRE BILAN BEAUTÉ</Text>

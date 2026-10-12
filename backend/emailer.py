@@ -1,0 +1,236 @@
+"""Transactional email sending through the Emergent managed email proxy.
+
+Only used to deliver Nūr Protocol's own one-time activation codes.
+`_assert_safe_email` is a hard gate: it runs on every send path.
+"""
+import os
+import re
+import asyncio
+import ipaddress
+import logging
+import httpx
+from html import escape
+from html.parser import HTMLParser
+from urllib.parse import urlparse
+from pathlib import Path
+from dotenv import load_dotenv
+from fastapi import HTTPException
+
+load_dotenv(Path(__file__).parent / ".env")
+logger = logging.getLogger(__name__)
+
+EMAIL_BASE_URL = "https://integrations.emergentagent.com"
+EMAIL_KEY = os.environ["EMERGENT_EMAIL_KEY"]
+EMAIL_FROM_NAME = os.environ["EMAIL_FROM_NAME"]
+EMAIL_REPLY_TO = os.environ.get("EMAIL_REPLY_TO")
+
+_SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
+_CRED_ASK = ("reply with your password", "reply with the code", "send your password", "cvv",
+             "send us your password", "enter your password below", "confirm your card number",
+             "your full card number", "seed phrase", "recovery phrase", "verify your card",
+             "social security number", "confirm your bank details")
+_HOSTISH = re.compile(r"\b(?:https?://)?((?:[a-z0-9-]+\.)+[a-z]{2,})", re.I)
+
+
+def _host_ok(host: str) -> bool:
+    if not host or "xn--" in host:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return False
+    except ValueError:
+        pass
+    return not any(host == s or host.endswith("." + s) for s in _SHORTENERS)
+
+
+def _same_site(shown: str, real: str) -> bool:
+    return shown == real or real.endswith("." + shown) or shown.endswith("." + real)
+
+
+class _EmailScan(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags, self.urls, self.anchors = set(), [], []
+        self._href, self._text = None, []
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.add(tag.lower())
+        self.urls += [v for k, v in attrs if k.lower() in ("href", "src") and v]
+        if tag.lower() == "a":
+            self._href = dict((k.lower(), v) for k, v in attrs).get("href")
+            self._text = []
+
+    def handle_data(self, data):
+        if self._href is not None:
+            self._text.append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._href is not None:
+            self.anchors.append((self._href, "".join(self._text)))
+            self._href, self._text = None, []
+
+
+def _assert_safe_email(subject: str, html: str) -> None:
+    scan = _EmailScan(); scan.feed(html)
+    if scan.tags & {"form", "input", "textarea", "select"}:
+        raise ValueError("No forms or input fields in email (G2)")
+    body = f"{subject}\n{html}".lower()
+    for p in _CRED_ASK:
+        if p in body:
+            raise ValueError(f"Email asks the recipient for credentials: {p!r} (G2)")
+    for url in scan.urls:
+        low = url.strip().lower()
+        if low.startswith(("mailto:", "tel:", "cid:", "#")):
+            continue
+        if not low.startswith("https://"):
+            raise ValueError(f"Email links/assets must be absolute https: {url!r} (G3)")
+        host = urlparse(low).hostname or ""
+        if not _host_ok(host) or urlparse(low).username is not None:
+            raise ValueError(f"Shortened, numeric-host or credential-bearing URL: {url!r} (G3)")
+    for href, text in scan.anchors:
+        real = urlparse(href.strip().lower()).hostname or ""
+        if not real:
+            continue
+        for m in _HOSTISH.finditer(text):
+            if not _same_site(m.group(1).lower(), real):
+                raise ValueError(f"Anchor text {m.group(1)!r} ≠ real link host {real!r} (G3)")
+
+
+async def send_email(*, to: str, subject: str, html: str, reply_to: str | None = None) -> str | None:
+    _assert_safe_email(subject, html)
+    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+    if reply_to or EMAIL_REPLY_TO:
+        payload["contact_email"] = reply_to or EMAIL_REPLY_TO
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"{EMAIL_BASE_URL}/api/v1/email/send",
+                headers={"X-Email-Key": EMAIL_KEY},
+                json=payload,
+            )
+            if resp.status_code == 429:
+                # Provider burst limit — one short retry keeps a real customer from
+                # seeing a failure when two codes are requested at the same second.
+                await asyncio.sleep(2)
+                resp = await client.post(
+                    f"{EMAIL_BASE_URL}/api/v1/email/send",
+                    headers={"X-Email-Key": EMAIL_KEY},
+                    json=payload,
+                )
+            if resp.status_code == 429:
+                logger.warning("Email rate limited by provider for %s", to)
+                raise HTTPException(status_code=503, detail="email_unavailable")
+        resp.raise_for_status()
+        return resp.json().get("id")
+    except httpx.HTTPStatusError as e:
+        try:
+            code = e.response.json().get("code", "")
+            message = e.response.json().get("message", "")
+        except ValueError:
+            code, message = "", ""
+        if code in ("insufficient_credits", "integration_disabled", "daily_limit_reached"):
+            logger.warning(f"Email paused: {code} ({e.response.status_code}): {message}")
+            raise HTTPException(status_code=503, detail="email_unavailable")
+        logger.error(f"Email send failed: {e.response.status_code} {e.response.text}")
+        raise HTTPException(status_code=502, detail="email_send_failed")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Email send error: {str(e)}")
+        raise HTTPException(status_code=500, detail="email_send_failed")
+
+
+# ---------- Server-side templates (callers only pass IDs / codes, never markup) ----------
+_OTP_COPY = {
+    "fr": {
+        "subject": "Votre code d'activation Nūr : {code}",
+        "hello": "Bienvenue dans votre At-Home Clinic",
+        "intro": "Voici votre code d'activation personnel. Saisissez-le dans l'application pour ouvrir votre Skincoach.",
+        "valid": "Ce code est valable 10 minutes.",
+        "ignore": "Vous n'avez pas demandé ce code ? Ignorez simplement ce message, aucun accès n'est créé.",
+        "foot": "Envoyé par {brand}. Nous ne vous demanderons jamais votre mot de passe ni vos informations bancaires par e-mail.",
+    },
+    "en": {
+        "subject": "Your Nūr activation code: {code}",
+        "hello": "Welcome to your At-Home Clinic",
+        "intro": "Here is your personal activation code. Enter it in the app to open your Skincoach.",
+        "valid": "This code is valid for 10 minutes.",
+        "ignore": "Didn't request this code? Simply ignore this message — no access is created.",
+        "foot": "Sent by {brand}. We will never ask for your password or payment details by email.",
+    },
+    "es": {
+        "subject": "Tu código de activación Nūr: {code}",
+        "hello": "Bienvenida a tu At-Home Clinic",
+        "intro": "Este es tu código de activación personal. Introdúcelo en la aplicación para abrir tu Skincoach.",
+        "valid": "Este código es válido durante 10 minutos.",
+        "ignore": "¿No lo has solicitado? Ignora este mensaje, no se crea ningún acceso.",
+        "foot": "Enviado por {brand}. Nunca te pediremos tu contraseña ni tus datos bancarios por correo.",
+    },
+    "it": {
+        "subject": "Il tuo codice di attivazione Nūr: {code}",
+        "hello": "Benvenuta nella tua At-Home Clinic",
+        "intro": "Ecco il tuo codice di attivazione personale. Inseriscilo nell'app per aprire il tuo Skincoach.",
+        "valid": "Questo codice è valido per 10 minuti.",
+        "ignore": "Non hai richiesto questo codice? Ignora questo messaggio, nessun accesso viene creato.",
+        "foot": "Inviato da {brand}. Non chiederemo mai la tua password o i dati bancari via email.",
+    },
+    "de": {
+        "subject": "Ihr Nūr Aktivierungscode: {code}",
+        "hello": "Willkommen in Ihrer At-Home Clinic",
+        "intro": "Hier ist Ihr persönlicher Aktivierungscode. Geben Sie ihn in der App ein, um Ihren Skincoach zu öffnen.",
+        "valid": "Dieser Code ist 10 Minuten gültig.",
+        "ignore": "Sie haben diesen Code nicht angefordert? Ignorieren Sie diese Nachricht, es wird kein Zugang erstellt.",
+        "foot": "Gesendet von {brand}. Wir fragen niemals per E-Mail nach Ihrem Passwort oder Ihren Bankdaten.",
+    },
+    "ru": {
+        "subject": "Ваш код активации Nūr: {code}",
+        "hello": "Добро пожаловать в вашу At-Home Clinic",
+        "intro": "Это ваш персональный код активации. Введите его в приложении, чтобы открыть Skincoach.",
+        "valid": "Код действует 10 минут.",
+        "ignore": "Не запрашивали код? Просто проигнорируйте это письмо — доступ не создаётся.",
+        "foot": "Отправлено {brand}. Мы никогда не спрашиваем пароль или банковские данные по email.",
+    },
+    "ar": {
+        "subject": "رمز تنشيط نُور: {code}",
+        "hello": "مرحباً بكِ في عيادتك المنزلية",
+        "intro": "هذا رمز التنشيط الخاص بكِ. أدخليه في التطبيق لفتح Skincoach.",
+        "valid": "الرمز صالح لمدة 10 دقائق.",
+        "ignore": "لم تطلبي هذا الرمز؟ تجاهلي هذه الرسالة، لن يتم إنشاء أي حساب.",
+        "foot": "أُرسلت بواسطة {brand}. لن نطلب منكِ كلمة المرور أو بيانات البطاقة عبر البريد.",
+    },
+}
+
+
+def _otp_html(code: str, lang: str) -> str:
+    c = _OTP_COPY.get(lang, _OTP_COPY["fr"])
+    brand = escape(EMAIL_FROM_NAME)
+    safe_code = escape(code)
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#FBF7F0;padding:32px 0;font-family:Georgia,\'Times New Roman\',serif">'
+        '<tr><td align="center">'
+        '<table role="presentation" width="460" cellpadding="0" cellspacing="0" '
+        'style="background:#FFFFFF;border:1px solid #E8DCC4;border-radius:18px;padding:36px 32px">'
+        f'<tr><td align="center" style="font-size:12px;letter-spacing:4px;color:#A98C4E">{brand.upper()}</td></tr>'
+        f'<tr><td align="center" style="padding-top:16px;font-size:23px;color:#3A2F21">{escape(c["hello"])}</td></tr>'
+        '<tr><td align="center" style="padding:12px 0"><span style="color:#C9A961">&#9670;</span></td></tr>'
+        '<tr><td align="center" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;'
+        f'line-height:21px;color:#6B5F4F">{escape(c["intro"])}</td></tr>'
+        '<tr><td align="center" style="padding:26px 0">'
+        '<div style="display:inline-block;background:#FBF7F0;border:1px solid #C9A961;border-radius:14px;'
+        'padding:18px 28px;font-family:Menlo,Consolas,monospace;font-size:34px;letter-spacing:10px;'
+        f'color:#3A2F21">{safe_code}</div></td></tr>'
+        '<tr><td align="center" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;'
+        f'color:#A98C4E">{escape(c["valid"])}</td></tr>'
+        '<tr><td align="center" style="padding-top:22px;font-family:Arial,Helvetica,sans-serif;'
+        f'font-size:12px;line-height:18px;color:#8C8171">{escape(c["ignore"])}</td></tr>'
+        '<tr><td align="center" style="padding-top:22px;font-family:Arial,Helvetica,sans-serif;'
+        f'font-size:11px;line-height:17px;color:#ADA392">{escape(c["foot"]).format(brand=brand)}</td></tr>'
+        '</table></td></tr></table>'
+    )
+
+
+async def send_otp_email(*, to: str, code: str, lang: str = "fr") -> str | None:
+    c = _OTP_COPY.get(lang, _OTP_COPY["fr"])
+    subject = c["subject"].format(code=code)
+    return await send_email(to=to, subject=subject, html=_otp_html(code, lang))

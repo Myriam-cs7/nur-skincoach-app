@@ -37,7 +37,7 @@ export default function ScanQR() {
   if (!permission?.granted || unsupported) {
     return (
       <View style={styles.root}>
-        <LinearGradient colors={['#0e0a04', '#06060A', '#04040A']} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={theme.gradient.page} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.gate} edges={['top', 'bottom']}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backAbs} testID="scanqr-back">
             <Feather name="chevron-left" size={24} color={theme.color.onSurface} />
@@ -85,7 +85,7 @@ export default function ScanQR() {
       </View>
       <SafeAreaView style={styles.camUi} edges={['top', 'bottom']}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backCam} testID="scanqr-back-cam">
-          <Feather name="chevron-left" size={24} color={theme.color.onSurface} />
+          <Feather name="chevron-left" size={24} color={theme.color.onCamera} />
         </Pressable>
         <View style={{ flex: 1 }} />
         <View style={styles.bottomCard}>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   cta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingVertical: 18,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
-    marginTop: theme.spacing.xl,
+    marginTop: theme.spacing.xl, ...theme.shadow.cta,
   },
   ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
   link: { color: theme.color.onSurfaceSecondary, fontSize: 12, textAlign: 'center', textDecorationLine: 'underline', marginTop: theme.spacing.md },

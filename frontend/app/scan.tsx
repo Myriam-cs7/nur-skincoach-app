@@ -59,7 +59,7 @@ export default function Scan() {
   if (!permission || !permission.granted) {
     return (
       <View style={styles.root}>
-        <LinearGradient colors={['#0e0a04', '#06060A']} locations={[0, 0.5]} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={[theme.color.brandTint, theme.color.surface]} locations={[0, 0.5]} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
           <View style={styles.header}>
             <Pressable onPress={() => router.back()} hitSlop={12} testID="scan-back">
@@ -113,7 +113,7 @@ export default function Scan() {
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} testID="scan-back">
-            <Feather name="x" size={22} color={theme.color.onSurface} />
+            <Feather name="x" size={22} color={theme.color.onCamera} />
           </Pressable>
           <Text style={styles.kicker}>{t('scan.kicker')}</Text>
           <Pressable onPress={onSkip} hitSlop={12} testID="skip-top">
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color.brandTint,
     borderWidth: 1, borderColor: theme.color.brand,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: theme.color.brand, shadowOpacity: 0.4, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
+    shadowColor: theme.color.brand, shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: 4 },
   },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, marginTop: theme.spacing.lg, letterSpacing: -0.3, textAlign: 'center' },
   subtitle: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: theme.spacing.sm },
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   br: { bottom: 0, right: 0, borderBottomWidth: 2, borderRightWidth: 2, borderBottomRightRadius: 8 },
   bottomPanel: { paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.lg, gap: theme.spacing.sm, alignItems: 'center' },
   tipRow: { flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center' },
-  tip: { color: theme.color.onSurfaceTertiary, fontSize: 12 },
+  tip: { color: theme.color.onCamera, fontSize: 12 },
   cta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingHorizontal: theme.spacing.xl,
     paddingVertical: 16, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
@@ -205,8 +205,8 @@ const styles = StyleSheet.create({
     shadowColor: theme.color.brand, shadowOpacity: 0.4, shadowRadius: 22, shadowOffset: { width: 0, height: 6 },
   },
   ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
-  linkText: { color: theme.color.onSurfaceSecondary, fontSize: 13, textDecorationLine: 'underline' },
-  sep: { color: theme.color.onSurfaceSecondary, fontSize: 13 },
+  linkText: { color: theme.color.onCamera, fontSize: 13, textDecorationLine: 'underline' },
+  sep: { color: theme.color.onCamera, fontSize: 13 },
   bottomActions: { flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
   shutter: { marginTop: theme.spacing.lg },
   shutterRing: { width: 76, height: 76, borderRadius: 999, borderWidth: 2, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },

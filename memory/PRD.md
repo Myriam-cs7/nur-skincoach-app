@@ -116,3 +116,74 @@ La barrière d'accès ne repose plus sur un code imprimé variable mais sur **l'
 2. Créer la page `nurprotocol.com/activate` avec les deux boutons de stores
 3. Héberger `/.well-known/apple-app-site-association` et `/.well-known/assetlinks.json`
    pour que le lien ouvre l'app directement (optionnel, confort)
+
+---
+
+# Session juin 2026 (suite) — Activation instantanée, 7 modes, nouveau logo
+
+## Décision : activation en 2 étapes, sans aucune attente
+L'ancienne barrière (« accès validé sous 24 h ») est SUPPRIMÉE. Nouveau parcours :
+1. La cliente saisit l'e-mail de sa commande
+2. Elle reçoit un code à 6 chiffres (e-mail « Nūr Protocol », réponses vers contact@nurprotocol.com)
+3. Elle saisit le code → accès immédiat
+
+La vérification Shopify tourne en tâche de fond (`asyncio.create_task`) et ne bloque jamais.
+Aucune commande trouvée → **période de découverte de 14 jours**, accès COMPLET, bandeau positif
+« Rattacher ma commande ». À l'échéance sans rattachement → écran « Votre accès est en pause »
+avec bouton de rattachement et contact (rien n'est supprimé).
+
+### Règles du code
+- Valable 10 minutes · renvoi possible après 60 s · max 5 envois / heure · max 5 tentatives
+- Consommé après succès · même e-mail = même profil (idempotent, jamais de doublon)
+- Collage direct depuis l'e-mail, autofill iOS/Android (`textContentType=oneTimeCode`, `autoComplete=sms-otp`)
+
+### Chemins alternatifs
+- **Codes partenaires multi-usage** : `NUR-CREATOR`, `NUR-PRESSE`, `NUR-SAV`, `NUR-CADEAU`
+  (chaque activation crée un profil distinct, `active: false` pour révoquer)
+- **Liste blanche e-mail** : `db.allowed_emails` → accès vérifié sans commande
+- **Numéro de commande** accepté comme preuve alternative (`/link-order`)
+
+## E-mail (Emergent managed)
+`/app/backend/emailer.py` — gate `_assert_safe_email` sur chaque envoi, templates serveur
+dans les 7 langues, `from_name` = Nūr Protocol, `contact_email` = contact@nurprotocol.com.
+Envoi AVANT persistance du code : si l'e-mail échoue, aucun code fantôme en base.
+429 du fournisseur → 1 relance après 2 s puis 503 `email_unavailable` (message dédié côté app).
+
+## Les 7 modes du masque (remplacent l'ancienne liste de 6)
+rouge 633 nm · bleu 415 nm · vert 532 nm · jaune 590 nm · cyan 490 nm ·
+violet (415 + 633 nm combinés) · blanc (spectre complet)
+Mis à jour partout : `/api/led-library`, prompts de diagnostic (7 langues), prompts du coach,
+prompts du tunnel pré-achat, bibliothèque, rituel, graphiques.
+Les mentions 830 nm / 1072 nm ont été retirées de l'app (non confirmées par l'usine).
+Textes des 7 lumières traduits dans les 7 langues : `/app/frontend/src/led.ts`.
+
+## Identité visuelle
+- Refonte beige & or construite puis **annulée** à la demande de la cliente : **fond noir conservé**.
+- `theme.ts` conserve les nouveaux jetons `gradient.*` et `shadow.*` (palette sombre).
+- **Nouveau logo** (lockup NŪR PROTOCOL · AI SKIN COACH · LED MASK) détouré en PNG transparent :
+  `assets/images/nur-logo.png`. Icônes régénérées depuis le monogramme NŪR :
+  `icon.png`, `adaptive-icon.png`, `favicon.png`, `splash-icon.png`.
+- Écran d'accueil responsive (`useWindowDimensions`), le logo ne déborde plus.
+- Dictionnaire EN complété : 238 clés, parité totale avec le FR (coach, tunnel, codes).
+
+## Livrables (dossier /app/deliverables)
+- `nur-qr-carte-gold-2048.png` + `nur-qr-carte-gold.svg` → QR de la carte gold
+  (contenu `https://nurprotocol.com/app`, décodage vérifié jusqu'à 180 px)
+- `README-QR-carte-gold.md` → specs d'impression pour l'agent en Chine
+- `page-nurprotocol-app.html` → page à coller dans Shopify (détection iOS/Android)
+
+## Nouvelles API
+- `POST /api/auth/request-code` {email, lang}
+- `POST /api/auth/verify-code` {email, code, lang} → AccessResponse
+- `GET /api/users/{id}/access` · `POST /api/users/{id}/link-order`
+- `GET /api/qr` · `GET /api/qr.svg`
+- Supprimé : `POST /api/verify-purchase`
+
+## Collections
+`otps` {email, code, attempts, expires_at, last_sent_at, window_start, sends_in_window}
+`users` + {access_status: verified|trial|paused, trial_expires_at, first_name, order_ref, shopify_email}
+
+## Reste à faire côté Nūr
+1. Jeton Shopify (`read_orders`, `read_customers`) → active la vérification automatique
+2. Mettre en ligne `nurprotocol.com/app` avant la première livraison
+3. Phase 2 : console d'admin, pré-activation à l'achat, photos avant/après, liens universels

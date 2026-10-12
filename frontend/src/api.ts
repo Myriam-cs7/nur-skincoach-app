@@ -86,9 +86,16 @@ export type DiagnosisRecord = {
   data: DiagnosisData;
 };
 
-export type VerifyPurchaseResponse = ActivateResponse & {
+export type AccessResponse = {
+  user_id: string;
+  activation_code: string;
+  has_intake: boolean;
+  has_diagnosis: boolean;
+  email?: string | null;
   first_name?: string | null;
   order_ref?: string | null;
+  access_status: 'verified' | 'trial' | 'paused';
+  trial_days_left?: number | null;
 };
 export type ProgressData = {
   daily: { date: string; sessions: number }[];
@@ -101,11 +108,19 @@ export type ProgressData = {
 };
 
 export const api = {
-  verifyPurchase: (email: string, lang = 'fr') =>
-    request<VerifyPurchaseResponse>('/verify-purchase', {
+  requestCode: (email: string, lang = 'fr') =>
+    request<{ ok: boolean; expires_in: number; resend_after: number; masked_email: string }>('/auth/request-code', {
       method: 'POST',
       body: JSON.stringify({ email, lang }),
     }),
+  verifyCode: (email: string, code: string, lang = 'fr') =>
+    request<AccessResponse>('/auth/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, lang }),
+    }),
+  getAccess: (id: string) => request<AccessResponse>(`/users/${id}/access`),
+  linkOrder: (id: string, body: { email?: string; order_number?: string }) =>
+    request<AccessResponse>(`/users/${id}/link-order`, { method: 'POST', body: JSON.stringify(body) }),
   progress: (id: string) => request<ProgressData>(`/users/${id}/progress`),
   activate: (code: string) =>
     request<ActivateResponse>('/activate', {

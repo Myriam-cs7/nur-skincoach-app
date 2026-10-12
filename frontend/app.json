@@ -37,6 +37,8 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
+            { "scheme": "https", "host": "nurprotocol.com", "pathPrefix": "/app" },
+            { "scheme": "https", "host": "www.nurprotocol.com", "pathPrefix": "/app" },
             { "scheme": "https", "host": "nurprotocol.com", "pathPrefix": "/activate" },
             { "scheme": "https", "host": "www.nurprotocol.com", "pathPrefix": "/activate" }
           ],

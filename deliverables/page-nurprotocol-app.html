@@ -1,0 +1,62 @@
+<!--
+  PAGE À CRÉER SUR TON SITE : https://nurprotocol.com/app
+  C'est l'adresse inscrite dans le QR code de la carte gold. Elle ne doit jamais changer.
+
+  Shopify : Boutique en ligne → Pages → Ajouter une page
+    • Titre : App
+    • Vérifier que l'URL finale est bien /pages/app puis créer une redirection
+      Paramètres → Navigation → Redirections d'URL : /app  →  /pages/app
+    • Dans l'éditeur de la page, cliquer sur « <> » (afficher le code HTML)
+      puis coller TOUT le bloc ci-dessous (sans ce commentaire).
+
+  Remplacer les 2 liens quand les applications seront publiées :
+    APPLE_LINK  → https://apps.apple.com/app/idXXXXXXXX
+    GOOGLE_LINK → https://play.google.com/store/apps/details?id=com.emergent.nurprotocolskin.zl0vs4
+-->
+
+<div style="max-width:520px;margin:0 auto;padding:48px 24px;text-align:center;font-family:Georgia,'Times New Roman',serif;color:#F5F1E6;background:#06060A;border-radius:24px">
+  <div style="font-size:12px;letter-spacing:5px;color:#C9A961">NŪR PROTOCOL</div>
+  <h1 style="font-size:30px;line-height:1.2;margin:18px 0 6px;color:#F5F1E6">Votre Skin Coach personnel</h1>
+  <div style="color:#C9A961;font-size:18px;margin-bottom:14px">&#9670;</div>
+  <p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;color:#A0998A;margin:0 0 28px">
+    Téléchargez l'application, entrez l'e-mail de votre commande et recevez votre bilan de peau
+    ainsi que votre rituel LED personnalisé.
+  </p>
+
+  <a id="nur-ios" href="APPLE_LINK"
+     style="display:block;background:#C9A961;color:#0A0A10;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:15px;letter-spacing:1px;padding:17px 24px;border-radius:999px;margin-bottom:12px">
+    Télécharger sur l'App Store
+  </a>
+
+  <a id="nur-android" href="GOOGLE_LINK"
+     style="display:block;background:transparent;color:#C9A961;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:15px;letter-spacing:1px;padding:16px 24px;border-radius:999px;border:1px solid rgba(201,169,97,0.45)">
+    Télécharger sur Google Play
+  </a>
+
+  <p style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#8C8171;margin:28px 0 0">
+    Une question ? <a href="mailto:contact@nurprotocol.com" style="color:#C9A961">contact@nurprotocol.com</a>
+  </p>
+</div>
+
+<script>
+  /* Met en avant le bon store selon le téléphone de la visiteuse. */
+  (function () {
+    var ua = navigator.userAgent || '';
+    var ios = /iPad|iPhone|iPod/.test(ua) || (/Mac/.test(ua) && 'ontouchend' in document);
+    var android = /Android/.test(ua);
+    var a = document.getElementById('nur-ios');
+    var g = document.getElementById('nur-android');
+    if (!a || !g) return;
+    if (android) {
+      g.style.background = '#C9A961';
+      g.style.color = '#0A0A10';
+      g.style.border = 'none';
+      a.style.background = 'transparent';
+      a.style.color = '#C9A961';
+      a.style.border = '1px solid rgba(201,169,97,0.45)';
+      g.parentNode.insertBefore(g, a);
+    } else if (!ios) {
+      /* Ordinateur : on garde les deux boutons visibles. */
+    }
+  })();
+</script>

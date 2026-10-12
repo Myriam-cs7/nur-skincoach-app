@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable, KeyboardAvoidingView,
   Platform, ActivityIndicator, ScrollView, Keyboard,
@@ -9,51 +9,90 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { theme } from '../src/theme';
 import { GoldDivider, Wordmark } from '../src/ui';
-import { api, setStoredUser } from '../src/api';
+import { api, setStoredUser, AccessResponse } from '../src/api';
 import { useT, getLang } from '../src/i18n';
 
-type Mode = 'email' | 'code';
+type Step = 'email' | 'otp' | 'partner';
 
 export default function Activate() {
   const router = useRouter();
   const { t } = useT();
   const params = useLocalSearchParams<{ code?: string; scanned?: string }>();
-  const [mode, setMode] = useState<Mode>(params.code ? 'code' : 'email');
+  const [step, setStep] = useState<Step>(params.code ? 'partner' : 'email');
   const [email, setEmail] = useState('');
+  const [masked, setMasked] = useState('');
+  const [otp, setOtp] = useState('');
   const [code, setCode] = useState(params.code ? String(params.code).toUpperCase() : '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(params.scanned ? t('gate.card_ok') : null);
+  const [cooldown, setCooldown] = useState(0);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (params.code) { setMode('code'); setCode(String(params.code).toUpperCase()); }
+    if (params.code) { setStep('partner'); setCode(String(params.code).toUpperCase()); }
   }, [params.code]);
 
-  const route = (r: { user_id: string; activation_code: string; has_intake: boolean; has_diagnosis: boolean }) => {
+  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
+
+  const startCooldown = (seconds: number) => {
+    setCooldown(seconds);
+    if (timer.current) clearInterval(timer.current);
+    timer.current = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1 && timer.current) { clearInterval(timer.current); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+  };
+
+  const route = (r: { has_intake: boolean; has_diagnosis: boolean }) => {
     if (r.has_diagnosis) router.replace('/(tabs)/home');
     else if (r.has_intake) router.replace('/scan');
     else router.replace('/onboarding');
   };
 
-  const onVerifyEmail = async () => {
+  const sendCode = async (resend = false) => {
     const e = email.trim().toLowerCase();
     if (!e) return;
     Keyboard.dismiss();
     setBusy(true); setErr(null); setInfo(null);
     try {
-      const r = await api.verifyPurchase(e, getLang());
-      await setStoredUser(r.user_id, r.activation_code);
-      route(r);
-    } catch (e: any) {
-      const m = String(e?.message || '');
-      if (m.includes('503')) setInfo(t('gate.pending'));
-      else if (m.includes('403')) setErr(t('gate.not_found'));
-      else if (m.includes('400')) setErr(t('gate.not_found'));
-      else setErr(t('common.error'));
+      const r = await api.requestCode(e, getLang());
+      setMasked(r.masked_email);
+      setStep('otp');
+      setOtp('');
+      startCooldown(r.resend_after);
+    } catch (e2: any) {
+      const m = String(e2?.message || '');
+      if (m.includes('resend_too_soon')) { setStep('otp'); startCooldown(60); setErr(t('gate.too_soon')); }
+      else if (m.includes('too_many_requests')) setErr(t('gate.too_many'));
+      else if (m.includes('invalid_email')) setErr(t('gate.not_found'));
+      else if (m.includes('email_unavailable')) setErr(t('gate.mail_paused'));
+      else setErr(t('gate.mail_error'));
+      if (resend) setStep('otp');
     } finally { setBusy(false); }
   };
 
-  const onValidateCode = async () => {
+  const verifyOtp = async () => {
+    const digits = otp.replace(/\D/g, '');
+    if (digits.length !== 6) return;
+    Keyboard.dismiss();
+    setBusy(true); setErr(null);
+    try {
+      const r: AccessResponse = await api.verifyCode(email.trim().toLowerCase(), digits, getLang());
+      await setStoredUser(r.user_id, r.activation_code);
+      route(r);
+    } catch (e2: any) {
+      const m = String(e2?.message || '');
+      if (m.includes('code_expired')) setErr(t('otp.expired'));
+      else if (m.includes('too_many_attempts')) setErr(t('otp.too_many'));
+      else if (m.includes('no_code_requested')) setErr(t('otp.not_found'));
+      else setErr(t('otp.invalid'));
+    } finally { setBusy(false); }
+  };
+
+  const validatePartnerCode = async () => {
     const c = code.trim().toUpperCase();
     if (!c) return;
     Keyboard.dismiss();
@@ -62,32 +101,47 @@ export default function Activate() {
       const r = await api.activate(c);
       await setStoredUser(r.user_id, r.activation_code);
       route(r);
-    } catch (e: any) {
-      if (String(e?.message || '').includes('403')) setErr(t('welcome.code_invalid'));
+    } catch (e2: any) {
+      if (String(e2?.message || '').includes('403')) setErr(t('welcome.code_invalid'));
       else setErr(t('common.error'));
     } finally { setBusy(false); }
   };
 
-  const isEmail = mode === 'email';
+  const titles: Record<Step, string> = {
+    email: t('gate.title'),
+    otp: t('otp.title'),
+    partner: t('welcome.code_title'),
+  };
+  const subs: Record<Step, string> = {
+    email: t('gate.sub'),
+    otp: t('otp.sub', { email: masked || email }),
+    partner: t('welcome.code_sub'),
+  };
+  const icons: Record<Step, any> = { email: 'mail', otp: 'key', partner: 'award' };
+
+  const goBackStep = () => {
+    if (step === 'email') router.back();
+    else { setStep('email'); setErr(null); setInfo(null); }
+  };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
-      <LinearGradient colors={['#0e0a04', '#06060A', '#04040A']} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={theme.gradient.page} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.back} testID="activate-back">
+          <Pressable onPress={goBackStep} hitSlop={12} style={styles.back} testID="activate-back">
             <Feather name="chevron-left" size={24} color={theme.color.onSurface} />
           </Pressable>
 
           <View style={styles.iconCircle}>
-            <Feather name={isEmail ? 'shield' : 'lock'} size={24} color={theme.color.brand} />
+            <Feather name={icons[step]} size={23} color={theme.color.brand} />
           </View>
           <Wordmark label="NŪR PROTOCOL" />
-          <Text style={styles.title}>{isEmail ? t('gate.title') : t('welcome.code_title')}</Text>
+          <Text style={styles.title}>{titles[step]}</Text>
           <GoldDivider marginV={theme.spacing.md} />
-          <Text style={styles.sub}>{isEmail ? t('gate.sub') : t('welcome.code_sub')}</Text>
+          <Text style={styles.sub}>{subs[step]}</Text>
 
-          {isEmail ? (
+          {step === 'email' ? (
             <>
               <TextInput
                 value={email}
@@ -98,33 +152,88 @@ export default function Activate() {
                 autoCorrect={false}
                 keyboardType="email-address"
                 inputMode="email"
+                textContentType="emailAddress"
                 returnKeyType="go"
-                onSubmitEditing={onVerifyEmail}
-                style={[styles.input, styles.inputEmail, err && { borderColor: theme.color.error }]}
+                onSubmitEditing={() => sendCode()}
+                style={[styles.input, styles.inputEmail, !!err && styles.inputErr]}
                 testID="gate-email-input"
               />
               {err ? <Text style={styles.err} testID="gate-error">{err}</Text> : null}
               {info ? (
                 <View style={styles.infoBox} testID="gate-info">
-                  <Feather name="clock" size={13} color={theme.color.brand} />
+                  <Feather name="check-circle" size={13} color={theme.color.brand} />
                   <Text style={styles.infoTxt}>{info}</Text>
                 </View>
               ) : null}
-              <Pressable
-                style={[styles.cta, (!email || busy) && { opacity: 0.4 }]}
-                onPress={onVerifyEmail}
+              <Cta
+                label={t('gate.cta')}
+                busy={busy}
                 disabled={!email || busy}
+                onPress={() => sendCode()}
                 testID="gate-verify"
-              >
-                {busy ? <ActivityIndicator color={theme.color.onBrand} /> : (
-                  <>
-                    <Text style={styles.ctaTxt}>{t('gate.cta')}</Text>
-                    <Feather name="arrow-right" size={16} color={theme.color.onBrand} />
-                  </>
-                )}
+              />
+              <Pressable style={styles.ghost} onPress={() => router.push('/scan-qr')} testID="gate-scan-card">
+                <Feather name="maximize" size={14} color={theme.color.brandDeep} />
+                <Text style={styles.ghostTxt}>{t('gate.scan_card')}</Text>
+              </Pressable>
+              <Pressable onPress={() => { setStep('partner'); setErr(null); }} style={styles.linkWrap} testID="gate-switch-mode">
+                <Text style={styles.link}>{t('gate.have_code')}</Text>
+              </Pressable>
+              <View style={styles.whyRow}>
+                <Feather name="lock" size={10} color={theme.color.brand} />
+                <Text style={styles.whyTxt}>{t('gate.why')}</Text>
+              </View>
+              <Pressable onPress={() => router.replace('/discover')} style={styles.linkWrap} testID="no-code-link">
+                <Text style={styles.link}>{t('gate.no_order')}</Text>
               </Pressable>
             </>
-          ) : (
+          ) : null}
+
+          {step === 'otp' ? (
+            <>
+              <TextInput
+                value={otp}
+                onChangeText={(v) => { setOtp(v.replace(/\D/g, '').slice(0, 6)); setErr(null); }}
+                placeholder={t('otp.placeholder')}
+                placeholderTextColor={theme.color.borderStrong}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                maxLength={6}
+                returnKeyType="go"
+                onSubmitEditing={verifyOtp}
+                autoFocus
+                style={[styles.input, styles.inputOtp, !!err && styles.inputErr]}
+                testID="otp-input"
+              />
+              {err ? <Text style={styles.err} testID="otp-error">{err}</Text> : null}
+              <Cta
+                label={t('otp.cta')}
+                busy={busy}
+                disabled={otp.length !== 6 || busy}
+                onPress={verifyOtp}
+                testID="otp-verify"
+              />
+              <Pressable
+                style={styles.ghost}
+                disabled={cooldown > 0 || busy}
+                onPress={() => sendCode(true)}
+                testID="otp-resend"
+              >
+                <Feather name="refresh-cw" size={13} color={cooldown > 0 ? theme.color.onSurfaceSecondary : theme.color.brandDeep} />
+                <Text style={[styles.ghostTxt, cooldown > 0 && { color: theme.color.onSurfaceSecondary }]}>
+                  {cooldown > 0 ? t('otp.resend_in', { s: cooldown }) : t('otp.resend')}
+                </Text>
+              </Pressable>
+              <Text style={styles.hint}>{t('otp.spam_hint')}</Text>
+              <Pressable onPress={() => { setStep('email'); setErr(null); setOtp(''); }} style={styles.linkWrap} testID="otp-change-email">
+                <Text style={styles.link}>{t('otp.change_email')}</Text>
+              </Pressable>
+            </>
+          ) : null}
+
+          {step === 'partner' ? (
             <>
               <TextInput
                 value={code}
@@ -134,51 +243,41 @@ export default function Activate() {
                 autoCapitalize="characters"
                 autoCorrect={false}
                 returnKeyType="go"
-                onSubmitEditing={onValidateCode}
-                style={[styles.input, err && { borderColor: theme.color.error }]}
+                onSubmitEditing={validatePartnerCode}
+                style={[styles.input, !!err && styles.inputErr]}
                 testID="activate-code-input"
               />
               {err ? <Text style={styles.err}>{err}</Text> : null}
-              <Pressable
-                style={[styles.cta, (!code || busy) && { opacity: 0.4 }]}
-                onPress={onValidateCode}
+              <Cta
+                label={t('welcome.code_validate')}
+                busy={busy}
                 disabled={!code || busy}
+                onPress={validatePartnerCode}
                 testID="activate-validate"
-              >
-                {busy ? <ActivityIndicator color={theme.color.onBrand} /> : (
-                  <>
-                    <Text style={styles.ctaTxt}>{t('welcome.code_validate')}</Text>
-                    <Feather name="arrow-right" size={16} color={theme.color.onBrand} />
-                  </>
-                )}
+              />
+              <Pressable onPress={() => { setStep('email'); setErr(null); }} style={styles.linkWrap} testID="gate-use-email">
+                <Text style={styles.link}>{t('gate.use_email')}</Text>
               </Pressable>
             </>
-          )}
-
-          <Pressable style={styles.ghost} onPress={() => router.push('/scan-qr')} testID="gate-scan-card">
-            <Feather name="maximize" size={14} color={theme.color.brand} />
-            <Text style={styles.ghostTxt}>{t('gate.scan_card')}</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => { setMode(isEmail ? 'code' : 'email'); setErr(null); setInfo(null); }}
-            style={{ marginTop: theme.spacing.lg }}
-            testID="gate-switch-mode"
-          >
-            <Text style={styles.link}>{isEmail ? t('gate.have_code') : t('gate.use_email')}</Text>
-          </Pressable>
-
-          <View style={styles.whyRow}>
-            <Feather name="lock" size={10} color={theme.color.brand} />
-            <Text style={styles.whyTxt}>{t('gate.why')}</Text>
-          </View>
-
-          <Pressable onPress={() => router.replace('/discover')} style={{ marginTop: theme.spacing.md }} testID="no-code-link">
-            <Text style={styles.link}>{t('gate.no_order')}</Text>
-          </Pressable>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     </KeyboardAvoidingView>
+  );
+}
+
+function Cta({ label, busy, disabled, onPress, testID }: {
+  label: string; busy: boolean; disabled: boolean; onPress: () => void; testID: string;
+}) {
+  return (
+    <Pressable style={[styles.cta, disabled && { opacity: 0.45 }]} onPress={onPress} disabled={disabled} testID={testID}>
+      {busy ? <ActivityIndicator color={theme.color.onBrand} /> : (
+        <>
+          <Text style={styles.ctaTxt}>{label}</Text>
+          <Feather name="arrow-right" size={16} color={theme.color.onBrand} />
+        </>
+      )}
+    </Pressable>
   );
 }
 
@@ -189,9 +288,8 @@ const styles = StyleSheet.create({
   iconCircle: {
     alignSelf: 'center', width: 66, height: 66, borderRadius: 999,
     backgroundColor: theme.color.brandTint, borderWidth: 1, borderColor: theme.color.brand,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center', marginBottom: theme.spacing.lg,
     shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
-    marginBottom: theme.spacing.lg,
   },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 29, textAlign: 'center', marginTop: theme.spacing.md, letterSpacing: -0.5 },
   sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20 },
@@ -201,6 +299,8 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xl, fontFamily: theme.font.mono, letterSpacing: 2, textAlign: 'center',
   },
   inputEmail: { fontFamily: theme.font.sans, letterSpacing: 0.3, fontSize: 16 },
+  inputOtp: { fontSize: 30, letterSpacing: 12, paddingVertical: 20, color: theme.color.onSurface },
+  inputErr: { borderColor: theme.color.error },
   err: { color: theme.color.error, fontSize: 12, textAlign: 'center', marginTop: theme.spacing.sm, lineHeight: 18 },
   infoBox: {
     flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center', marginTop: theme.spacing.md,
@@ -211,8 +311,7 @@ const styles = StyleSheet.create({
   cta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingVertical: 18,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
-    marginTop: theme.spacing.xl,
-    shadowColor: theme.color.brand, shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: { width: 0, height: 6 },
+    marginTop: theme.spacing.xl, ...theme.shadow.cta,
   },
   ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
   ghost: {
@@ -220,8 +319,10 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm, paddingVertical: 15, borderRadius: theme.radius.pill,
     borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: 'rgba(201,169,97,0.06)',
   },
-  ghostTxt: { color: theme.color.brand, fontSize: 13, fontWeight: '600', letterSpacing: 0.4 },
+  ghostTxt: { color: theme.color.brandDeep, fontSize: 13, fontWeight: '600', letterSpacing: 0.4 },
+  hint: { color: theme.color.onSurfaceSecondary, fontSize: 11, textAlign: 'center', marginTop: theme.spacing.md },
+  linkWrap: { marginTop: theme.spacing.lg, paddingVertical: 4 },
   link: { color: theme.color.onSurfaceSecondary, fontSize: 12, textAlign: 'center', textDecorationLine: 'underline' },
   whyRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.md },
-  whyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 10, opacity: 0.75, flex: 1, lineHeight: 15 },
+  whyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 10, opacity: 0.85, flex: 1, lineHeight: 15 },
 });

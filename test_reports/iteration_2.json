@@ -1,0 +1,42 @@
+{
+  "summary": "Nūr Protocol iteration 2 — exhaustive OTP flow validation. Rewrote /app/backend/tests/test_nur_api.py (18 pytest cases) around the new /api/auth/request-code + /api/auth/verify-code pipeline (legacy /verify-purchase tests removed). ALL 18 BACKEND TESTS PASS (100%). Coverage: request-code valid (200 + 600/60/masked), invalid_email (400), resend_too_soon (429), verify-code invalid (400), happy path (access_status=trial, trial_days_left=14, has_intake=false), consume-after-success (second attempt → 404 no_code_requested), no_code_requested (404), OTP idempotence (same email → same user_id, exactly 1 Mongo doc), /users/{id}/access trial→paused via trial_expires_at backdating, link-order shopify_not_configured (503), link-order email_or_order_required (400), NUR-CREATOR multi-use (two different user_id), NUR-DEMO-2026 single-use (same user_id), invalid code (403), /led-library exact 7 ids + wavelengths (no 830/1072 nm), /users/demo-charts-user/progress shape (28 daily, 4 weekly, score_history=3), /qr PNG + /qr.svg content-types. Frontend: /activate on mobile viewport (390x844) shows email step → OTP step with testID otp-input + otp-resend countdown + masked email, wrong code triggers otp-error and user stays on screen, otp-change-email returns to email step, gate-switch-mode toggles to activate-code-input, NUR-CREATOR redirects to /onboarding. Trial banner on /home (localStorage nur.user_id=ui-trial-user) shows 'Discovery · 14 days left · Link my order' and routes to /link-order; link-order submission returns the localized testID 'link-order-error' message 'Verification is unavailable right now. Your access stays open.' with no crash. After backdating trial_expires_at, /home correctly shows the paused screen with testID 'paused-link-order' and the 'pause' wording. /library renders all 7 led-card-{red,blue,green,yellow,cyan,violet,white} testIDs. /home with demo-charts-user renders 11 SVGs (charts) + reminders-toggle. /protocol renders the weekly ritual with localized day names (Monday..Sunday). Dark theme preserved on every screen tested (black background with gold accents, no beige leftover). Email rate limiting from Resend sandbox (429 → backend returns 502 to the client) only affected one UI run; the mongo-direct seed path confirmed end-to-end functionality. No React Native deprecated-package issues detected (expo-av/barcode-scanner/background-fetch absent).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/request-code", "issue": "When Resend sandbox returns 422 undeliverable_recipient or 429 rate_limited, backend bubbles up a 502 to the client AFTER the OTP was already written to Mongo. The UX message 'Sending failed. Check your address' is displayed but a valid OTP is now live in DB. Consider either (a) deleting the OTP row when email fails, or (b) sending the email BEFORE the Mongo upsert, so the DB state never desynchronises from what the user received."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/protocol (EN)", "issues": ["Grammar: 'A 8-week beauty programme' should be 'An 8-week beauty programme' when lang=en. Trivial."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_nur_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Decide whether to roll back the Mongo OTP upsert when send_otp_email raises (currently leaves an orphan code in db.otps whenever Resend returns 422/429). This can mask send failures from the UI yet still let a scripted actor read the code and verify.",
+    "Fix the 'A 8-week' → 'An 8-week' English copy on /protocol (purely cosmetic).",
+    "Optional (carried over from iteration 1): migrate shadow* styles to boxShadow and props.pointerEvents to style.pointerEvents to silence RN-web deprecation warnings."
+  ],
+  "critical_code_review_comments": [
+    "server.py — request_code writes the OTP to Mongo (upsert) BEFORE sending the email. If send_otp_email raises HTTPException(502), the row persists and the client sees 'Sending failed' while the OTP is actually valid. Low risk given the attacker still needs the inbox, but the API contract becomes inconsistent.",
+    "server.py — verify_code deletes the OTP row BEFORE creating the user. If db.users.insert_one later raises, the user loses both the code and the account. Wrapping both ops in a single Mongo transaction (or at least try/except with re-upsert on failure) would be safer.",
+    "server.py — _resolve_access computes days_left via (expiry - now)/86400 + 1 which off-by-ones by 1 on day 1 (e.g. a user created now sees '14 days left', which matches the design spec, good; just document it).",
+    "server.py is now ~1296 lines — still worth splitting into modules (routes/auth.py, routes/users.py, routes/shopify.py, routes/qr.py, llm/prompts.py).",
+    "emailer.py — HTTPException(502) raised inside the Resend path short-circuits the request. Add retry on 429 (rate limiting) with jittered backoff; current behaviour makes functional tests brittle.",
+    "In seed_activation_codes, the demo codes list keeps old names 'NUR-TEST-LINA / NUR-TEST-SOPHIE / NUR-LAUNCH-01' alongside the new partner codes — fine, but confirm the client doesn't want them removed before production."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_nur_api.py (rewritten for OTP flow — 18 tests, all green)"
+  ],
+  "success_rate": {"backend": "100% (18/18)", "frontend": "100% (all requested testIDs reachable; dark theme preserved; link-order error message localized correctly)"},
+  "seed_data_creation": "Created ui-trial-user directly in db.users (shopify_email=uitrial@example.com, access_status=trial, trial_expires_at=+14d) to exercise trial banner + paused screen without hitting Resend rate limit. test_nur_api.py uses delivered+<uuid>@resend.dev (Resend sandbox + plus addressing) so each run is unique AND recipients always deliver.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Resend sandbox is strict: only delivered@resend.dev (and its plus-addressed variants) are accepted. Any other recipient → 422 undeliverable_recipient → backend returns 502. If you see 502 on request-code, it is NOT a backend bug per se, it is the Resend sandbox rejecting the recipient. Use delivered+<unique>@resend.dev. Rate limit on Resend is low — space email tests out or seed users directly via Mongo for subsequent UI flows. Mongo collection otps keeps the plaintext code; backend deletes it on successful verify. db.users is keyed by {id} (uuid) with secondary uniqueness on shopify_email. Dark theme is the target — any beige/light leftover must be reported."
+}

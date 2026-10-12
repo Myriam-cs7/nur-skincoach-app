@@ -133,7 +133,7 @@ export default function Discover() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
-      <LinearGradient colors={['#0e0a04', '#06060A', '#04040A']} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={theme.gradient.page} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => router.back()} hitSlop={12} testID="discover-back">
@@ -282,11 +282,11 @@ function PrescriptionStep({ p, shop, t }: any) {
         <View style={styles.wavelengthRow}>
           <View style={[styles.wlPill, { borderColor: theme.color.ledRed }]}>
             <View style={[styles.wlDot, { backgroundColor: theme.color.ledRed, shadowColor: theme.color.ledRed }]} />
-            <Text style={[styles.wlTxt, { color: theme.color.ledRed }]}>630nm · Visage</Text>
+            <Text style={[styles.wlTxt, { color: theme.color.ledRed }]}>633 nm</Text>
           </View>
-          <View style={[styles.wlPill, { borderColor: '#FF7A4A' }]}>
-            <View style={[styles.wlDot, { backgroundColor: '#FF7A4A', shadowColor: '#FF7A4A' }]} />
-            <Text style={[styles.wlTxt, { color: '#FF7A4A' }]}>830nm · Cou</Text>
+          <View style={[styles.wlPill, { borderColor: theme.color.brand }]}>
+            <View style={[styles.wlDot, { backgroundColor: theme.color.brand, shadowColor: theme.color.brand }]} />
+            <Text style={[styles.wlTxt, { color: theme.color.brandDeep }]}>{t('library.title')}</Text>
           </View>
         </View>
         <Text style={styles.protocolTxt}>{p.protocol_summary}</Text>

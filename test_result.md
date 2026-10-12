@@ -147,3 +147,95 @@ frontend:
     working: "NA"
     file: "/app/frontend/src/notifications.ts"
     comment: "Non testable sur web (switch désactivé) — vérifier seulement l'UI et l'absence de crash."
+
+## Session 2 — Activation instantanée par code e-mail (OTP), 7 modes LED, période de découverte
+
+user_problem_statement: >
+  Un seul QR code identique sur toutes les cartes gold (https://nurprotocol.com/app).
+  L'ancienne barrière "vérification de commande avec message 24 h" est REMPLACÉE par une
+  activation instantanée : e-mail → code à 6 chiffres reçu par e-mail → accès immédiat.
+  Vérification Shopify en tâche de fond (jamais bloquante). Si aucune commande trouvée →
+  période de découverte de 14 jours avec accès complet + bandeau "Rattacher ma commande".
+  Codes partenaires multi-usage pour influenceuses/presse. 7 modes LED réels (dont blanc).
+  Thème : fond noir conservé (la cliente a finalement refusé la version beige).
+
+backend:
+  - task: "POST /api/auth/request-code — envoi du code à 6 chiffres par e-mail"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py, /app/backend/emailer.py"
+    comment: |
+      Emergent managed email. Limites : renvoi après 60 s (429 resend_too_soon),
+      max 5 envois / heure (429 too_many_requests), code valable 600 s.
+      E-mail de test sûr : delivered@resend.dev
+  - task: "POST /api/auth/verify-code — activation + période de découverte 14 j"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    comment: |
+      Mauvais code → 400 invalid_code (max 5 tentatives → 429 too_many_attempts),
+      expiré → 400 code_expired, jamais demandé → 404 no_code_requested.
+      Crée l'utilisateur avec access_status=trial + trial_expires_at (14 j) et lance
+      la vérification Shopify en tâche de fond (asyncio.create_task).
+      Shopify non configuré (cas actuel) → l'accès reste ouvert en trial.
+  - task: "GET /api/users/{id}/access + POST /api/users/{id}/link-order"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    comment: "link-order sans Shopify configuré → 503 shopify_not_configured (comportement attendu)."
+  - task: "Codes partenaires multi-usage (/api/activate)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    comment: "NUR-CREATOR, NUR-PRESSE, NUR-SAV, NUR-CADEAU → un profil distinct à chaque activation. NUR-DEMO-2026 reste à usage unique."
+  - task: "7 modes LED dans /api/led-library et tous les prompts IA"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+  - task: "GET /api/qr et /api/qr.svg (carte gold)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "Décodage vérifié : https://nurprotocol.com/app (PNG 2048/600/300/180 px)."
+  - task: "/api/verify-purchase SUPPRIMÉ (remplacé par le flux OTP)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+
+frontend:
+  - task: "Écran d'activation en 3 étapes : e-mail → code 6 chiffres → (ou) code partenaire"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/activate.tsx"
+  - task: "Écran Rattacher ma commande (e-mail ou n° de commande)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/link-order.tsx"
+  - task: "Bandeau période de découverte + écran d'accès en pause (accueil)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/home.tsx"
+  - task: "Bibliothèque des 7 lumières, textes en 7 langues"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/library.tsx, /app/frontend/src/led.ts"
+    comment: "Vérifié visuellement : 7 cartes, longueurs d'onde 633/415/532/590/490/415+633/spectre complet."
+  - task: "Rituel hebdomadaire — jours localisés + 7 lumières"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/protocol.tsx"
+
+### Résultats itération 2 (après corrections)
+- `pytest /app/backend/tests/` → **16 passés, 2 ignorés** (les 2 ignorés envoient de vrais
+  e-mails et sont sautés automatiquement quand le quota du fournisseur est épuisé).
+- Les tests ne consomment plus le quota d'envoi : helper `_seed_otp` / `_activate` qui écrit
+  le code directement en base. Seuls `TestRequestCode` déclenchent un vrai envoi.
+- Corrections apportées après l'itération 2 :
+  - `request-code` envoie l'e-mail AVANT d'écrire le code (plus de code fantôme si l'envoi échoue) — vérifié
+  - `verify-code` insère l'utilisateur AVANT de supprimer le code
+  - 429 du fournisseur → 1 relance après 2 s puis 503 `email_unavailable` + message dédié dans l'app
+  - EN complété (238 clés, parité FR) : coach, tunnel pré-achat, codes
+  - Grammaire EN `proto.sub` corrigée
+- Parcours UI revérifié au screenshot : e-mail → écran du code (e-mail masqué + compte à rebours 59 s)
+  → mauvais code (message d'erreur, on reste sur l'écran) → bon code → `/onboarding`.
+- Nouveau logo intégré, écran d'accueil responsive, icônes/splash régénérés.
