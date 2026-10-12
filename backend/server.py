@@ -5,6 +5,8 @@ import asyncio
 import secrets
 import logging
 import re
+import hashlib
+import tempfile
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -15,13 +17,14 @@ import qrcode
 from PIL import Image
 from qrcode.constants import ERROR_CORRECT_H
 
-from fastapi import FastAPI, APIRouter, HTTPException, Query, Response
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Response, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
+from emergentintegrations.llm.openai import OpenAISpeechToText, OpenAITextToSpeech
 
 from emailer import send_otp_email
 
@@ -231,9 +234,14 @@ TU DOIS RÉPONDRE STRICTEMENT EN JSON VALIDE (sans markdown), avec ce schéma :
 "summary":"Bilan beauté court (2-3 phrases) en français",
 "routine_advice":["1","2","3","4"],
 "lifestyle_advice":["1","2","3"],
-"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|white|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"texte court"}...],"total_weeks":int,"expected_results":"texte"}}
+"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|white|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"texte court"}...],"total_weeks":int,"expected_results":"texte"},
+"global_index":int,
+"zones":[{"zone":"Front|Zone T|Joues|Contour des yeux|Menton & mâchoire|Cou","observation":"ce que montre la photo ou le profil, 1 phrase","priority":"haute|moyenne|basse"}]}
 
 RÈGLES :
+- Si une photo est fournie, `zones` et `summary` doivent décrire ce que tu OBSERVES réellement sur l'image (grain, brillance, rougeurs, cernes, relief). Sans photo, base-toi sur le profil et reste prudente dans les formulations.
+- `global_index` = indice d'éclat global sur 100, cohérent avec les scores
+- 5 à 6 zones maximum
 - 4 à 6 séances par semaine MAX, au moins 1 jour de repos (led_color_id=null, intensity=null)
 - intensity adaptée : "faible" pour peau sensible/débutante, "moyenne" usage standard, "forte" pour besoins ciblés
 - VOCABULAIRE BEAUTÉ/COSMÉTIQUE UNIQUEMENT, jamais médical (interdit : "diagnostic", "dermatologique", "traitement", "soigner", "guérir", "clinique", "pathologie")
@@ -249,9 +257,14 @@ REPLY STRICTLY IN VALID JSON (no markdown):
 "summary":"Short beauty summary (2-3 sentences) in English",
 "routine_advice":["1","2","3","4"],
 "lifestyle_advice":["1","2","3"],
-"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|white|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"short text"}...],"total_weeks":int,"expected_results":"text"}}
+"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|white|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"short text"}...],"total_weeks":int,"expected_results":"text"},
+"global_index":int,
+"zones":[{"zone":"Forehead|T-zone|Cheeks|Eye area|Chin & jawline|Neck","observation":"what the photo or profile shows, 1 sentence","priority":"haute|moyenne|basse"}]}
 
 RULES:
+- If a photo is provided, `zones` and `summary` must describe what you ACTUALLY observe on the image (texture, shine, redness, under-eyes, relief). Without a photo, rely on the profile and stay cautious in wording.
+- `global_index` = overall radiance index out of 100, consistent with the scores
+- 5 to 6 zones maximum
 - MAX 4-6 sessions per week, at least 1 rest day (led_color_id=null, intensity=null)
 - intensity: "faible" sensitive/beginner, "moyenne" standard, "forte" targeted needs (keep these French values for consistency across languages)
 - BEAUTY/COSMETIC LEXICON ONLY, never medical (forbidden: "diagnosis", "dermatological", "treatment", "heal", "cure", "clinical", "pathology")
@@ -267,7 +280,9 @@ RULES:
 "summary":"ملخص جمالي قصير (2-3 جمل) بالعربية",
 "routine_advice":["1","2","3","4"],
 "lifestyle_advice":["1","2","3"],
-"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|white|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"نص قصير"}...],"total_weeks":int,"expected_results":"نص"}}
+"protocol":{"weekly_schedule":[{"day":1-7,"led_color_id":"red|blue|green|yellow|cyan|violet|white|null","session_minutes":int_or_null,"intensity":"faible|moyenne|forte|null","notes":"نص قصير"}...],"total_weeks":int,"expected_results":"نص"},
+"global_index":int,
+"zones":[{"zone":"الجبهة|منطقة T|الوجنتان|محيط العين|الذقن والفك|الرقبة","observation":"ما تظهره الصورة أو الملف، جملة واحدة","priority":"haute|moyenne|basse"}]}
 
 القواعد:
 - 4-6 جلسات أسبوعياً كحد أقصى، يوم راحة واحد على الأقل (led_color_id=null, intensity=null)
@@ -278,7 +293,8 @@ RULES:
 }
 
 
-async def run_diagnosis(intake: dict, image_b64: Optional[str], mime_type: str, session_id: str, lang: str = "fr") -> dict:
+async def run_diagnosis(intake: dict, image_b64: Optional[str], mime_type: str, session_id: str,
+                        lang: str = "fr", consultation: Optional[str] = None) -> dict:
     system_prompt = SYSTEM_PROMPTS.get(lang, SYSTEM_PROMPTS["fr"])
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
@@ -292,6 +308,11 @@ async def run_diagnosis(intake: dict, image_b64: Optional[str], mime_type: str, 
         "ar": "إليكِ معلومات العميلة (استبيان الجمال)" + (" وصورة وجهها" if image_b64 else " — لا توجد صورة، استندي إلى الاستبيان فقط") + ".\n",
     }
     user_text = intro.get(lang, intro["fr"]) + f"Profil:\n{json.dumps(intake, ensure_ascii=False, indent=2)}"
+    if consultation:
+        user_text += (
+            "\n\nÉléments recueillis pendant la consultation avec Nūr Skincoach "
+            "(à prendre en compte en priorité) :\n" + consultation[:4000]
+        )
 
     file_contents = []
     if image_b64:
@@ -1134,6 +1155,120 @@ async def lead_prescription(req: LeadRequest):
     }
 
 
+# ---------- Voice: speech-to-text (OpenAI gpt-4o-mini-transcribe) ----------
+_STT_PROMPT = (
+    "Nūr Protocol, masque LED, luminothérapie, photobiomodulation, sérum, niacinamide, "
+    "rétinol, acide hyaluronique, vitamine C, SPF, rides, éclat, grain de peau."
+)
+_ALLOWED_STT_LANGS = {"fr", "en", "ar", "es", "it", "de", "ru"}
+
+
+@api.post("/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form("fr")):
+    data = await audio.read()
+    # A stray tap produces a tiny file — never worth a request
+    if len(data) < 2048:
+        return {"text": "", "reason": "too_short"}
+    if len(data) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="audio_too_large")
+
+    suffix = (Path(audio.filename or "recording.m4a").suffix or ".m4a").lower()
+    if suffix not in {".m4a", ".mp3", ".mp4", ".mpeg", ".mpga", ".wav", ".webm"}:
+        suffix = ".m4a"
+
+    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    try:
+        tmp.write(data)
+        tmp.close()
+        stt = OpenAISpeechToText(api_key=EMERGENT_LLM_KEY)
+        with open(tmp.name, "rb") as fh:
+            resp = await stt.transcribe(
+                file=fh,
+                model="gpt-4o-mini-transcribe",
+                response_format="json",
+                language=lang if lang in _ALLOWED_STT_LANGS else "fr",
+                temperature=0.0,
+                prompt=_STT_PROMPT,
+            )
+        text = (getattr(resp, "text", "") or "").strip()
+        return {"text": text, "reason": None if text else "no_speech"}
+    except Exception as e:
+        logger.exception("Transcription error")
+        raise HTTPException(status_code=502, detail=f"transcription_failed: {e}")
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
+
+
+# ---------- Voice: text-to-speech (OpenAI gpt-4o-mini-tts, voice "nova") ----------
+TTS_DIR = Path(tempfile.gettempdir()) / "nur_tts"
+TTS_DIR.mkdir(parents=True, exist_ok=True)
+TTS_VOICE = "nova"
+TTS_MODEL = "tts-1"
+TTS_SPEED = 0.95
+
+_EMOJI_RE = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF\u2190-\u21FF\u2B00-\u2BFF\uFE0F\u2022]"
+)
+
+
+def clean_for_tts(text: str) -> str:
+    text = _EMOJI_RE.sub("", text or "")
+    text = re.sub(r"https?://\S+", "", text)
+    text = re.sub(r"`{1,3}[^`]*`{1,3}", "", text)
+    text = re.sub(r"[*_#>~|]", "", text)
+    text = text.replace("Nūr", "Nour")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+class TTSRequest(BaseModel):
+    text: str
+    lang: str = "fr"
+
+
+@api.post("/tts")
+async def tts_generate(req: TTSRequest):
+    text = clean_for_tts(req.text)[:4000]
+    if not text:
+        raise HTTPException(status_code=400, detail="empty_text")
+
+    key = hashlib.sha256(
+        f"{text}|{TTS_VOICE}|{TTS_SPEED}|{TTS_MODEL}|mp3".encode("utf-8")
+    ).hexdigest()
+    path = TTS_DIR / f"{key}.mp3"
+
+    if not path.exists():
+        tts = OpenAITextToSpeech(api_key=EMERGENT_LLM_KEY)
+        try:
+            audio = await asyncio.wait_for(
+                tts.generate_speech(text=text, model=TTS_MODEL, voice=TTS_VOICE,
+                                    speed=TTS_SPEED, response_format="mp3"),
+                timeout=45,
+            )
+        except Exception as e:
+            logger.exception("TTS failed")
+            raise HTTPException(status_code=502, detail=f"tts_failed: {e}")
+        path.write_bytes(audio)
+
+    return {"path": f"/api/tts/{key}.mp3", "key": key}
+
+
+@api.get("/tts/{key}.mp3")
+async def tts_fetch(key: str):
+    if not re.fullmatch(r"[a-f0-9]{64}", key):
+        raise HTTPException(status_code=400, detail="bad_key")
+    path = TTS_DIR / f"{key}.mp3"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="not_found")
+    return Response(
+        content=path.read_bytes(),
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "public, max-age=31536000"},
+    )
+
+
 class ChatMessage(BaseModel):
     role: str  # "user" | "assistant"
     content: str
@@ -1143,6 +1278,8 @@ class ChatRequest(BaseModel):
     message: str
     history: List[ChatMessage] = []
     lang: str = "fr"
+    photo_base64: Optional[str] = None
+    mime_type: str = "image/jpeg"
 
 
 SKINCOACH_SYSTEM = {
@@ -1173,7 +1310,21 @@ Si la question est :
 
 → Réponds EXACTEMENT : « Je suis Nūr Skincoach, je vous accompagne uniquement sur votre rituel beauté et l'utilisation de votre masque Nūr Protocol. Posez-moi une question sur votre peau, votre routine ou vos séances LED ✨ »
 
-Ne réponds JAMAIS à ces questions hors-cadre, même avec une formulation détournée.""",
+Ne réponds JAMAIS à ces questions hors-cadre, même avec une formulation détournée.
+
+CONSULTATION GUIDÉE :
+- Mène l'échange comme une vraie consultation en institut : UNE SEULE question à la fois, jamais de questionnaire en bloc.
+- Fil conducteur : sa préoccupation n°1, son type de peau, sa routine actuelle, son rythme de vie, ses précautions éventuelles. 4 à 6 questions maximum.
+- Reformule en une phrase ce que tu comprends avant d'enchaîner sur la question suivante.
+- Quand tu as assez d'éléments (au moins 3 questions posées), propose-lui de prendre une photo de son visage pour affiner ses recommandations, et termine ce message EXACTEMENT par le marqueur [PHOTO] seul, tout à la fin, sans rien après. Ce marqueur ne doit apparaître qu'UNE SEULE fois dans toute la conversation.
+- Si une photo t'est envoyée, décris d'abord ce que tu OBSERVES en lexique beauté (grain de peau, éclat, zones de rougeur, marques, hydratation apparente), puis livre le plan final.
+
+PLAN FINAL (après la photo, ou si elle la refuse) — 8 lignes maximum :
+1. Son rituel LED : les 2-3 modes utiles, la durée et la fréquence par semaine
+2. Ses soins cosmétiques : uniquement des ACTIFS et des TYPES de produits (« un sérum à la niacinamide 5 % le matin », « une crème à l'acide hyaluronique le soir », « un SPF 50 chaque matin »). NE CITE JAMAIS de marque, de nom commercial ni de prix.
+3. Un geste à éviter, puis un repère de résultats dans le temps
+
+VOIX : tes réponses peuvent être lues à voix haute. Écris des phrases fluides, sans puces, sans astérisques, sans markdown (jamais de ** ni de titres), sans emoji en milieu de phrase. Cela s'applique AUSSI au plan final.""",
     "en": """You are Nūr Skincoach, the client's personal beauty assistant. Warm, expert, kind — like a luxury salon consultant, never robotic.
 
 EXCLUSIVE SCOPE:
@@ -1200,7 +1351,21 @@ If the question is:
 
 → Reply EXACTLY: "I'm Nūr Skincoach, here to guide you on your beauty ritual and Nūr Protocol mask usage only. Ask me about your skin, routine, or LED sessions ✨"
 
-Never answer these, even when rephrased.""",
+Never answer these, even when rephrased.
+
+GUIDED CONSULTATION:
+- Run it like a real salon consultation: ONE question at a time, never a block of questions.
+- Thread: her main concern, skin type, current routine, lifestyle, any precautions. 4 to 6 questions maximum.
+- Restate in one sentence what you understood before moving to the next question.
+- Once you have enough (at least 3 questions asked), invite her to take a photo of her face to refine the recommendations, and end that message EXACTLY with the marker [PHOTO] alone, at the very end, nothing after it. Use that marker ONCE in the whole conversation.
+- If a photo is sent, first describe what you OBSERVE in beauty wording (skin texture, radiance, areas of redness, marks, apparent hydration), then give the final plan.
+
+FINAL PLAN (after the photo, or if she declines) — 8 lines maximum:
+1. Her LED ritual: the 2-3 useful modes, duration and weekly frequency
+2. Her skincare: ACTIVES and PRODUCT TYPES only ("a 5% niacinamide serum in the morning", "a hyaluronic acid cream at night", "an SPF 50 every morning"). NEVER name a brand, a commercial product or a price.
+3. One habit to avoid, then a realistic timeline for results
+
+VOICE: your replies may be read aloud. Write flowing sentences — no bullets, no asterisks, no markdown (never ** or headings), no emoji mid-sentence. This applies to the final plan TOO.""",
 }
 
 
@@ -1218,41 +1383,65 @@ def _is_blocked(text: str) -> bool:
 
 @api.post("/users/{user_id}/chat")
 async def skincoach_chat(user_id: str, req: ChatRequest):
-    await _get_user_or_404(user_id)
+    user = await _get_user_or_404(user_id)
     msg = req.message.strip()
-    if len(msg) < 1 or len(msg) > 1000:
+    photo_b64 = req.photo_base64 if (req.photo_base64 and len(req.photo_base64) > 100) else None
+    if (len(msg) < 1 and not photo_b64) or len(msg) > 1000:
         raise HTTPException(status_code=400, detail="invalid_message_length")
 
-    # Hard guardrail filter
-    if _is_blocked(msg):
+    # Hard guardrail filter (skipped when the client is sending her consultation photo)
+    if msg and not photo_b64 and _is_blocked(msg):
         refusal = {
             "fr": "Je suis Nūr Skincoach, je vous accompagne uniquement sur votre rituel beauté et l'utilisation de votre masque Nūr Protocol. Posez-moi une question sur votre peau, votre routine ou vos séances LED ✨",
             "en": "I'm Nūr Skincoach, here to guide you on your beauty ritual and Nūr Protocol mask usage only. Ask me about your skin, routine, or LED sessions ✨",
         }.get(req.lang, "Je suis Nūr Skincoach…")
-        return {"reply": refusal, "blocked": True}
+        return {"reply": refusal, "blocked": True, "ask_photo": False}
 
     system_prompt = SKINCOACH_SYSTEM.get(req.lang, SKINCOACH_SYSTEM["fr"])
+    intake = user.get("intake")
+    if intake:
+        system_prompt += "\n\nPROFIL CONNU DE LA CLIENTE (ne repose pas ces questions) : " + json.dumps(
+            {k: v for k, v in intake.items() if v}, ensure_ascii=False
+        )
+
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=f"coach-{user_id}",
         system_message=system_prompt,
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
-    # Re-inject recent history for context (last 6 turns)
+    # Re-inject recent history for context (last 10 turns)
     history_text = ""
-    for h in (req.history or [])[-6:]:
+    for h in (req.history or [])[-10:]:
         prefix = "Cliente" if h.role == "user" else "Skincoach"
         history_text += f"{prefix}: {h.content}\n"
     full = (history_text + f"Cliente: {msg}") if history_text else msg
+    if photo_b64:
+        full += (
+            "\n\n[La cliente vient d'envoyer la photo de son visage. Décris ce que tu observes "
+            "en lexique beauté, puis donne le plan final : rituel LED + actifs cosmétiques (sans marque).]"
+        )
 
     try:
-        raw = await chat.send_message(UserMessage(text=full))
-        reply = raw if isinstance(raw, str) else str(raw)
+        message = UserMessage(
+            text=full,
+            file_contents=[ImageContent(image_base64=photo_b64)] if photo_b64 else None,
+        )
+        raw = await chat.send_message(message)
+        reply = (raw if isinstance(raw, str) else str(raw)).strip()
     except Exception as e:
         logger.exception("Coach chat error")
         raise HTTPException(status_code=502, detail=f"chat_failed: {e}")
 
-    return {"reply": reply.strip(), "blocked": False}
+    ask_photo = "[PHOTO]" in reply
+    if ask_photo:
+        reply = reply.replace("[PHOTO]", "").strip()
+
+    # Safety net: the reply is also read aloud — keep it free of markdown marks
+    reply = re.sub(r"\*{1,3}", "", reply)
+    reply = re.sub(r"^#{1,6}\s*", "", reply, flags=re.MULTILINE).strip()
+
+    return {"reply": reply, "blocked": False, "ask_photo": ask_photo and not photo_b64}
 
 
 app.include_router(api)

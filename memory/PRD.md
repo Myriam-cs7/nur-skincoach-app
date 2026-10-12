@@ -187,3 +187,40 @@ Textes des 7 lumières traduits dans les 7 langues : `/app/frontend/src/led.ts`.
 1. Jeton Shopify (`read_orders`, `read_customers`) → active la vérification automatique
 2. Mettre en ligne `nurprotocol.com/app` avant la première livraison
 3. Phase 2 : console d'admin, pré-activation à l'achat, photos avant/après, liens universels
+
+---
+
+# Session juin 2026 (suite) — Consultation vocale & analyse photo du Skincoach
+
+## Ce que la cliente vit
+Le Skincoach n'est plus un simple chat : c'est une consultation.
+1. Avatar Nūr visible, halo animé selon l'état (écoute / réflexion / parole)
+2. Elle peut **parler** : appui sur le micro → transcription (OpenAI `gpt-4o-mini-transcribe`)
+3. L'IA pose **une seule question à la fois** (préoccupation, type de peau, routine, rythme de vie, précautions)
+4. Après 3 questions minimum, elle propose **une photo du visage — caméra uniquement**
+   (marqueur serveur `[PHOTO]` → `ask_photo: true`, retiré de la réponse affichée)
+5. Animation de **scan clinique** sur la photo + son `analysis.wav` pendant l'analyse (Claude Vision)
+6. **Plan final** : rituel LED (modes, durée, fréquence) + soins cosmétiques en **actifs et types de
+   produits uniquement** (niacinamide 5 %, acide hyaluronique, SPF 50…), **jamais de marque**
+7. Chaque réponse de l'assistante a un bouton **Écouter** (voix OpenAI `nova`, `tts-1`).
+   La lecture vocale est **désactivée par défaut** (choix de la cliente).
+8. Sons d'interface : `send.wav` à l'envoi, `receive.wav` à la réponse, `analysis.wav` en boucle pendant le scan
+
+## Détails techniques
+- Backend : `POST /api/transcribe` (multipart `audio` + `lang`, refus < 2 Ko),
+  `POST /api/tts` → `{path}` + `GET /api/tts/{sha256}.mp3` (cache disque, `audio/mpeg`),
+  `POST /api/users/{id}/chat` accepte `photo_base64`/`mime_type` et renvoie `ask_photo`.
+  Nettoyage du texte avant synthèse (emoji, URL, markdown, « Nūr » → « Nour ») et retrait du
+  markdown dans les réponses (elles peuvent être lues à voix haute).
+- Frontend : `src/voice.ts` (sons, TTS, STT), `src/components/CoachAvatar.tsx`, `TypingDots.tsx`,
+  `ScanOverlay.tsx`, refonte de `app/(tabs)/coach.tsx`.
+- Micro (`expo-audio`) : metering activé, plancher de bruit calibré (+12 dB), auto-stop après
+  1,8 s de silence, watchdog 60 s, mic fermé pendant la lecture vocale, permission demandée
+  uniquement après un appui volontaire (+ « Ouvrir les réglages » si bloquée).
+- `emergentintegrations` mis à jour en 0.2.2 (nécessaire pour `gpt-4o-mini-transcribe`).
+- Micro et caméra ne fonctionnent pas dans l'aperçu web : message d'indisponibilité, aucun crash.
+
+## Tests
+`/app/backend/tests/test_voice_photo.py` → 14/14 OK (TTS, cache, STT, consultation 4-5 tours,
+photo, garde-fous). Frontend : 7/7 OK (avatar, envoi texte, points de réflexion, bouton Écouter,
+micro web, carte photo, « Plus tard »).

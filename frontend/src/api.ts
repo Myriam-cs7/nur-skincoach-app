@@ -144,10 +144,16 @@ export const api = {
   logSession: (id: string, body: { led_color_id: string; duration_minutes: number; notes?: string }) =>
     request<any>(`/users/${id}/sessions`, { method: 'POST', body: JSON.stringify(body) }),
   resetUser: (id: string) => request<any>(`/users/${id}`, { method: 'DELETE' }),
-  chat: (id: string, message: string, history: { role: string; content: string }[], lang: string) =>
-    request<{ reply: string; blocked: boolean }>(`/users/${id}/chat`, {
+  chat: (
+    id: string,
+    message: string,
+    history: { role: string; content: string }[],
+    lang: string,
+    photoB64?: string,
+  ) =>
+    request<{ reply: string; blocked: boolean; ask_photo: boolean }>(`/users/${id}/chat`, {
       method: 'POST',
-      body: JSON.stringify({ message, history, lang }),
+      body: JSON.stringify({ message, history, lang, photo_base64: photoB64 || null, mime_type: 'image/jpeg' }),
     }),
   leadPrescription: (body: { email: string; name?: string; age_range?: string; answers: { q1: string; q2: string; q3: string }; lang: string }) =>
     request<{ ok: boolean; lead_id: string; prescription: { headline: string; diagnosis: string; axes: string[]; protocol_summary: string; cta_text: string }; shop: { url: string; promo_code: string; discount: number } }>('/lead-prescription', {

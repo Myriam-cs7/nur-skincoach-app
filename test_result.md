@@ -225,6 +225,68 @@ frontend:
     working: "NA"
     file: "/app/frontend/app/(tabs)/protocol.tsx"
 
+## Session 3 — Consultation vocale & analyse photo dans le Skincoach
+
+user_problem_statement: >
+  Le Skincoach doit devenir une vraie consultation : avatar visible, entrée vocale (micro →
+  transcription), lecture vocale des réponses (désactivée par défaut, bouton 🔊 par message,
+  voix OpenAI "nova"), points de réflexion animés, sons d'interface (envoi/réception/analyse),
+  questions une par une puis demande de photo À LA FIN (caméra uniquement) avec animation de scan,
+  puis plan final : rituel LED + actifs et types de produits cosmétiques (JAMAIS de marque),
+  garde-fous beauté stricts (aucun vocabulaire médical).
+
+backend:
+  - task: "POST /api/transcribe — transcription audio (OpenAI gpt-4o-mini-transcribe)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: |
+      Multipart: champ `audio` (m4a/mp3/wav/webm) + champ `lang`. Fichier < 2 Ko → {"text":"","reason":"too_short"}.
+      Vérifié en local avec un mp3 généré par /api/tts → texte correct en français.
+  - task: "POST /api/tts + GET /api/tts/{key}.mp3 — synthèse vocale (tts-1, voix nova)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: |
+      POST {text, lang} → {"path": "/api/tts/<sha256>.mp3"}. Cache disque par hash
+      (texte|voix|vitesse|modèle|format). GET renvoie audio/mpeg (77 Ko vérifiés).
+      Nettoyage du texte avant synthèse (emoji, URL, markdown, « Nūr » → « Nour »).
+  - task: "POST /api/users/{id}/chat — consultation guidée + photo (Claude Vision)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: |
+      Nouveaux champs : photo_base64, mime_type. Réponse : {reply, blocked, ask_photo}.
+      Le prompt mène la consultation une question à la fois puis termine par le marqueur
+      [PHOTO] (retiré de la réponse, ask_photo=true) après 3 questions minimum.
+      Vérifié : 4 tours → ask_photo=true au 4e ; photo envoyée → observation beauté + plan final
+      (rituel LED + actifs, aucune marque). Markdown retiré côté serveur (réponses lues à voix haute).
+      Garde-fou hors-sujet toujours actif (test « prix du bitcoin » → refus poli).
+
+frontend:
+  - task: "Coach : avatar animé, points de réflexion, sons d'interface"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/coach.tsx, /app/frontend/src/components/CoachAvatar.tsx, TypingDots.tsx"
+  - task: "Entrée vocale (micro → /api/transcribe) avec auto-stop sur silence"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/coach.tsx, /app/frontend/src/voice.ts"
+    comment: |
+      expo-audio : metering activé, plancher de bruit calibré (+12 dB), auto-stop après 1,8 s de
+      silence, watchdog 60 s, permission demandée seulement après un appui volontaire
+      (feuille d'explication puis « Ouvrir les réglages » si bloquée).
+      NON testable sur le web : le bouton micro affiche un message d'indisponibilité.
+  - task: "Lecture vocale par message (bouton Écouter), désactivée par défaut"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/voice.ts"
+  - task: "Photo de consultation : caméra uniquement + animation de scan"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/coach.tsx, /app/frontend/src/components/ScanOverlay.tsx"
+    comment: "Carte « Prendre ma photo » affichée quand ask_photo=true. Sur le web, la caméra n'est pas disponible → panneau de permission."
+
 ### Résultats itération 2 (après corrections)
 - `pytest /app/backend/tests/` → **16 passés, 2 ignorés** (les 2 ignorés envoient de vrais
   e-mails et sont sautés automatiquement quand le quota du fournisseur est épuisé).

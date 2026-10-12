@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Capture votre visage pour le diagnostic IA",
-        "NSPhotoLibraryUsageDescription": "Sélectionner une photo pour le diagnostic"
+        "NSPhotoLibraryUsageDescription": "Sélectionner une photo pour le diagnostic",
+        "NSMicrophoneUsageDescription": "Dictez vos questions à votre Skincoach"
       },
       "bundleIdentifier": "com.emergent.nurprotocolskin.zl0vs4",
       "associatedDomains": [
@@ -29,7 +30,9 @@
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS"
       ],
       "package": "com.emergent.nurprotocolskin.zl0vs4",
       "intentFilters": [
@@ -37,12 +40,31 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "nurprotocol.com", "pathPrefix": "/app" },
-            { "scheme": "https", "host": "www.nurprotocol.com", "pathPrefix": "/app" },
-            { "scheme": "https", "host": "nurprotocol.com", "pathPrefix": "/activate" },
-            { "scheme": "https", "host": "www.nurprotocol.com", "pathPrefix": "/activate" }
+            {
+              "scheme": "https",
+              "host": "nurprotocol.com",
+              "pathPrefix": "/app"
+            },
+            {
+              "scheme": "https",
+              "host": "www.nurprotocol.com",
+              "pathPrefix": "/app"
+            },
+            {
+              "scheme": "https",
+              "host": "nurprotocol.com",
+              "pathPrefix": "/activate"
+            },
+            {
+              "scheme": "https",
+              "host": "www.nurprotocol.com",
+              "pathPrefix": "/activate"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -75,7 +97,19 @@
           "color": "#C9A961"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Dictez vos questions à votre Skincoach"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choisir une photo pour votre bilan de peau"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
