@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../src/theme';
 import { useT } from '../src/i18n';
+import PhotoConsentSheet from '../src/components/PhotoConsentSheet';
 
 const { width } = Dimensions.get('window');
 
@@ -18,14 +19,23 @@ export default function Scan() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [busy, setBusy] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const pendingRef = useRef<'camera' | 'gallery' | null>(null);
 
   const goAnalyze = (b64?: string) => {
     if (b64) router.replace({ pathname: '/analyzing', params: { b64 } });
     else router.replace('/analyzing');
   };
 
-  const onCapture = async () => {
+  const askConsent = (source: 'camera' | 'gallery') => {
+    pendingRef.current = source;
+    setConsentOpen(true);
+  };
+
+  const onCapture = async (consented = false) => {
     if (!cameraRef.current || busy) return;
+    if (!consent && !consented) return askConsent('camera');
     setBusy(true);
     try {
       const pic = await cameraRef.current.takePictureAsync({ base64: false, quality: 0.7, skipProcessing: true });
@@ -37,8 +47,9 @@ export default function Scan() {
     } catch (e) { console.warn(e); setBusy(false); }
   };
 
-  const onPickGallery = async () => {
+  const onPickGallery = async (consented = false) => {
     if (busy) return;
+    if (!consent && !consented) return askConsent('gallery');
     setBusy(true);
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -54,6 +65,21 @@ export default function Scan() {
   };
 
   const onSkip = () => goAnalyze();
+
+  const acceptConsent = () => {
+    setConsent(true);
+    setConsentOpen(false);
+    const source = pendingRef.current;
+    pendingRef.current = null;
+    // consent state is not yet committed in this render — call with the guard bypassed
+    setTimeout(() => (source === 'gallery' ? void onPickGallery(true) : void onCapture(true)), 0);
+  };
+
+  const declineConsent = () => {
+    setConsentOpen(false);
+    pendingRef.current = null;
+    goAnalyze();
+  };
 
   // No-permission / not-granted state — show the choice clearly (not blocking)
   if (!permission || !permission.granted) {
@@ -87,7 +113,7 @@ export default function Scan() {
               <Feather name="camera" size={16} color={theme.color.onBrand} />
               <Text style={styles.ctaText}>{t('scan.perm.allow')}</Text>
             </Pressable>
-            <Pressable onPress={onPickGallery} testID="gallery-button">
+            <Pressable onPress={() => onPickGallery()} testID="gallery-button">
               <Text style={styles.linkText}>{t('scan.gallery')}</Text>
             </Pressable>
             <Pressable onPress={onSkip} style={styles.skipBtn} testID="skip-button">
@@ -96,6 +122,7 @@ export default function Scan() {
             </Pressable>
           </View>
         </SafeAreaView>
+        <PhotoConsentSheet visible={consentOpen} onAccept={acceptConsent} onDecline={declineConsent} />
       </View>
     );
   }
@@ -140,7 +167,7 @@ export default function Scan() {
             <Text style={styles.tip}>{t('scan.tip2')}</Text>
           </View>
 
-          <Pressable onPress={onCapture} disabled={busy} style={[styles.shutter, busy && { opacity: 0.5 }]} testID="capture-button">
+          <Pressable onPress={() => onCapture()} disabled={busy} style={[styles.shutter, busy && { opacity: 0.5 }]} testID="capture-button">
             <View style={styles.shutterRing}>
               <View style={styles.shutterCore}>
                 {busy ? <ActivityIndicator color={theme.color.onBrand} /> : <Feather name="camera" size={22} color={theme.color.onBrand} />}
@@ -149,7 +176,7 @@ export default function Scan() {
           </Pressable>
 
           <View style={styles.bottomActions}>
-            <Pressable onPress={onPickGallery} disabled={busy} testID="gallery-button">
+            <Pressable onPress={() => onPickGallery()} disabled={busy} testID="gallery-button">
               <Text style={styles.linkText}>{t('scan.gallery')}</Text>
             </Pressable>
             <Text style={styles.sep}>·</Text>
@@ -159,6 +186,7 @@ export default function Scan() {
           </View>
         </View>
       </SafeAreaView>
+      <PhotoConsentSheet visible={consentOpen} onAccept={acceptConsent} onDecline={declineConsent} />
     </View>
   );
 }

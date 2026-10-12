@@ -225,6 +225,70 @@ frontend:
     working: "NA"
     file: "/app/frontend/app/(tabs)/protocol.tsx"
 
+## Session 5 — Durcissement sécurité (suite à l'audit)
+
+user_problem_statement: >
+  Audit de sécurité demandé par la cliente, puis correction de tout ce qui bloquait la mise en
+  production : console admin trop facile à deviner, données d'une cliente accessibles avec son
+  seul identifiant, endpoints IA ouverts à tous, photo de visage conservée en base.
+  Choix de la cliente : « Oui, tout » + « on ne garde pas la photo » + ajouter un consentement
+  (type clause de chatbot) avant l'analyse photo.
+
+backend:
+  - task: "Sessions signées côté serveur sur toutes les routes /api/users/{id}/*"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: |
+      Jeton opaque 32 octets (`secrets.token_urlsafe`), stocké uniquement en SHA-256 dans
+      `auth_sessions`, validité 180 jours glissants. Renvoyé par /api/activate et
+      /api/auth/verify-code (`session_token`). Dépendance `require_user` : pas de jeton → 401,
+      jeton invalide → 401, jeton d'une autre cliente → 403 (IDOR corrigé).
+      Vérifié en local : 401 / 200 / 403 / 401 sur /users/{id} et /users/{id}/chat.
+  - task: "Console admin par clé secrète longue + verrouillage"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: |
+      En-tête `X-Admin-Token`, comparaison en temps constant, 5 échecs en 10 min → 429 pendant
+      15 min. `ADMIN_PIN` supprimé du code et du .env. L'ancien appel `?pin=NUR2026` renvoie 401.
+  - task: "Limites de débit par IP sur auth, activation, IA, voix, lead, admin"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    comment: "auth 5/min · activation 10/10 min · ai 20/min · tts 40/min · lead 6/10 min · admin 30/min (en-tête Retry-After)."
+  - task: "Photo de visage jamais conservée + plafond de taille"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "`photo_thumbnail_b64` retiré de `diagnoses`/`users.diagnosis` ; > 8 Mo base64 → 413."
+  - task: "Historique du chat reconstruit côté serveur (anti injection de prompt)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "Collection `chat_turns` ; le champ `history` du client a été supprimé du modèle. Vérifié sur 2 tours."
+  - task: "Erreurs neutres, CORS sans credentials, cache voix borné"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "chat_unavailable / diagnosis_unavailable / transcription_unavailable / tts_unavailable ; purge du cache TTS au-delà de 300 fichiers."
+
+frontend:
+  - task: "Jeton de session stocké dans SecureStore et envoyé en Authorization"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/api.ts"
+    comment: "401 → session effacée (retour à l'activation). Sur le web, repli AsyncStorage (SecureStore indisponible)."
+  - task: "Console admin : saisie de la clé secrète (plus de PIN), en-tête X-Admin-Token"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/admin.tsx"
+  - task: "Consentement explicite avant toute analyse photo"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/PhotoConsentSheet.tsx, app/(tabs)/coach.tsx, app/scan.tsx"
+    comment: "Feuille de consentement (photo analysée puis effacée, esthétique uniquement, refus possible) avant la caméra du coach et avant la photo d'onboarding."
+
 ## Session 4 — Console admin privée, code d'accès envoyé à l'achat, nouvel avatar
 
 user_problem_statement: >

@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -19,7 +20,30 @@ import { theme } from '../src/theme';
 import { Wordmark, SectionLabel, GoldDivider } from '../src/ui';
 import { admin, type AdminOverview } from '../src/api';
 
-const PIN_KEY = 'nur.admin_pin';
+const KEY_STORE = 'nur.admin_key';
+
+// SecureStore is unavailable in the web preview — fail soft there
+async function saveAdminKey(key: string) {
+  try {
+    if (Platform.OS !== 'web') await SecureStore.setItemAsync(KEY_STORE, key);
+  } catch (e) {
+    console.warn('[admin] cannot store key', e);
+  }
+}
+async function readAdminKey(): Promise<string | null> {
+  try {
+    return Platform.OS !== 'web' ? await SecureStore.getItemAsync(KEY_STORE) : null;
+  } catch {
+    return null;
+  }
+}
+async function clearAdminKey() {
+  try {
+    if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(KEY_STORE);
+  } catch {
+    // nothing stored
+  }
+}
 
 const STATUS_LABEL: Record<string, string> = {
   verified: 'Vérifiée',
@@ -58,22 +82,18 @@ export default function Admin() {
       await load(thePin);
       setPin(thePin);
       setUnlocked(true);
-      await SecureStore.setItemAsync(PIN_KEY, thePin).catch(() => {});
+      await saveAdminKey(thePin);
     } catch (e) {
       console.warn('[admin] unlock failed', e);
-      setError('Code incorrect ou serveur indisponible.');
+      setError("Clé incorrecte, ou trop d'essais (réessayez dans 15 minutes).");
     } finally {
       setBusy(false);
     }
   };
 
   const tryStoredPin = useCallback(async () => {
-    try {
-      const stored = await SecureStore.getItemAsync(PIN_KEY);
-      if (stored) await unlock(stored);
-    } catch {
-      // nothing stored
-    }
+    const stored = await readAdminKey();
+    if (stored) await unlock(stored);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
@@ -112,7 +132,7 @@ export default function Admin() {
   };
 
   const lock = async () => {
-    await SecureStore.deleteItemAsync(PIN_KEY).catch(() => {});
+    await clearAdminKey();
     setUnlocked(false);
     setData(null);
     setPin('');
@@ -134,11 +154,12 @@ export default function Admin() {
             <TextInput
               value={pin}
               onChangeText={setPin}
-              placeholder="Code PIN"
+              placeholder="Clé d'accès"
               placeholderTextColor={theme.color.onSurfaceSecondary}
               style={styles.pinInput}
               secureTextEntry
-              autoCapitalize="characters"
+              autoCapitalize="none"
+              autoCorrect={false}
               onSubmitEditing={() => unlock()}
               testID="admin-pin"
             />
@@ -411,7 +432,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.lg, width: '100%', backgroundColor: theme.color.surfaceSecondary,
     borderWidth: 1, borderColor: theme.color.borderGold, borderRadius: theme.radius.md,
     paddingHorizontal: theme.spacing.lg, paddingVertical: 15, color: theme.color.onSurface,
-    fontSize: 18, letterSpacing: 6, textAlign: 'center', fontFamily: theme.font.mono,
+    fontSize: 14, letterSpacing: 1, textAlign: 'center', fontFamily: theme.font.mono,
   },
   error: { color: theme.color.error, fontSize: 12 },
   cta: {

@@ -9,6 +9,8 @@ import hashlib
 import hmac
 import base64
 import tempfile
+import time
+from collections import defaultdict, deque
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -19,7 +21,11 @@ import qrcode
 from PIL import Image
 from qrcode.constants import ERROR_CORRECT_H
 
-from fastapi import FastAPI, APIRouter, HTTPException, Query, Request, Response, UploadFile, File, Form
+from fastapi import (
+    FastAPI, APIRouter, Depends, Header, HTTPException, Query, Request, Response,
+    UploadFile, File, Form,
+)
+from fastapi import Path as PathParam
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -41,7 +47,9 @@ SHOPIFY_STORE_DOMAIN = (os.environ.get("SHOPIFY_STORE_DOMAIN") or "").strip()
 SHOPIFY_ADMIN_TOKEN = (os.environ.get("SHOPIFY_ADMIN_TOKEN") or "").strip()
 SHOPIFY_API_VERSION = (os.environ.get("SHOPIFY_API_VERSION") or "2025-01").strip()
 SHOPIFY_WEBHOOK_SECRET = (os.environ.get("SHOPIFY_WEBHOOK_SECRET") or "").strip()
-ADMIN_PIN = (os.environ.get("ADMIN_PIN") or "NUR2026").strip()
+ADMIN_TOKEN = (os.environ.get("ADMIN_TOKEN") or "").strip()
+SESSION_TTL_DAYS = int(os.environ.get("SESSION_TTL_DAYS") or 180)
+MAX_PHOTO_B64 = 8_000_000  # ~6 MB of image bytes
 PUBLIC_APP_URL = (os.environ.get("PUBLIC_APP_URL") or "https://nurprotocol.com").strip()
 
 client = AsyncIOMotorClient(MONGO_URL)
@@ -150,6 +158,7 @@ class ActivateResponse(BaseModel):
     activation_code: str
     has_intake: bool
     has_diagnosis: bool
+    session_token: Optional[str] = None
 
 
 class Intake(BaseModel):
@@ -223,6 +232,127 @@ async def _get_user_or_404(user_id: str) -> dict:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+# ---------- Rate limiting (single container, in process) ----------
+_RATE_RULES = {
+    "auth": (5, 60),         # OTP request / verify
+    "activation": (10, 600),  # access-code activation (anti guessing)
+    "ai": (20, 60),          # chat, diagnose, transcribe
+    "tts": (40, 60),
+    "lead": (6, 600),
+    "admin": (30, 60),
+}
+_rate_hits: dict[tuple[str, str], deque] = defaultdict(deque)
+
+
+def _client_ip(request: Request) -> str:
+    # Traffic always arrives through the platform ingress, which sets X-Forwarded-For
+    fwd = request.headers.get("X-Forwarded-For")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def rate_limit(bucket: str):
+    max_calls, window = _RATE_RULES[bucket]
+
+    async def dep(request: Request):
+        now = time.monotonic()
+        hits = _rate_hits[(bucket, _client_ip(request))]
+        while hits and now - hits[0] >= window:
+            hits.popleft()
+        if len(hits) >= max_calls:
+            raise HTTPException(status_code=429, detail="too_many_requests",
+                                headers={"Retry-After": str(window)})
+        hits.append(now)
+
+    return dep
+
+
+# ---------- Client sessions (opaque token, hashed at rest) ----------
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+async def issue_session(user_id: str) -> str:
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    await db.auth_sessions.insert_one({
+        "token_hash": _hash_token(token),
+        "user_id": user_id,
+        "created_at": now.isoformat(),
+        "last_used_at": now.isoformat(),
+        "expires_at": (now + timedelta(days=SESSION_TTL_DAYS)).isoformat(),
+    })
+    return token
+
+
+async def require_user(
+    user_id: str = PathParam(...),
+    authorization: Optional[str] = Header(default=None),
+) -> dict:
+    """Every /users/{id}/* route is authorized against the session, never the URL id."""
+    token = ""
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    if not token or len(token) > 256:
+        raise HTTPException(status_code=401, detail="session_required")
+
+    token_hash = _hash_token(token)
+    session = await db.auth_sessions.find_one({"token_hash": token_hash}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=401, detail="invalid_session")
+
+    expires = _parse_iso(session.get("expires_at"))
+    now = datetime.now(timezone.utc)
+    if not expires or expires < now:
+        await db.auth_sessions.delete_one({"token_hash": token_hash})
+        raise HTTPException(status_code=401, detail="session_expired")
+    if session.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    last_used = _parse_iso(session.get("last_used_at"))
+    if not last_used or (now - last_used).total_seconds() > 86400:
+        await db.auth_sessions.update_one(
+            {"token_hash": token_hash},
+            {"$set": {"last_used_at": now.isoformat(),
+                      "expires_at": (now + timedelta(days=SESSION_TTL_DAYS)).isoformat()}},
+        )
+    return await _get_user_or_404(user_id)
+
+
+# ---------- Admin credential (long random token + lockout) ----------
+_admin_failures: dict[str, deque] = defaultdict(deque)
+_admin_locked_until: dict[str, float] = {}
+
+
+async def require_admin(request: Request, x_admin_token: Optional[str] = Header(default=None)) -> bool:
+    ip = _client_ip(request)
+    now = time.monotonic()
+    locked_until = _admin_locked_until.get(ip, 0.0)
+    if now < locked_until:
+        raise HTTPException(status_code=429, detail="admin_locked",
+                            headers={"Retry-After": str(int(locked_until - now))})
+    if not ADMIN_TOKEN:
+        logger.error("ADMIN_TOKEN is not configured — admin console disabled")
+        raise HTTPException(status_code=503, detail="admin_not_configured")
+
+    supplied = (x_admin_token or "")[:256]
+    if not hmac.compare_digest(supplied.encode("utf-8"), ADMIN_TOKEN.encode("utf-8")):
+        failures = _admin_failures[ip]
+        while failures and now - failures[0] > 600:
+            failures.popleft()
+        failures.append(now)
+        if len(failures) >= 5:
+            _admin_locked_until[ip] = now + 900
+            failures.clear()
+        raise HTTPException(status_code=401, detail="invalid_admin_token")
+
+    _admin_failures.pop(ip, None)
+    _admin_locked_until.pop(ip, None)
+    return True
+
 
 
 # ---------- LLM diagnosis ----------
@@ -349,7 +479,7 @@ async def led_library():
     return {"colors": LED_LIBRARY}
 
 
-@api.post("/activate", response_model=ActivateResponse)
+@api.post("/activate", response_model=ActivateResponse, dependencies=[Depends(rate_limit("activation"))])
 async def activate(req: ActivateRequest):
     code = (req.activation_code or "").strip().upper()
     if not code:
@@ -368,6 +498,7 @@ async def activate(req: ActivateRequest):
                 activation_code=code,
                 has_intake=bool(existing.get("intake")),
                 has_diagnosis=bool(existing.get("diagnosis")),
+                session_token=await issue_session(existing["id"]),
             )
 
     user_id = str(uuid.uuid4())
@@ -385,7 +516,8 @@ async def activate(req: ActivateRequest):
         {"code": code},
         {"$set": {"activated_by": user_id, "activated_at": utc_now_iso()}, "$inc": {"uses": 1}},
     )
-    return ActivateResponse(user_id=user_id, activation_code=code, has_intake=False, has_diagnosis=False)
+    return ActivateResponse(user_id=user_id, activation_code=code, has_intake=False,
+                            has_diagnosis=False, session_token=await issue_session(user_id))
 
 
 # ---------- Shopify purchase verification (QR gate) ----------
@@ -522,6 +654,7 @@ class AccessResponse(BaseModel):
     order_ref: Optional[str] = None
     access_status: str = "trial"  # verified | trial | paused
     trial_days_left: Optional[int] = None
+    session_token: Optional[str] = None
 
 
 def _parse_iso(value: Optional[str]) -> Optional[datetime]:
@@ -598,7 +731,7 @@ async def _link_shopify_order(user_id: str, email: str):
     await db.access_requests.delete_one({"email": email})
 
 
-@api.post("/auth/request-code", response_model=RequestCodeResponse)
+@api.post("/auth/request-code", response_model=RequestCodeResponse, dependencies=[Depends(rate_limit("auth"))])
 async def request_code(req: RequestCodeRequest):
     email = (req.email or "").strip().lower()
     if not EMAIL_RE.match(email):
@@ -645,7 +778,7 @@ async def request_code(req: RequestCodeRequest):
     )
 
 
-@api.post("/auth/verify-code", response_model=AccessResponse)
+@api.post("/auth/verify-code", response_model=AccessResponse, dependencies=[Depends(rate_limit("auth"))])
 async def verify_code(req: VerifyCodeRequest):
     email = (req.email or "").strip().lower()
     code = re.sub(r"\D", "", req.code or "")
@@ -670,7 +803,9 @@ async def verify_code(req: VerifyCodeRequest):
         status, _ = _resolve_access(user)
         if status == "paused" and shopify_configured():
             asyncio.create_task(_link_shopify_order(user["id"], email))
-        return _access_response(user)
+        resp = _access_response(user)
+        resp.session_token = await issue_session(user["id"])
+        return resp
 
     allowed = await db.allowed_emails.find_one({"email": email}, {"_id": 0})
     now = datetime.now(timezone.utc)
@@ -692,18 +827,18 @@ async def verify_code(req: VerifyCodeRequest):
     await db.otps.delete_one({"email": email})
     if not allowed:
         asyncio.create_task(_link_shopify_order(user_id, email))
-    return _access_response(doc)
+    resp = _access_response(doc)
+    resp.session_token = await issue_session(user_id)
+    return resp
 
 
 @api.get("/users/{user_id}/access", response_model=AccessResponse)
-async def get_access(user_id: str):
-    user = await _get_user_or_404(user_id)
+async def get_access(user_id: str, user: dict = Depends(require_user)):
     return _access_response(user)
 
 
 @api.post("/users/{user_id}/link-order", response_model=AccessResponse)
-async def link_order(user_id: str, req: LinkOrderRequest):
-    user = await _get_user_or_404(user_id)
+async def link_order(user_id: str, req: LinkOrderRequest, user: dict = Depends(require_user)):
     email = (req.email or "").strip().lower()
     order_number = (req.order_number or "").strip()
     if not email and not order_number:
@@ -789,22 +924,15 @@ async def qr_svg(
     )
 
 
-# ---------- Admin (PIN protected) ----------
-def _check_pin(pin: str):
-    if (pin or "").strip() != ADMIN_PIN:
-        raise HTTPException(status_code=403, detail="invalid_pin")
-
-
+# ---------- Admin (long random token in the X-Admin-Token header) ----------
 class AdminAllowRequest(BaseModel):
-    pin: str
     email: str
     label: Optional[str] = None
     first_name: Optional[str] = None
 
 
-@api.post("/admin/allow-email")
+@api.post("/admin/allow-email", dependencies=[Depends(require_admin), Depends(rate_limit("admin"))])
 async def admin_allow_email(req: AdminAllowRequest):
-    _check_pin(req.pin)
     email = (req.email or "").strip().lower()
     if not EMAIL_RE.match(email):
         raise HTTPException(status_code=400, detail="invalid_email")
@@ -817,9 +945,8 @@ async def admin_allow_email(req: AdminAllowRequest):
     return {"ok": True, "email": email}
 
 
-@api.get("/admin/access-requests")
-async def admin_access_requests(pin: str = Query(...)):
-    _check_pin(pin)
+@api.get("/admin/access-requests", dependencies=[Depends(require_admin), Depends(rate_limit("admin"))])
+async def admin_access_requests():
     items = await db.access_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=300)
     allowed = await db.allowed_emails.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=300)
     return {"requests": items, "allowed": allowed}
@@ -923,7 +1050,6 @@ async def shopify_orders_paid(request: Request):
 
 
 class SimulateOrderRequest(BaseModel):
-    pin: str
     email: str
     order_name: Optional[str] = None
     quantity: int = 1
@@ -931,10 +1057,9 @@ class SimulateOrderRequest(BaseModel):
     first_name: Optional[str] = None
 
 
-@api.post("/admin/simulate-order")
+@api.post("/admin/simulate-order", dependencies=[Depends(require_admin), Depends(rate_limit("admin"))])
 async def admin_simulate_order(req: SimulateOrderRequest):
     """Same path as the Shopify webhook — used before the store credentials are wired."""
-    _check_pin(req.pin)
     order_name = req.order_name or f"#TEST{secrets.randbelow(9000) + 1000}"
     order = {
         "id": f"sim-{uuid.uuid4()}",
@@ -950,26 +1075,22 @@ async def admin_simulate_order(req: SimulateOrderRequest):
 
 # ---------- Admin console ----------
 class AdminPartnerCodeRequest(BaseModel):
-    pin: str
     code: str
     label: Optional[str] = None
     multi_use: bool = True
 
 
 class AdminCodeStateRequest(BaseModel):
-    pin: str
     code: str
     active: bool
 
 
 class AdminResendRequest(BaseModel):
-    pin: str
     email: str
 
 
-@api.get("/admin/overview")
-async def admin_overview(pin: str = Query(...), limit: int = Query(default=100, ge=1, le=500)):
-    _check_pin(pin)
+@api.get("/admin/overview", dependencies=[Depends(require_admin), Depends(rate_limit("admin"))])
+async def admin_overview(limit: int = Query(default=100, ge=1, le=500)):
     users_raw = await db.users.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=limit)
     users = []
     for u in users_raw:
@@ -1020,9 +1141,8 @@ async def admin_overview(pin: str = Query(...), limit: int = Query(default=100, 
     }
 
 
-@api.post("/admin/partner-code")
+@api.post("/admin/partner-code", dependencies=[Depends(require_admin), Depends(rate_limit("admin"))])
 async def admin_partner_code(req: AdminPartnerCodeRequest):
-    _check_pin(req.pin)
     code = (req.code or "").strip().upper()
     if len(code) < 4:
         raise HTTPException(status_code=400, detail="code_too_short")
@@ -1037,9 +1157,8 @@ async def admin_partner_code(req: AdminPartnerCodeRequest):
     return {"ok": True, "code": doc}
 
 
-@api.post("/admin/code-state")
+@api.post("/admin/code-state", dependencies=[Depends(require_admin), Depends(rate_limit("admin"))])
 async def admin_code_state(req: AdminCodeStateRequest):
-    _check_pin(req.pin)
     code = (req.code or "").strip().upper()
     res = await db.activation_codes.update_one({"code": code}, {"$set": {"active": req.active}})
     if res.matched_count == 0:
@@ -1047,9 +1166,8 @@ async def admin_code_state(req: AdminCodeStateRequest):
     return {"ok": True, "code": code, "active": req.active}
 
 
-@api.post("/admin/resend-codes")
+@api.post("/admin/resend-codes", dependencies=[Depends(require_admin), Depends(rate_limit("admin"))])
 async def admin_resend_codes(req: AdminResendRequest):
-    _check_pin(req.pin)
     email = (req.email or "").strip().lower()
     if not EMAIL_RE.match(email):
         raise HTTPException(status_code=400, detail="invalid_email")
@@ -1066,7 +1184,7 @@ async def admin_resend_codes(req: AdminResendRequest):
 
 # ---------- Progress (charts) ----------
 @api.get("/users/{user_id}/progress")
-async def user_progress(user_id: str):
+async def user_progress(user_id: str, user: dict = Depends(require_user)):
     user = await _get_user_or_404(user_id)
     sessions = await db.sessions.find({"user_id": user_id}, {"_id": 0}).to_list(length=1000)
 
@@ -1123,14 +1241,12 @@ async def user_progress(user_id: str):
 
 
 @api.get("/users/{user_id}")
-async def get_user(user_id: str):
-    user = await _get_user_or_404(user_id)
+async def get_user(user_id: str, user: dict = Depends(require_user)):
     return user
 
 
 @api.post("/users/{user_id}/intake")
-async def save_intake(user_id: str, intake: Intake):
-    await _get_user_or_404(user_id)
+async def save_intake(user_id: str, intake: Intake, user: dict = Depends(require_user)):
     intake_dict = intake.dict()
     await db.users.update_one(
         {"id": user_id},
@@ -1139,13 +1255,14 @@ async def save_intake(user_id: str, intake: Intake):
     return {"ok": True, "intake": intake_dict}
 
 
-@api.post("/users/{user_id}/diagnose")
-async def diagnose(user_id: str, req: DiagnoseRequest):
-    user = await _get_user_or_404(user_id)
+@api.post("/users/{user_id}/diagnose", dependencies=[Depends(rate_limit("ai"))])
+async def diagnose(user_id: str, req: DiagnoseRequest, user: dict = Depends(require_user)):
     if not user.get("intake"):
         raise HTTPException(status_code=400, detail="Intake form must be completed first")
 
     # Photo is OPTIONAL — questionnaire-only flow is fully supported
+    if req.photo_base64 and len(req.photo_base64) > MAX_PHOTO_B64:
+        raise HTTPException(status_code=413, detail="photo_too_large")
     image_b64 = req.photo_base64 if (req.photo_base64 and len(req.photo_base64) > 100) else None
 
     session_id = f"diag-{user_id}"
@@ -1153,15 +1270,15 @@ async def diagnose(user_id: str, req: DiagnoseRequest):
         diag = await run_diagnosis(user["intake"], image_b64, req.mime_type, session_id, req.lang)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Diagnosis LLM error")
-        raise HTTPException(status_code=502, detail=f"Diagnosis failed: {e}")
+        raise HTTPException(status_code=502, detail="diagnosis_unavailable")
 
+    # The face photo is analysed in memory and never persisted (GDPR)
     diag_record = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "created_at": utc_now_iso(),
-        "photo_thumbnail_b64": (req.photo_base64[:200000] if req.photo_base64 else None),  # cap stored size
         "data": diag,
     }
     await db.users.update_one({"id": user_id}, {"$set": {"diagnosis": diag_record}})
@@ -1170,16 +1287,14 @@ async def diagnose(user_id: str, req: DiagnoseRequest):
 
 
 @api.get("/users/{user_id}/diagnosis")
-async def get_diagnosis(user_id: str):
-    user = await _get_user_or_404(user_id)
+async def get_diagnosis(user_id: str, user: dict = Depends(require_user)):
     if not user.get("diagnosis"):
         raise HTTPException(status_code=404, detail="No diagnosis yet")
     return user["diagnosis"]
 
 
 @api.get("/users/{user_id}/protocol")
-async def get_protocol(user_id: str):
-    user = await _get_user_or_404(user_id)
+async def get_protocol(user_id: str, user: dict = Depends(require_user)):
     diag = user.get("diagnosis")
     if not diag:
         raise HTTPException(status_code=404, detail="No protocol available")
@@ -1187,8 +1302,7 @@ async def get_protocol(user_id: str):
 
 
 @api.post("/users/{user_id}/sessions")
-async def log_session(user_id: str, session: SessionLog):
-    await _get_user_or_404(user_id)
+async def log_session(user_id: str, session: SessionLog, user: dict = Depends(require_user)):
     record = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
@@ -1203,19 +1317,19 @@ async def log_session(user_id: str, session: SessionLog):
 
 
 @api.get("/users/{user_id}/sessions")
-async def list_sessions(user_id: str):
-    await _get_user_or_404(user_id)
+async def list_sessions(user_id: str, user: dict = Depends(require_user)):
     cursor = db.sessions.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1)
     items = await cursor.to_list(length=500)
     return {"sessions": items}
 
 
 @api.delete("/users/{user_id}")
-async def reset_user(user_id: str):
-    await _get_user_or_404(user_id)
+async def reset_user(user_id: str, user: dict = Depends(require_user)):
     await db.users.delete_one({"id": user_id})
     await db.sessions.delete_many({"user_id": user_id})
     await db.diagnoses.delete_many({"user_id": user_id})
+    await db.chat_turns.delete_many({"user_id": user_id})
+    await db.auth_sessions.delete_many({"user_id": user_id})
     return {"ok": True}
 
 # ---------- Lead funnel (pre-purchase mini diagnosis) ----------
@@ -1327,7 +1441,7 @@ BESCHRÄNKUNGEN: nur Beauty/Kosmetik-Lexikon, niemals medizinisch. Luxuriöser, 
 }
 
 
-@api.post("/lead-prescription")
+@api.post("/lead-prescription", dependencies=[Depends(rate_limit("lead"))])
 async def lead_prescription(req: LeadRequest):
     if "@" not in req.email or "." not in req.email or len(req.email) < 5:
         raise HTTPException(status_code=400, detail="Invalid email")
@@ -1405,7 +1519,7 @@ _STT_PROMPT = (
 _ALLOWED_STT_LANGS = {"fr", "en", "ar", "es", "it", "de", "ru"}
 
 
-@api.post("/transcribe")
+@api.post("/transcribe", dependencies=[Depends(rate_limit("ai"))])
 async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form("fr")):
     data = await audio.read()
     # A stray tap produces a tiny file — never worth a request
@@ -1434,9 +1548,9 @@ async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form("fr")
             )
         text = (getattr(resp, "text", "") or "").strip()
         return {"text": text, "reason": None if text else "no_speech"}
-    except Exception as e:
+    except Exception:
         logger.exception("Transcription error")
-        raise HTTPException(status_code=502, detail=f"transcription_failed: {e}")
+        raise HTTPException(status_code=502, detail="transcription_unavailable")
     finally:
         try:
             os.unlink(tmp.name)
@@ -1456,6 +1570,16 @@ _EMOJI_RE = re.compile(
 )
 
 
+def _prune_tts_cache(max_files: int = 300, keep: int = 240) -> None:
+    """Keep the on-disk voice cache bounded (it is public, anonymous and cheap to fill)."""
+    try:
+        files = sorted(TTS_DIR.glob("*.mp3"), key=lambda p: p.stat().st_mtime)
+        for stale in files[: max(0, len(files) - keep)] if len(files) > max_files else []:
+            stale.unlink(missing_ok=True)
+    except OSError:
+        logger.warning("TTS cache pruning failed", exc_info=True)
+
+
 def clean_for_tts(text: str) -> str:
     text = _EMOJI_RE.sub("", text or "")
     text = re.sub(r"https?://\S+", "", text)
@@ -1470,7 +1594,7 @@ class TTSRequest(BaseModel):
     lang: str = "fr"
 
 
-@api.post("/tts")
+@api.post("/tts", dependencies=[Depends(rate_limit("tts"))])
 async def tts_generate(req: TTSRequest):
     text = clean_for_tts(req.text)[:4000]
     if not text:
@@ -1489,10 +1613,11 @@ async def tts_generate(req: TTSRequest):
                                     speed=TTS_SPEED, response_format="mp3"),
                 timeout=45,
             )
-        except Exception as e:
+        except Exception:
             logger.exception("TTS failed")
-            raise HTTPException(status_code=502, detail=f"tts_failed: {e}")
+            raise HTTPException(status_code=502, detail="tts_unavailable")
         path.write_bytes(audio)
+        _prune_tts_cache()
 
     return {"path": f"/api/tts/{key}.mp3", "key": key}
 
@@ -1511,14 +1636,8 @@ async def tts_fetch(key: str):
     )
 
 
-class ChatMessage(BaseModel):
-    role: str  # "user" | "assistant"
-    content: str
-
-
 class ChatRequest(BaseModel):
     message: str
-    history: List[ChatMessage] = []
     lang: str = "fr"
     photo_base64: Optional[str] = None
     mime_type: str = "image/jpeg"
@@ -1623,10 +1742,11 @@ def _is_blocked(text: str) -> bool:
     return any(k in t for k in _BLOCKED_KEYWORDS if len(k) > 3)
 
 
-@api.post("/users/{user_id}/chat")
-async def skincoach_chat(user_id: str, req: ChatRequest):
-    user = await _get_user_or_404(user_id)
+@api.post("/users/{user_id}/chat", dependencies=[Depends(rate_limit("ai"))])
+async def skincoach_chat(user_id: str, req: ChatRequest, user: dict = Depends(require_user)):
     msg = req.message.strip()
+    if req.photo_base64 and len(req.photo_base64) > MAX_PHOTO_B64:
+        raise HTTPException(status_code=413, detail="photo_too_large")
     photo_b64 = req.photo_base64 if (req.photo_base64 and len(req.photo_base64) > 100) else None
     if (len(msg) < 1 and not photo_b64) or len(msg) > 1000:
         raise HTTPException(status_code=400, detail="invalid_message_length")
@@ -1652,11 +1772,12 @@ async def skincoach_chat(user_id: str, req: ChatRequest):
         system_message=system_prompt,
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
-    # Re-inject recent history for context (last 10 turns)
+    # History is rebuilt from the server's own record — a client cannot forge coach turns
     history_text = ""
-    for h in (req.history or [])[-10:]:
-        prefix = "Cliente" if h.role == "user" else "Skincoach"
-        history_text += f"{prefix}: {h.content}\n"
+    stored = await db.chat_turns.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(length=10)
+    for h in reversed(stored):
+        prefix = "Cliente" if h.get("role") == "user" else "Skincoach"
+        history_text += f"{prefix}: {h.get('content', '')}\n"
     full = (history_text + f"Cliente: {msg}") if history_text else msg
     if photo_b64:
         full += (
@@ -1671,9 +1792,9 @@ async def skincoach_chat(user_id: str, req: ChatRequest):
         )
         raw = await chat.send_message(message)
         reply = (raw if isinstance(raw, str) else str(raw)).strip()
-    except Exception as e:
+    except Exception:
         logger.exception("Coach chat error")
-        raise HTTPException(status_code=502, detail=f"chat_failed: {e}")
+        raise HTTPException(status_code=502, detail="chat_unavailable")
 
     ask_photo = "[PHOTO]" in reply
     if ask_photo:
@@ -1683,6 +1804,12 @@ async def skincoach_chat(user_id: str, req: ChatRequest):
     reply = re.sub(r"\*{1,3}", "", reply)
     reply = re.sub(r"^#{1,6}\s*", "", reply, flags=re.MULTILINE).strip()
 
+    now = utc_now_iso()
+    await db.chat_turns.insert_many([
+        {"user_id": user_id, "role": "user", "content": msg or "[photo]", "created_at": now},
+        {"user_id": user_id, "role": "assistant", "content": reply, "created_at": now},
+    ])
+
     return {"reply": reply, "blocked": False, "ask_photo": ask_photo and not photo_b64}
 
 
@@ -1690,7 +1817,8 @@ app.include_router(api)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
+    # The API is token-based (Authorization header), never cookie-based
+    allow_credentials=False,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1722,6 +1850,9 @@ async def seed_activation_codes():
                               "label": label, "multi_use": True, "active": True, "uses": 0}},
             upsert=True,
         )
+    await db.auth_sessions.create_index("token_hash", unique=True)
+    await db.auth_sessions.create_index("user_id")
+    await db.chat_turns.create_index([("user_id", 1), ("created_at", -1)])
 
 
 @app.on_event("shutdown")

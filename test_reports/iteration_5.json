@@ -1,0 +1,41 @@
+{
+  "summary": "Security hardening (session 5) verified end-to-end. Backend: 29/29 security tests pass (26 non rate-limited + 3 rate-limit tests run last after fresh backend restarts). Session Bearer auth, admin X-Admin-Token + 15-min lockout, per-IP rate limits, photo never persisted, 413 photo_too_large, server-rebuilt chat history (prompt-injection resistant), neutral error strings, LED library, revoked codes, Shopify webhook, TTS — all green. Frontend: /admin lock screen uses testID admin-pin; wrong key shows 401 error; correct ADMIN_TOKEN unlocks dashboard; admin-lock padlock re-locks. /scan: gallery-button and capture-button both open PhotoConsentSheet (testID photo-consent-accept/decline), decline closes it. Coach tab sends Authorization: Bearer on /api/users/{id}/chat (captured live). The coach-open-camera → consent sheet wiring was validated via code review (same PhotoConsentSheet component as /scan). React Native deprecated-style warnings surfaced: shadow* props and props.pointerEvents (non-blocking but should be migrated).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "shadow* style props", "issue": "React Native warns 'shadow*' style props are deprecated. Use 'boxShadow'. Appears repeatedly in console on home, /admin, /coach, /scan — surfaced from theme/style files."},
+      {"component": "props.pointerEvents", "issue": "React Native warns props.pointerEvents is deprecated. Use style.pointerEvents. Appears on /coach and /scan."},
+      {"component": "Animated useNativeDriver", "issue": "'useNativeDriver is not supported because the native animated module is missing' warning on /coach (web only — expected). No action needed for web preview."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_security_hardening.py",
+    "/app/test_reports/pytest/pytest_security_hardening.xml"
+  ],
+  "action_items": [
+    "Nothing to fix on security — all hardening items confirmed working as designed.",
+    "(Nice-to-have) Migrate theme shadow* style props to boxShadow and move props.pointerEvents to style.pointerEvents to silence the two recurring deprecation warnings on web.",
+    "(Nice-to-have) Update legacy test files /app/backend/tests/test_admin_console.py and /app/backend/tests/test_nur_api.py — they still send `pin` to admin and omit the Bearer header on /users/{id}/* routes, so they are stale regressors against the new security model. The new /app/backend/tests/test_security_hardening.py supersedes them."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 1858 lines — above the 700-line guideline; worth splitting into auth, admin, coach, voice, lead modules in a later refactor (not blocking).",
+    "require_user re-fetches the user doc from Mongo via _get_user_or_404 on every call — fine for current traffic but a cache (or returning only the id) would reduce DB round-trips.",
+    "The admin 5-strike lockout counter is global, not per IP — a single hostile IP can lock out the admin for everyone (and in fact tripped during testing). Consider keying _admin_failures by client IP."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_security_hardening.py (new)",
+    "/app/test_reports/pytest/pytest_security_hardening.xml (generated)"
+  ],
+  "success_rate": {"backend": "100% (29/29 after restarts; 2 rate-limit false-fails on the fat run are expected — buckets exhausted by prior tests, both pass in isolation)", "frontend": "100% on verified flows (admin unlock + re-lock, scan consent sheet, coach Bearer auth)"},
+  "seed_data_creation": "None (used NUR-CREATOR multi-use code and ephemeral delivered+<uuid>@resend.dev addresses). Each NUR-CREATOR activation creates a throwaway user — these accumulate in db.users but do not affect production data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The in-memory rate limit buckets (activation 10/10min, admin 30/min, admin lockout 5-strikes/15min) will trip when running the full suite back-to-back. Always `sudo supervisorctl restart backend` before another full run and run TestRateLimits LAST (it is marked pytest.mark.order('last') but pytest-order is only enforced within the file). The admin lockout counter is GLOBAL — any hostile IP can lock the console for 15 min; verify before every admin test session. Legacy /app/backend/tests/test_admin_console.py and test_nur_api.py still use the old pin-based admin path and will fail — use /app/backend/tests/test_security_hardening.py instead.",
+  "rca_of_issue": "N/A — this iteration is a verification pass, no production bug to RCA. The two 'failures' in the fat run (TestChatHistory + test_revoked_activation_code_returns_403) are explained entirely by the activation bucket (10/10min) being exhausted by prior tests that each call /api/activate; both tests pass in isolation after a backend restart."
+}

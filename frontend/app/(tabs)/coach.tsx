@@ -34,6 +34,7 @@ import { useT, getLang } from '../../src/i18n';
 import CoachAvatar, { type CoachState } from '../../src/components/CoachAvatar';
 import TypingDots from '../../src/components/TypingDots';
 import ScanOverlay from '../../src/components/ScanOverlay';
+import PhotoConsentSheet from '../../src/components/PhotoConsentSheet';
 import { playUiSound, speak, stopSpeaking, stopUiSound, transcribeRecording } from '../../src/voice';
 
 type Msg = {
@@ -62,6 +63,8 @@ export default function Coach() {
   const [micSheet, setMicSheet] = useState<'hidden' | 'ask' | 'blocked'>('hidden');
   const [cameraOpen, setCameraOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [photoConsent, setPhotoConsent] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
 
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -109,7 +112,6 @@ export default function Coach() {
     stopSpeaking();
     setSpeakingId(null);
     const userMsg: Msg = { id: uid(), role: 'user', content: body, photoUri: photo?.uri, analyzing: !!photo };
-    const history = messagesRef.current.slice(-10).map((m) => ({ role: m.role, content: m.content }));
     setMessages([...messagesRef.current, userMsg]);
     setInput('');
     setAskPhoto(false);
@@ -121,7 +123,7 @@ export default function Coach() {
     try {
       const userId = await getStoredUserId();
       if (!userId) throw new Error('no_user');
-      const r = await api.chat(userId, body || t('coach.photo.msg'), history, getLang(), photo?.b64);
+      const r = await api.chat(userId, body || t('coach.photo.msg'), getLang(), photo?.b64);
       setMessages((prev) => [
         ...prev.map((m) => (m.id === userMsg.id ? { ...m, analyzing: false } : m)),
         { id: uid(), role: 'assistant', content: r.reply, blocked: r.blocked },
@@ -309,6 +311,10 @@ export default function Coach() {
       setHint(t('coach.photo.perm.sub'));
       return;
     }
+    if (!photoConsent) {
+      setConsentOpen(true);
+      return;
+    }
     setCameraOpen(true);
   };
 
@@ -493,6 +499,20 @@ export default function Coach() {
         </View>
         <Text style={styles.foot}>{t('coach.disclaimer')}</Text>
       </SafeAreaView>
+
+      {/* Face-photo consent — explicit, before the camera opens */}
+      <PhotoConsentSheet
+        visible={consentOpen}
+        onAccept={() => {
+          setPhotoConsent(true);
+          setConsentOpen(false);
+          setCameraOpen(true);
+        }}
+        onDecline={() => {
+          setConsentOpen(false);
+          void sendMessage(t('coach.photo.declined'));
+        }}
+      />
 
       {/* Microphone permission — contextual, after a deliberate tap */}
       <Modal visible={micSheet !== 'hidden'} transparent animationType="fade" onRequestClose={() => setMicSheet('hidden')}>

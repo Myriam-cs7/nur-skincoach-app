@@ -263,3 +263,52 @@ pour éclaircir l'écran — demande explicite : « sinon ça fait trop noir par
 ## Tests session 4
 `/app/backend/tests/test_admin_console.py` → 18/18 OK (3 ignorés quand le quota e-mail est épuisé).
 Frontend : 9/9 OK (PIN, KPI, création et révocation de code, cadenas) + non-régression de `/coach`.
+
+---
+
+# Session juin 2026 (suite) — Audit de sécurité et durcissement
+
+Audit demandé par la cliente → verdict « ne pas mettre en production » (1 faille élevée,
+3 moyennes). Les 4 corrections ont été appliquées (choix de la cliente : « Oui, tout » et
+« on ne garde pas la photo du tout » + consentement explicite avant l'analyse photo).
+
+## 1. Console admin — clé secrète au lieu d'un PIN
+- En-tête `X-Admin-Token` (valeur `ADMIN_TOKEN` dans `/app/backend/.env`, 32 octets aléatoires),
+  comparaison en temps constant, plus jamais dans l'URL. `ADMIN_PIN` supprimé.
+- Verrouillage **par adresse IP** : 5 échecs en 10 min → 429 `admin_locked` pendant 15 min
+  (le verrou ne bloque pas les autres adresses).
+- Écran `/admin` : champ « Clé d'accès », clé mémorisée dans SecureStore (repli : rien sur le web).
+
+## 2. Sessions signées côté serveur (correction de l'IDOR)
+- Jeton opaque de 32 octets (`secrets.token_urlsafe`), stocké **uniquement en SHA-256** dans
+  `auth_sessions`, validité 180 jours glissants, révoqué à la réinitialisation du profil.
+- Renvoyé par `POST /api/activate` et `POST /api/auth/verify-code` (champ `session_token`).
+- Dépendance `require_user` sur **toutes** les routes `/api/users/{id}/*` : pas de jeton → 401,
+  jeton d'une autre cliente → 403.
+- Côté app : jeton dans SecureStore (AsyncStorage sur le web), en-tête `Authorization: Bearer`,
+  et un 401 efface la session → retour à l'écran d'activation.
+
+## 3. Limites anti-abus
+- Par IP : auth 5/min · activation 10/10 min · IA 20/min · voix 40/min · lead 6/10 min · admin 30/min
+  (en-tête `Retry-After`).
+- Photo : > 8 Mo base64 → 413 sur `/diagnose` et `/chat`.
+- Cache audio TTS borné (purge au-delà de 300 fichiers).
+- CORS : `allow_credentials=False` (l'API est à jetons, jamais à cookies).
+
+## 4. Données personnelles et garde-fous
+- **La photo du visage n'est plus jamais conservée** (`photo_thumbnail_b64` supprimé) : analyse en
+  mémoire puis oubli. Consentement explicite affiché avant la caméra du coach et avant la photo
+  d'onboarding (`src/components/PhotoConsentSheet.tsx`) : analysée puis effacée, esthétique
+  uniquement, refus possible sans perdre la personnalisation.
+- Historique du chat reconstruit côté serveur (`chat_turns`) : une cliente ne peut plus forger de
+  faux tours « Skincoach » (injection de prompt).
+- Messages d'erreur neutres : `chat_unavailable`, `diagnosis_unavailable`,
+  `transcription_unavailable`, `tts_unavailable` (plus de détails de fournisseur exposés).
+
+## Tests session 5
+`/app/backend/tests/test_security_hardening.py` → 29/29 OK (sessions sur les 12 routes
+utilisateur, console admin, verrouillage, limites de débit, photo non stockée, injection de
+prompt, erreurs neutres, non-régressions). Frontend OK : clé admin, cadenas, feuille de
+consentement sur `/scan` et dans le coach, jeton bien envoyé par le chat.
+Reste en suspens (cosmétique) : avertissements Expo `shadow*` → `boxShadow` et
+`props.pointerEvents` → `style.pointerEvents`.

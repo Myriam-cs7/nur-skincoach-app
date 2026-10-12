@@ -1,10 +1,36 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 export const API_BASE = `${BACKEND}/api`;
 
 const USER_KEY = 'nur.user_id';
 const CODE_KEY = 'nur.activation_code';
+const TOKEN_KEY = 'nur.session_token';
+
+// SecureStore is unavailable on web; the browser preview falls back to AsyncStorage
+const secureAvailable = Platform.OS !== 'web';
+
+async function saveToken(token: string) {
+  if (secureAvailable) await SecureStore.setItemAsync(TOKEN_KEY, token);
+  else await AsyncStorage.setItem(TOKEN_KEY, token);
+}
+async function readToken(): Promise<string | null> {
+  try {
+    return secureAvailable ? await SecureStore.getItemAsync(TOKEN_KEY) : await AsyncStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+async function deleteToken() {
+  try {
+    if (secureAvailable) await SecureStore.deleteItemAsync(TOKEN_KEY);
+    else await AsyncStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // nothing stored
+  }
+}
 
 export async function getStoredUserId(): Promise<string | null> {
   return AsyncStorage.getItem(USER_KEY);
@@ -15,14 +41,21 @@ export async function setStoredUser(userId: string, code: string) {
 }
 export async function clearStoredUser() {
   await AsyncStorage.multiRemove([USER_KEY, CODE_KEY]);
+  await deleteToken();
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await readToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers || {}),
+    },
   });
   if (!res.ok) {
+    if (res.status === 401) await clearStoredUser(); // session expired → re-activation
     const text = await res.text();
     throw new Error(`API ${res.status}: ${text}`);
   }
@@ -34,6 +67,7 @@ export type ActivateResponse = {
   activation_code: string;
   has_intake: boolean;
   has_diagnosis: boolean;
+  session_token?: string;
 };
 export type IntakePayload = {
   name?: string;
@@ -96,6 +130,7 @@ export type AccessResponse = {
   order_ref?: string | null;
   access_status: 'verified' | 'trial' | 'paused';
   trial_days_left?: number | null;
+  session_token?: string;
 };
 export type ProgressData = {
   daily: { date: string; sessions: number }[];
@@ -106,6 +141,18 @@ export type ProgressData = {
   total_minutes: number;
   target_per_week: number;
 };
+
+async function adminRequest<T>(path: string, adminKey: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminKey, ...(init?.headers || {}) },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return res.json();
+}
 
 export type AdminOverview = {
   counts: {
@@ -125,19 +172,19 @@ export type AdminOverview = {
 };
 
 export const admin = {
-  overview: (pin: string) => request<AdminOverview>(`/admin/overview?pin=${encodeURIComponent(pin)}`),
-  allowEmail: (pin: string, email: string, label?: string) =>
-    request<{ ok: boolean }>('/admin/allow-email', { method: 'POST', body: JSON.stringify({ pin, email, label }) }),
-  partnerCode: (pin: string, code: string, label?: string) =>
-    request<{ ok: boolean }>('/admin/partner-code', { method: 'POST', body: JSON.stringify({ pin, code, label, multi_use: true }) }),
-  codeState: (pin: string, code: string, active: boolean) =>
-    request<{ ok: boolean }>('/admin/code-state', { method: 'POST', body: JSON.stringify({ pin, code, active }) }),
-  resendCodes: (pin: string, email: string) =>
-    request<{ ok: boolean; codes: string[] }>('/admin/resend-codes', { method: 'POST', body: JSON.stringify({ pin, email }) }),
-  simulateOrder: (pin: string, email: string, quantity: number, order_name?: string) =>
-    request<{ ok: boolean; order: string; codes: string[]; already_issued: boolean }>('/admin/simulate-order', {
+  overview: (key: string) => adminRequest<AdminOverview>('/admin/overview', key),
+  allowEmail: (key: string, email: string, label?: string) =>
+    adminRequest<{ ok: boolean }>('/admin/allow-email', key, { method: 'POST', body: JSON.stringify({ email, label }) }),
+  partnerCode: (key: string, code: string, label?: string) =>
+    adminRequest<{ ok: boolean }>('/admin/partner-code', key, { method: 'POST', body: JSON.stringify({ code, label, multi_use: true }) }),
+  codeState: (key: string, code: string, active: boolean) =>
+    adminRequest<{ ok: boolean }>('/admin/code-state', key, { method: 'POST', body: JSON.stringify({ code, active }) }),
+  resendCodes: (key: string, email: string) =>
+    adminRequest<{ ok: boolean; codes: string[] }>('/admin/resend-codes', key, { method: 'POST', body: JSON.stringify({ email }) }),
+  simulateOrder: (key: string, email: string, quantity: number, order_name?: string) =>
+    adminRequest<{ ok: boolean; order: string; codes: string[]; already_issued: boolean }>('/admin/simulate-order', key, {
       method: 'POST',
-      body: JSON.stringify({ pin, email, quantity, order_name, lang: 'fr' }),
+      body: JSON.stringify({ email, quantity, order_name, lang: 'fr' }),
     }),
 };
 
@@ -147,20 +194,26 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, lang }),
     }),
-  verifyCode: (email: string, code: string, lang = 'fr') =>
-    request<AccessResponse>('/auth/verify-code', {
+  verifyCode: async (email: string, code: string, lang = 'fr') => {
+    const r = await request<AccessResponse>('/auth/verify-code', {
       method: 'POST',
       body: JSON.stringify({ email, code, lang }),
-    }),
+    });
+    if (r.session_token) await saveToken(r.session_token);
+    return r;
+  },
   getAccess: (id: string) => request<AccessResponse>(`/users/${id}/access`),
   linkOrder: (id: string, body: { email?: string; order_number?: string }) =>
     request<AccessResponse>(`/users/${id}/link-order`, { method: 'POST', body: JSON.stringify(body) }),
   progress: (id: string) => request<ProgressData>(`/users/${id}/progress`),
-  activate: (code: string) =>
-    request<ActivateResponse>('/activate', {
+  activate: async (code: string) => {
+    const r = await request<ActivateResponse>('/activate', {
       method: 'POST',
       body: JSON.stringify({ activation_code: code }),
-    }),
+    });
+    if (r.session_token) await saveToken(r.session_token);
+    return r;
+  },
   getUser: (id: string) => request<any>(`/users/${id}`),
   saveIntake: (id: string, intake: IntakePayload) =>
     request<{ ok: boolean }>(`/users/${id}/intake`, {
@@ -181,13 +234,12 @@ export const api = {
   chat: (
     id: string,
     message: string,
-    history: { role: string; content: string }[],
     lang: string,
     photoB64?: string,
   ) =>
     request<{ reply: string; blocked: boolean; ask_photo: boolean }>(`/users/${id}/chat`, {
       method: 'POST',
-      body: JSON.stringify({ message, history, lang, photo_base64: photoB64 || null, mime_type: 'image/jpeg' }),
+      body: JSON.stringify({ message, lang, photo_base64: photoB64 || null, mime_type: 'image/jpeg' }),
     }),
   leadPrescription: (body: { email: string; name?: string; age_range?: string; answers: { q1: string; q2: string; q3: string }; lang: string }) =>
     request<{ ok: boolean; lead_id: string; prescription: { headline: string; diagnosis: string; axes: string[]; protocol_summary: string; cta_text: string }; shop: { url: string; promo_code: string; discount: number } }>('/lead-prescription', {
