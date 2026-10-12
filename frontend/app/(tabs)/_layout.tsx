@@ -20,7 +20,7 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: theme.color.brand,
         tabBarInactiveTintColor: theme.color.onSurfaceSecondary,
-        tabBarLabelStyle: { fontSize: 9, letterSpacing: 1.5, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: 9, fontFamily: theme.font.sansMedium, letterSpacing: 1.5, fontWeight: '700' },
       }}
     >
       <Tabs.Screen name="home" options={{ title: t('tab.today'), tabBarIcon: ({ color }) => <Feather name="sun" size={20} color={color} /> }} />

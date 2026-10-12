@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { theme } from '../../src/theme';
-import { Wordmark, SectionLabel, GoldDivider } from '../../src/ui';
+import { SectionLabel, GoldDivider, BrandHeader } from '../../src/ui';
 import { api, getStoredUserId, clearStoredUser } from '../../src/api';
 import { useT, setLang, getLang, Lang } from '../../src/i18n';
 
@@ -36,12 +36,24 @@ export default function Profile() {
     })();
   }, []);
 
-  const onReset = async () => {
+  const [deleting, setDeleting] = useState(false);
+
+  const wipeAccount = async () => {
+    setDeleting(true);
     const uid = await getStoredUserId();
-    if (uid) { try { await api.resetUser(uid); } catch {} }
+    if (uid) {
+      try {
+        await api.resetUser(uid);
+      } catch (e) {
+        console.warn('[profile] delete failed', e);
+      }
+    }
     await clearStoredUser();
+    setDeleting(false);
     router.replace('/');
   };
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const onRedoScan = () => router.push('/scan');
 
   if (!user) return <View style={[styles.root, styles.center]}><ActivityIndicator color={theme.color.brand} /></View>;
@@ -52,10 +64,10 @@ export default function Profile() {
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Wordmark label="NŪR PROTOCOL" />
           <Pressable onLongPress={() => router.push('/admin')} delayLongPress={1200} testID="profile-admin-gate">
-            <Text style={styles.title} testID="profile-title">{intake.name || t('profile.title')}</Text>
+            <BrandHeader title={intake.name || t('profile.title')} />
           </Pressable>
+          <Text style={styles.hiddenTitle} testID="profile-title">{intake.name || t('profile.title')}</Text>
           <Text style={styles.code}>{t('profile.code')} · {user.activation_code}</Text>
           <GoldDivider marginV={theme.spacing.xl} />
 
@@ -96,15 +108,44 @@ export default function Profile() {
               <Text style={styles.privacyTxt}>{t('profile.privacy.body')}</Text>
             </View>
           )}
-          <Pressable style={styles.actionRow} onPress={onReset} testID="reset-account">
-            <Feather name="log-out" size={16} color={theme.color.error} />
-            <Text style={[styles.actionTxt, { color: theme.color.error }]}>{t('profile.reset')}</Text>
-            <Feather name="chevron-right" size={16} color={theme.color.onSurfaceSecondary} />
+          <Pressable style={styles.actionRow} onPress={() => setConfirmOpen(true)} disabled={deleting} testID="delete-data">
+            <Feather name="trash-2" size={16} color={theme.color.error} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.actionTxt, { color: theme.color.error }]}>{t('profile.delete')}</Text>
+              <Text style={styles.actionHint}>{t('profile.delete.hint')}</Text>
+            </View>
+            {deleting ? (
+              <ActivityIndicator color={theme.color.error} />
+            ) : (
+              <Feather name="chevron-right" size={16} color={theme.color.onSurfaceSecondary} />
+            )}
           </Pressable>
 
           <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
+
+      <Modal visible={confirmOpen} transparent animationType="fade" onRequestClose={() => setConfirmOpen(false)}>
+        <View style={styles.backdrop}>
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmIcon}>
+              <Feather name="trash-2" size={20} color={theme.color.error} />
+            </View>
+            <Text style={styles.confirmTitle}>{t('profile.delete')}</Text>
+            <Text style={styles.confirmBody}>{t('profile.delete.body')}</Text>
+            <Pressable
+              style={styles.confirmDanger}
+              onPress={() => { setConfirmOpen(false); void wipeAccount(); }}
+              testID="delete-data-confirm"
+            >
+              <Text style={styles.confirmDangerTxt}>{t('profile.delete.confirm')}</Text>
+            </Pressable>
+            <Pressable onPress={() => setConfirmOpen(false)} testID="delete-data-cancel">
+              <Text style={styles.confirmCancel}>{t('common.cancel')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -120,6 +161,8 @@ function Row({ label, value }: { label: string; value?: string }) {
 }
 
 const styles = StyleSheet.create({
+  // kept for accessibility/tests, visually replaced by BrandHeader
+  hiddenTitle: { height: 0, opacity: 0, fontSize: 1, fontFamily: theme.font.sans },
   root: { flex: 1, backgroundColor: theme.color.surface },
   center: { alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
@@ -128,13 +171,32 @@ const styles = StyleSheet.create({
   langRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.md, marginBottom: theme.spacing.xl },
   langChip: { paddingHorizontal: theme.spacing.lg, paddingVertical: 10, borderRadius: theme.radius.pill, borderWidth: 1, borderColor: theme.color.border, backgroundColor: theme.color.surfaceSecondary },
   langChipActive: { borderColor: theme.color.brand, backgroundColor: theme.color.brandTint },
-  langTxt: { color: theme.color.onSurfaceSecondary, fontSize: 13 },
+  langTxt: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans },
   langTxtActive: { color: theme.color.brand, fontWeight: '600' },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.color.divider },
-  rowLabel: { color: theme.color.onSurfaceSecondary, fontSize: 12, letterSpacing: 0.3 },
-  rowValue: { color: theme.color.onSurface, fontSize: 13, fontWeight: '500', textTransform: 'capitalize' },
+  rowLabel: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, letterSpacing: 0.3 },
+  rowValue: { color: theme.color.onSurface, fontSize: 13, fontFamily: theme.font.sans, fontWeight: '500', textTransform: 'capitalize' },
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.color.divider },
-  actionTxt: { flex: 1, color: theme.color.onSurface, fontSize: 14 },
+  actionTxt: { flex: 1, color: theme.color.onSurface, fontSize: 14, fontFamily: theme.font.sans },
+  actionHint: { ...theme.type.micro, color: theme.color.onSurfaceSecondary, marginTop: 2 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(5,5,5,0.85)', justifyContent: 'flex-end' },
+  confirmCard: {
+    backgroundColor: theme.color.surfaceSecondary, borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl, borderTopWidth: 1, borderColor: theme.color.border,
+    padding: theme.spacing.xl, paddingBottom: theme.spacing.xxl, alignItems: 'center', gap: theme.spacing.md,
+  },
+  confirmIcon: {
+    width: 52, height: 52, borderRadius: 999, borderWidth: 1, borderColor: theme.color.error,
+    backgroundColor: 'rgba(199,93,93,0.12)', alignItems: 'center', justifyContent: 'center',
+  },
+  confirmTitle: { ...theme.type.h2, color: theme.color.onSurface, textAlign: 'center' },
+  confirmBody: { ...theme.type.bodySm, color: theme.color.onSurfaceSecondary, textAlign: 'center' },
+  confirmDanger: {
+    alignSelf: 'stretch', alignItems: 'center', backgroundColor: theme.color.error,
+    borderRadius: theme.radius.pill, paddingVertical: 15, marginTop: theme.spacing.xs,
+  },
+  confirmDangerTxt: { ...theme.type.button, color: theme.color.onSurface },
+  confirmCancel: { ...theme.type.body, color: theme.color.onSurfaceSecondary, textDecorationLine: 'underline' },
   privacyBody: { backgroundColor: theme.color.surfaceSecondary, padding: theme.spacing.lg, borderRadius: theme.radius.md, marginVertical: theme.spacing.md, borderWidth: 1, borderColor: theme.color.borderGold },
-  privacyTxt: { color: theme.color.onSurfaceTertiary, fontSize: 12, lineHeight: 20 },
+  privacyTxt: { color: theme.color.onSurfaceTertiary, fontSize: 12, fontFamily: theme.font.sans, lineHeight: 20 },
 });

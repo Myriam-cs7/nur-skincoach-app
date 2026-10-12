@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { theme, LED_COLORS, LED_NAMES_BY_LANG } from '../../src/theme';
-import { Wordmark, GoldDivider } from '../../src/ui';
+import { GoldDivider, BrandHeader } from '../../src/ui';
 import { api, getStoredUserId, DiagnosisRecord, ProgressData, AccessResponse } from '../../src/api';
 import { useT, getLang } from '../../src/i18n';
 import ProgressCharts from '../../src/components/ProgressCharts';
@@ -150,8 +150,8 @@ export default function Home() {
               <Feather name="chevron-right" size={14} color={theme.color.brandDeep} />
             </Pressable>
           ) : null}
-          <Wordmark label={t('home.kicker')} />
-          <Text style={styles.title} testID="home-greet">{greeting}{name}</Text>
+          <BrandHeader title={`${greeting}${name}`} subtitle={t('home.kicker')} />
+          <Text style={styles.hiddenTitle} testID="home-greet">{greeting}{name}</Text>
           <Text style={styles.dateTxt}>{new Date().toLocaleDateString(lang === 'fr' ? 'fr-FR' : lang === 'ar' ? 'ar' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
           <GoldDivider marginV={theme.spacing.lg} />
 
@@ -271,9 +271,13 @@ export default function Home() {
 function Stat({ label, value, icon }: { label: string; value: string; icon: any }) {
   return (
     <View style={styles.stat}>
-      <Feather name={icon} size={12} color={theme.color.brand} />
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Feather name={icon} size={13} color={theme.color.brand} />
+      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+        {value}
+      </Text>
+      <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -300,11 +304,13 @@ function weeklyTarget(diag: DiagnosisRecord | null): number {
 }
 
 const styles = StyleSheet.create({
+  // kept for accessibility/tests, visually replaced by BrandHeader
+  hiddenTitle: { height: 0, opacity: 0, fontSize: 1, fontFamily: theme.font.sans },
   root: { flex: 1, backgroundColor: theme.color.surface },
   center: { alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 34, marginTop: theme.spacing.md, letterSpacing: -0.5 },
-  dateTxt: { color: theme.color.onSurfaceSecondary, fontSize: 12, marginTop: 4, textTransform: 'capitalize', letterSpacing: 0.3 },
+  dateTxt: { ...theme.type.bodySm, color: theme.color.onSurfaceSecondary, marginTop: 2, textTransform: 'capitalize', textAlign: 'center' },
   heroWrap: {
     padding: theme.spacing.xl, borderRadius: theme.radius.lg,
     backgroundColor: theme.color.surfaceSecondary,
@@ -313,33 +319,34 @@ const styles = StyleSheet.create({
     ...theme.shadow.card,
   },
   heroOrb: { position: 'absolute', width: 160, height: 160, borderRadius: 999, right: -50, top: -40, opacity: 0.55, shadowOpacity: 0.9, shadowRadius: 70, shadowOffset: { width: 0, height: 0 } },
-  heroKicker: { color: theme.color.brand, letterSpacing: 2.5, fontSize: 10, fontWeight: '700' },
+  heroKicker: { color: theme.color.brand, letterSpacing: 2.5, fontSize: 10, fontFamily: theme.font.sansMedium, fontWeight: '700' },
   heroTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, letterSpacing: -0.3 },
-  heroSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, lineHeight: 18 },
+  heroSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, lineHeight: 18 },
   heroMetaRow: { flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.sm, marginBottom: theme.spacing.xs },
   heroPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.radius.pill, backgroundColor: theme.color.brandTint, borderWidth: 1, borderColor: theme.color.brand },
-  heroPillTxt: { color: theme.color.brand, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
+  heroPillTxt: { color: theme.color.brand, fontSize: 11, fontFamily: theme.font.sansMedium, fontWeight: '600', textTransform: 'capitalize' },
   heroCta: {
     marginTop: theme.spacing.md, flexDirection: 'row', alignSelf: 'flex-start',
     backgroundColor: theme.color.brand, paddingHorizontal: theme.spacing.lg, paddingVertical: 10,
     borderRadius: theme.radius.pill, gap: 8, alignItems: 'center',
     shadowColor: theme.color.brand, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
   },
-  heroCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, letterSpacing: 0.5 },
+  heroCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 0.5 },
   doneRow: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: theme.spacing.md },
-  doneTxt: { color: theme.color.success, fontSize: 13, fontWeight: '600' },
-  statsRow: { flexDirection: 'row', gap: theme.spacing.md, marginTop: theme.spacing.lg },
-  stat: { flex: 1, backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.md, padding: theme.spacing.lg, borderWidth: 1, borderColor: theme.color.borderGold, gap: 6, ...theme.shadow.soft },
-  statValue: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 26 },
-  statLabel: { color: theme.color.onSurfaceSecondary, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase' },
+  doneTxt: { color: theme.color.success, fontSize: 13, fontFamily: theme.font.sansMedium, fontWeight: '600' },
+  statsRow: { flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.lg },
+  stat: { flex: 1, minWidth: 0, backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.md, paddingVertical: theme.spacing.lg, paddingHorizontal: theme.spacing.md, borderWidth: 1, borderColor: theme.color.borderGold, gap: 6, ...theme.shadow.soft },
+  statValue: { ...theme.type.stat, color: theme.color.onSurface },
+  // No letterSpacing inside narrow cards — this is what used to break "STREAK" into "STREA / K"
+  statLabel: { ...theme.type.cardLabel, color: theme.color.onSurfaceSecondary, textTransform: 'uppercase' },
   card: {
     flexDirection: 'row', alignItems: 'center', marginTop: theme.spacing.lg,
     backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.md,
     padding: theme.spacing.lg, borderWidth: 1, borderColor: theme.color.borderGold,
     gap: theme.spacing.md, ...theme.shadow.soft,
   },
-  cardTitle: { color: theme.color.onSurface, fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
-  cardSub: { color: theme.color.onSurfaceSecondary, fontSize: 12, marginTop: 4, lineHeight: 18 },
+  cardTitle: { color: theme.color.onSurface, fontSize: 13, fontFamily: theme.font.sansMedium, fontWeight: '600', letterSpacing: 0.3 },
+  cardSub: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, marginTop: 4, lineHeight: 18 },
   reminderCard: {
     marginTop: theme.spacing.lg, backgroundColor: theme.color.surfaceSecondary,
     borderRadius: theme.radius.md, padding: theme.spacing.lg,
@@ -347,7 +354,7 @@ const styles = StyleSheet.create({
   },
   card2Row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   hoursWrap: { marginTop: theme.spacing.lg, gap: theme.spacing.sm },
-  hoursLabel: { color: theme.color.brand, fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase' },
+  hoursLabel: { color: theme.color.brand, fontSize: 10, fontFamily: theme.font.sans, letterSpacing: 1.6, textTransform: 'uppercase' },
   hoursRow: { flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' },
   hourChip: {
     paddingHorizontal: theme.spacing.lg, paddingVertical: 10, borderRadius: theme.radius.pill,
@@ -355,24 +362,24 @@ const styles = StyleSheet.create({
     minWidth: 54, alignItems: 'center',
   },
   hourChipOn: { borderColor: theme.color.brand, backgroundColor: theme.color.brandTint },
-  hourTxt: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontWeight: '600' },
+  hourTxt: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sansMedium, fontWeight: '600' },
   hourTxtOn: { color: theme.color.brand },
   blockedWrap: { marginTop: theme.spacing.md, gap: theme.spacing.sm },
-  blockedTxt: { color: theme.color.error, fontSize: 11, lineHeight: 16 },
+  blockedTxt: { color: theme.color.error, fontSize: 11, fontFamily: theme.font.sans, lineHeight: 16 },
   settingsBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
     paddingHorizontal: theme.spacing.lg, paddingVertical: 12, borderRadius: theme.radius.pill,
     borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: 'rgba(201,169,97,0.06)',
   },
-  settingsTxt: { color: theme.color.brand, fontSize: 12, fontWeight: '600' },
+  settingsTxt: { color: theme.color.brand, fontSize: 12, fontFamily: theme.font.sansMedium, fontWeight: '600' },
   trialBanner: {
     flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
     backgroundColor: theme.color.brandTint, borderWidth: 1, borderColor: theme.color.borderGold,
     borderRadius: theme.radius.pill, paddingVertical: 10, paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
-  trialTxt: { color: theme.color.brandDeep, fontSize: 11, fontWeight: '600', flex: 1 },
-  trialLink: { color: theme.color.brandDeep, fontSize: 11, textDecorationLine: 'underline' },
+  trialTxt: { color: theme.color.brandDeep, fontSize: 11, fontFamily: theme.font.sansMedium, fontWeight: '600', flex: 1 },
+  trialLink: { color: theme.color.brandDeep, fontSize: 11, fontFamily: theme.font.sans, textDecorationLine: 'underline' },
   pausedCard: {
     backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.lg,
     padding: theme.spacing.xl, borderWidth: 1, borderColor: theme.color.borderGold,
@@ -383,12 +390,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: theme.color.borderGold, alignItems: 'center', justifyContent: 'center',
   },
   pausedTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 24, textAlign: 'center' },
-  pausedSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  pausedSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   pausedCta: {
     flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, backgroundColor: theme.color.brand,
     paddingVertical: 15, paddingHorizontal: theme.spacing.xl, borderRadius: theme.radius.pill,
     marginTop: theme.spacing.sm, ...theme.shadow.cta,
   },
-  pausedCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, letterSpacing: 0.5 },
-  pausedMail: { color: theme.color.onSurfaceSecondary, fontSize: 11 },
+  pausedCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 0.5 },
+  pausedMail: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans },
 });

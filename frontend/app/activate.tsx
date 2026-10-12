@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { theme } from '../src/theme';
-import { GoldDivider, Wordmark } from '../src/ui';
+import { GoldDivider, BrandHeader } from '../src/ui';
 import { api, setStoredUser, AccessResponse } from '../src/api';
 import { useT, getLang } from '../src/i18n';
 
@@ -136,8 +136,7 @@ export default function Activate() {
           <View style={styles.iconCircle}>
             <Feather name={icons[step]} size={23} color={theme.color.brand} />
           </View>
-          <Wordmark label="NŪR PROTOCOL" />
-          <Text style={styles.title}>{titles[step]}</Text>
+          <BrandHeader title={titles[step]} />
           <GoldDivider marginV={theme.spacing.md} />
           <Text style={styles.sub}>{subs[step]}</Text>
 
@@ -292,37 +291,37 @@ const styles = StyleSheet.create({
     shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
   },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 29, textAlign: 'center', marginTop: theme.spacing.md, letterSpacing: -0.5 },
-  sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   input: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
     borderRadius: theme.radius.md, padding: 18, color: theme.color.onSurface, fontSize: 18,
     marginTop: theme.spacing.xl, fontFamily: theme.font.mono, letterSpacing: 2, textAlign: 'center',
   },
   inputEmail: { fontFamily: theme.font.sans, letterSpacing: 0.3, fontSize: 16 },
-  inputOtp: { fontSize: 30, letterSpacing: 12, paddingVertical: 20, color: theme.color.onSurface },
+  inputOtp: { fontSize: 30, fontFamily: theme.font.sans, letterSpacing: 12, paddingVertical: 20, color: theme.color.onSurface },
   inputErr: { borderColor: theme.color.error },
-  err: { color: theme.color.error, fontSize: 12, textAlign: 'center', marginTop: theme.spacing.sm, lineHeight: 18 },
+  err: { color: theme.color.error, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', marginTop: theme.spacing.sm, lineHeight: 18 },
   infoBox: {
     flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center', marginTop: theme.spacing.md,
     backgroundColor: theme.color.brandTint, borderWidth: 1, borderColor: theme.color.borderGold,
     borderRadius: theme.radius.md, padding: theme.spacing.md,
   },
-  infoTxt: { color: theme.color.onSurfaceTertiary, fontSize: 12, flex: 1, lineHeight: 18 },
+  infoTxt: { color: theme.color.onSurfaceTertiary, fontSize: 12, fontFamily: theme.font.sans, flex: 1, lineHeight: 18 },
   cta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingVertical: 18,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
     marginTop: theme.spacing.xl, ...theme.shadow.cta,
   },
-  ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
+  ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
   ghost: {
     marginTop: theme.spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: theme.spacing.sm, paddingVertical: 15, borderRadius: theme.radius.pill,
     borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: 'rgba(201,169,97,0.06)',
   },
-  ghostTxt: { color: theme.color.brandDeep, fontSize: 13, fontWeight: '600', letterSpacing: 0.4 },
-  hint: { color: theme.color.onSurfaceSecondary, fontSize: 11, textAlign: 'center', marginTop: theme.spacing.md },
+  ghostTxt: { color: theme.color.brandDeep, fontSize: 13, fontFamily: theme.font.sansMedium, fontWeight: '600', letterSpacing: 0.4 },
+  hint: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, textAlign: 'center', marginTop: theme.spacing.md },
   linkWrap: { marginTop: theme.spacing.lg, paddingVertical: 4 },
-  link: { color: theme.color.onSurfaceSecondary, fontSize: 12, textAlign: 'center', textDecorationLine: 'underline' },
+  link: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', textDecorationLine: 'underline' },
   whyRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.md },
-  whyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 10, opacity: 0.85, flex: 1, lineHeight: 15 },
+  whyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, opacity: 0.85, flex: 1, lineHeight: 15 },
 });

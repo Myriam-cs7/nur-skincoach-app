@@ -2,28 +2,28 @@ import { Platform } from 'react-native';
 
 export const theme = {
   color: {
-    // Deep "At-Home Clinic" dark palette
-    surface: '#06060A',
-    onSurface: '#F5F1E6',
-    surfaceSecondary: '#0F0F14',
-    onSurfaceSecondary: '#A0998A',
-    surfaceTertiary: '#16161D',
-    onSurfaceTertiary: '#CFC8B7',
-    surfaceElevated: '#191921',
-    // Warm gold from the logo
+    // Deep "At-Home Clinic" dark palette (brand charter: nurprotocol.com)
+    surface: '#050505',
+    onSurface: '#FBF7F0',
+    surfaceSecondary: '#141414',
+    onSurfaceSecondary: '#8F8A80',
+    surfaceTertiary: '#1E1E1E',
+    onSurfaceTertiary: '#E8E3DA',
+    surfaceElevated: '#1A1A1A',
+    // Champagne gold from the logo
     brand: '#C9A961',
     brandLight: '#E6CC85',
     brandSoft: '#8C713B',
-    brandTint: '#1F1A0E',
+    brandTint: '#1C1710',
     brandDeep: '#C9A961',
-    onBrand: '#0A0A10',
+    onBrand: '#050505',
     onCamera: '#FFF8EA',
     success: '#7AA17A',
     error: '#C75D5D',
-    border: '#1E1E28',
-    borderStrong: '#2A2A38',
+    border: '#2A2A2A',
+    borderStrong: '#3A3A3A',
     borderGold: 'rgba(201,169,97,0.25)',
-    divider: '#13131A',
+    divider: '#1A1A1A',
     // 7 LED modes of the Nūr mask
     ledRed: '#FF4A4A',
     ledBlue: '#3399FF',
@@ -35,16 +35,33 @@ export const theme = {
   },
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48, huge: 64 },
   radius: { sm: 6, md: 12, lg: 20, xl: 28, pill: 999 },
+  // Type scale — letterSpacing is only allowed on FULL-WIDTH labels (never inside narrow cards)
+  type: {
+    display: { fontFamily: 'Cormorant-Medium', fontSize: 32, lineHeight: 38 },
+    h1: { fontFamily: 'Cormorant-Medium', fontSize: 26, lineHeight: 32 },
+    h2: { fontFamily: 'Cormorant-Medium', fontSize: 21, lineHeight: 27 },
+    stat: { fontFamily: 'Cormorant-SemiBold', fontSize: 28, lineHeight: 32 },
+    body: { fontFamily: 'DMSans-Regular', fontSize: 14, lineHeight: 21 },
+    bodySm: { fontFamily: 'DMSans-Regular', fontSize: 12.5, lineHeight: 19 },
+    label: { fontFamily: 'DMSans-Medium', fontSize: 11, lineHeight: 15, letterSpacing: 1.4 },
+    cardLabel: { fontFamily: 'DMSans-Medium', fontSize: 11, lineHeight: 15 },
+    button: { fontFamily: 'DMSans-Medium', fontSize: 13, lineHeight: 17, letterSpacing: 0.6 },
+    micro: { fontFamily: 'DMSans-Regular', fontSize: 10.5, lineHeight: 15 },
+  },
   font: {
-    serif: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' })!,
-    sans: Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' })!,
+    // Display: Cormorant Garamond · UI: DM Sans (brand charter)
+    serif: 'Cormorant-Medium',
+    serifRegular: 'Cormorant-Regular',
+    serifBold: 'Cormorant-SemiBold',
+    sans: 'DMSans-Regular',
+    sansMedium: 'DMSans-Medium',
     mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' })!,
   },
   gradient: {
-    page: ['#0e0a04', '#06060A', '#04040A'] as const,
+    page: ['#0C0A06', '#050505', '#030303'] as const,
     gold: ['#E6CC85', '#C9A961'] as const,
     goldSoft: ['rgba(201,169,97,0.18)', 'rgba(201,169,97,0)'] as const,
-    scrim: ['rgba(6,6,10,0)', 'rgba(6,6,10,0.96)'] as const,
+    scrim: ['rgba(5,5,5,0)', 'rgba(5,5,5,0.96)'] as const,
   },
   shadow: {
     card: {

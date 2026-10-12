@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { theme } from '../src/theme';
-import { GoldDivider, Wordmark } from '../src/ui';
+import { GoldDivider, BrandHeader } from '../src/ui';
 import { api, getStoredUserId } from '../src/api';
 import { useT } from '../src/i18n';
 
@@ -51,8 +51,7 @@ export default function LinkOrder() {
           <View style={styles.iconCircle}>
             <Feather name={done ? 'check' : 'package'} size={23} color={theme.color.brand} />
           </View>
-          <Wordmark label="NŪR PROTOCOL" />
-          <Text style={styles.title}>{done ? t('trial.verified') : t('trial.title')}</Text>
+          <BrandHeader title={done ? t('trial.verified') : t('trial.title')} />
           <GoldDivider marginV={theme.spacing.md} />
           <Text style={styles.sub}>{done ? t('trial.ok') : t('trial.sub')}</Text>
 
@@ -119,7 +118,7 @@ const styles = StyleSheet.create({
     shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
   },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 28, textAlign: 'center', marginTop: theme.spacing.md },
-  sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   input: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
     borderRadius: theme.radius.md, padding: 18, color: theme.color.onSurface, fontSize: 16,
@@ -127,12 +126,12 @@ const styles = StyleSheet.create({
   },
   inputEmail: { fontFamily: theme.font.sans, letterSpacing: 0.3 },
   inputErr: { borderColor: theme.color.error },
-  or: { color: theme.color.onSurfaceSecondary, textAlign: 'center', marginTop: theme.spacing.md, fontSize: 12 },
-  err: { color: theme.color.error, fontSize: 12, textAlign: 'center', marginTop: theme.spacing.md, lineHeight: 18 },
+  or: { color: theme.color.onSurfaceSecondary, textAlign: 'center', marginTop: theme.spacing.md, fontSize: 12, fontFamily: theme.font.sans },
+  err: { color: theme.color.error, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', marginTop: theme.spacing.md, lineHeight: 18 },
   cta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingVertical: 18,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
     marginTop: theme.spacing.xl, ...theme.shadow.cta,
   },
-  ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
+  ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
 });

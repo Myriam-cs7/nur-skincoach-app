@@ -225,6 +225,66 @@ frontend:
     working: "NA"
     file: "/app/frontend/app/(tabs)/protocol.tsx"
 
+## Session 6 — Refonte UI/UX (charte Nūr Protocol), suppression des données, ventes hebdo, webhook Shopify
+
+user_problem_statement: >
+  « L'UX et l'UI design n'est pas bon du tout… la façon dont tu as positionné "Your Beauty Expert"
+  puis "Nūr Skincoach" en dessous, les textes ne sont pas alignés… le pire c'est le tracking :
+  "STREAK" est coupé, le K est en bas, "SESSIONS" NS en bas… y a pas mon logo, il apparaît nulle
+  part… il faut choisir les bonnes polices » (captures du site nurprotocol.com fournies).
+  Demandes supplémentaires : bouton « supprimer mes données » dans le profil ; nombre de codes
+  envoyés et activés par semaine dans la console ; clé de signature du webhook Shopify fournie.
+
+frontend:
+  - task: "Typographie de marque (Cormorant Garamond + DM Sans) chargée via expo-font"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/hooks/use-brand-fonts.ts, /app/frontend/src/theme.ts, /app/frontend/app/_layout.tsx"
+    comment: |
+      5 TTF locaux (Cormorant Regular/Medium/SemiBold, DM Sans Regular/Medium), couverture ū et
+      accents vérifiée. Échelle `theme.type` ajoutée (display/h1/h2/stat/body/bodySm/label/
+      cardLabel/button/micro). Toutes les styles de texte de l'app reçoivent une fontFamily.
+  - task: "En-tête unique avec le VRAI logo (BrandHeader)"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/ui.tsx"
+    comment: |
+      Nouveau composant `BrandHeader` : logo `nur-logo-header.png` centré (variante recadrée du
+      logo officiel), titre d'écran en Cormorant, sous-titre optionnel, flèche de retour et slot
+      droit. Remplace l'ancien bandeau doré « YOUR BEAUTY EXPERT » mal aligné sur 10 écrans
+      (accueil, protocole, bibliothèque, profil, activation, lien commande, scan QR, coach, admin).
+      Vérifié au screenshot sur /home et /coach.
+  - task: "Règles anti-casse typographique (fin de « STREA / K »)"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/home.tsx, /app/frontend/src/ui.tsx"
+    comment: |
+      Libellés de cartes sans letterSpacing (`theme.type.cardLabel`), `numberOfLines={1}` +
+      `adjustsFontSizeToFit` + `minimumFontScale`, cartes en `flex: 1, minWidth: 0`.
+      Vérifié : STREAK / SESSIONS / WEEK tiennent sur une ligne en FR et EN.
+  - task: "Bouton « Supprimer mes données » dans le profil"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/profile.tsx"
+    comment: "testID `delete-data`, Alert de confirmation (annuler / tout supprimer) → DELETE /api/users/{id} + effacement de la session locale + retour à l'accueil."
+  - task: "Ventes par semaine dans la console admin"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/admin.tsx"
+    comment: "Histogramme 8 semaines : codes envoyés (barre claire) et activés (barre dorée)."
+
+backend:
+  - task: "GET /api/admin/overview renvoie weekly_codes (8 dernières semaines)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "Vérifié : [{week_start, label, issued, activated}] — S42 : 27 envoyés / 6 activés."
+  - task: "Clé de signature du webhook Shopify installée"
+    implemented: true
+    working: true
+    file: "/app/backend/.env"
+    comment: "SHOPIFY_WEBHOOK_SECRET renseignée ; webhook sans signature → 401 (plus 503) ; overview indique webhook: true."
+
 ## Session 5 — Durcissement sécurité (suite à l'audit)
 
 user_problem_statement: >

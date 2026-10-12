@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { theme } from '../../src/theme';
-import { Wordmark, GoldDivider } from '../../src/ui';
+import { GoldDivider, BrandHeader } from '../../src/ui';
 import { LED_META, ledText, LedId } from '../../src/led';
 import { api, getStoredUserId, DiagnosisRecord } from '../../src/api';
 import { useT, getLang } from '../../src/i18n';
@@ -54,8 +54,8 @@ export default function Protocol() {
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Wordmark label={t('proto.kicker')} />
-          <Text style={styles.title} testID="protocol-title">{t('proto.title')}</Text>
+          <BrandHeader title={t('proto.title')} subtitle={t('proto.kicker')} />
+          <Text style={styles.hiddenTitle} testID="protocol-title">{t('proto.title')}</Text>
           <GoldDivider marginV={theme.spacing.md} />
           <Text style={styles.subtle}>{t('proto.sub', { weeks: protocol.total_weeks })}</Text>
 
@@ -111,11 +111,13 @@ export default function Protocol() {
 }
 
 const styles = StyleSheet.create({
+  // kept for accessibility/tests, visually replaced by BrandHeader
+  hiddenTitle: { height: 0, opacity: 0, fontSize: 1, fontFamily: theme.font.sans },
   root: { flex: 1, backgroundColor: theme.color.surface },
   center: { alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, marginTop: theme.spacing.md },
-  subtle: { color: theme.color.onSurfaceSecondary, fontSize: 13, lineHeight: 20 },
+  subtle: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, lineHeight: 20 },
   timeline: { marginTop: theme.spacing.xl },
   row: { flexDirection: 'row', gap: theme.spacing.lg },
   lineCol: { width: 16, alignItems: 'center' },
@@ -123,14 +125,14 @@ const styles = StyleSheet.create({
   dotRest: { backgroundColor: theme.color.surfaceTertiary, borderWidth: 1, borderColor: theme.color.borderStrong },
   line: { width: 1, flex: 1, backgroundColor: theme.color.borderStrong, marginTop: 4 },
   dayBlock: { flex: 1, paddingBottom: theme.spacing.xl, gap: 2 },
-  dayName: { color: theme.color.onSurface, fontSize: 15, fontWeight: '600', textTransform: 'capitalize' },
+  dayName: { color: theme.color.onSurface, fontSize: 15, fontFamily: theme.font.sansMedium, fontWeight: '600', textTransform: 'capitalize' },
   colorName: { fontFamily: theme.font.serif, fontSize: 20, marginTop: 2 },
-  metaTxt: { color: theme.color.onSurfaceSecondary, fontSize: 12, textTransform: 'capitalize' },
+  metaTxt: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textTransform: 'capitalize' },
   expectedCard: {
     flexDirection: 'row', gap: theme.spacing.md, backgroundColor: theme.color.surfaceSecondary,
     borderRadius: theme.radius.lg, padding: theme.spacing.lg, borderWidth: 1,
     borderColor: theme.color.borderGold, ...theme.shadow.card,
   },
-  expectedTitle: { color: theme.color.onSurface, fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  expectedTxt: { color: theme.color.onSurfaceTertiary, fontSize: 13, lineHeight: 20, marginBottom: 4 },
+  expectedTitle: { color: theme.color.onSurface, fontSize: 14, fontFamily: theme.font.sansMedium, fontWeight: '600', marginBottom: 4 },
+  expectedTxt: { color: theme.color.onSurfaceTertiary, fontSize: 13, fontFamily: theme.font.sans, lineHeight: 20, marginBottom: 4 },
 });

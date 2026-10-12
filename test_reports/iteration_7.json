@@ -1,0 +1,60 @@
+{
+  "summary": "Frontend-only retest of 2 corrections from iteration 6: (1) FR i18n label 'Série' and (2) Modal-based delete confirmation. Both corrections validated. Non-regression on 5 tabs, logo, admin/overview and led-library also OK.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_7.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Non-blocking (déjà présent avant cette itération) : console warnings 'shadow* deprecated', 'props.pointerEvents deprecated', 'Image: style.resizeMode deprecated' — hygiène RN Web, pas lié aux 2 correctifs."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100%"},
+  "seed_data_creation": "Un utilisateur jetable créé via POST /api/activate {activation_code: 'NUR-CREATOR'} (uid acd94dcd-c5b4-4a7f-a791-b195c37d6563) — supprimé par le flux testé. Le compte demo-charts-user n'a PAS été touché (vérifié GET 200 après le test).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Itération 7 : les 2 correctifs de l'itération 6 sont validés. Rien d'autre à retester côté frontend. Si de nouveaux changements arrivent, repartir d'ici.",
+  "rca_of_issue": "N/A — pas de bug trouvé.",
+  "detailed_results": {
+    "correction_1_i18n_fr": {
+      "home_fr_stat_labels_found": ["SÉRIE", "SÉANCES", "SEMAINE"],
+      "home_fr_streak_absent": true,
+      "home_en_stat_labels_found": ["STREAK", "SESSIONS", "WEEK"],
+      "verdict": "OK — libellé FR corrigé, EN inchangé"
+    },
+    "correction_2_delete_modal": {
+      "modal_opens_on_delete_data_tap": true,
+      "modal_title_present": "Supprimer mes données",
+      "red_confirm_button_testid": "delete-data-confirm (texte: 'Tout supprimer')",
+      "cancel_link_testid": "delete-data-cancel (texte: 'Annuler')",
+      "cancel_closes_modal_without_deleting": true,
+      "demo_user_still_accessible_after_cancel": true,
+      "disposable_user_delete_flow": {
+        "DELETE_/api/users/{id}_called": true,
+        "DELETE_status": 200,
+        "local_session_cleared": true,
+        "redirected_to_home": true,
+        "GET_user_after_delete": 401
+      },
+      "verdict": "OK — modale thématisée fonctionnelle, flux de suppression complet"
+    },
+    "non_regression": {
+      "tabs_loaded_without_js_error": ["/home", "/coach", "/ritual", "/lights", "/profile"],
+      "console_errors_apart_from_expected_422_401": "aucune",
+      "admin_overview_has_weekly_codes": true,
+      "led_library_colors_count": 7,
+      "demo_user_preserved": true
+    },
+    "notes": {
+      "intake_POST_422_is_expected": "Le payload d'intake envoyé pour semer l'utilisateur jetable a échoué en 422 (champs manquants pour le schéma backend) — sans conséquence car la modale et le DELETE restent accessibles même sans intake complet.",
+      "expo_web_deprecation_warnings": ["shadow*", "props.pointerEvents", "Image.style.resizeMode", "expo-notifications web listener"] 
+    }
+  }
+}

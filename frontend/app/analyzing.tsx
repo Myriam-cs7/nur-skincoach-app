@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   stepDot: { width: 5, height: 5, borderRadius: 999, backgroundColor: theme.color.border },
   stepDotActive: { backgroundColor: theme.color.brand },
-  stepTxt: { color: theme.color.onSurfaceSecondary, fontSize: 13, letterSpacing: 0.2 },
+  stepTxt: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, letterSpacing: 0.2 },
   stepTxtActive: { color: theme.color.onSurface },
   error: { color: theme.color.error, textAlign: 'center' },
 });

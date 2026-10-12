@@ -312,3 +312,50 @@ prompt, erreurs neutres, non-régressions). Frontend OK : clé admin, cadenas, f
 consentement sur `/scan` et dans le coach, jeton bien envoyé par le chat.
 Reste en suspens (cosmétique) : avertissements Expo `shadow*` → `boxShadow` et
 `props.pointerEvents` → `style.pointerEvents`.
+
+---
+
+# Session juin 2026 (suite) — Refonte UI/UX selon la charte Nūr Protocol
+
+La cliente a rejeté le design : bandeau « YOUR BEAUTY EXPERT » sur deux lignes au-dessus du titre,
+textes mal alignés, libellés coupés au milieu d'un mot (« STREA / K », « SESSIO / NS ») et surtout
+**son logo absent de l'app**. Elle a fourni des captures de nurprotocol.com comme charte.
+
+## Typographie de marque
+- `Cormorant Garamond` (titres) + `DM Sans` (interface), 5 TTF dans `assets/fonts`, chargés par
+  `src/hooks/use-brand-fonts.ts` (expo-font) ; le layout racine attend leur chargement.
+- Échelle `theme.type` : display / h1 / h2 / stat / body / bodySm / label / cardLabel / button / micro.
+- Toutes les feuilles de style de l'app ont reçu une `fontFamily` explicite (plus de police système).
+
+## En-tête unique avec le logo (`BrandHeader` dans `src/ui.tsx`)
+- Logo officiel recadré `assets/images/nur-logo-header.png` centré, titre d'écran en Cormorant,
+  sous-titre optionnel, flèche de retour et emplacement à droite (avatar du coach, cadenas admin).
+- Déployé sur 10 écrans : accueil, protocole, bibliothèque, profil, coach, activation,
+  rattachement de commande, scan QR, console admin.
+- L'ancien bandeau doré est supprimé ; `Wordmark` ne sert plus qu'aux petites légendes, sur une
+  seule ligne avec réduction automatique.
+
+## Règles anti-casse typographique (définitives)
+- Aucun `letterSpacing` dans une carte étroite (`theme.type.cardLabel`).
+- Tout libellé de donnée : `numberOfLines={1}` + `adjustsFontSizeToFit` + `minimumFontScale`.
+- Grilles en `flex: 1, minWidth: 0` (jamais de largeur fixe) → tient en FR (SÉRIE / SÉANCES /
+  SEMAINE / MINUTES DE LUMIÈRE) comme en EN.
+
+## Palette ajustée
+`surface #050505`, `surfaceSecondary #141414`, `surfaceTertiary #1E1E1E`, crème `#FBF7F0`,
+or champagne `#C9A961` — fond noir conservé comme demandé.
+
+## Autres demandes de la même session
+- **« Supprimer mes données »** dans le profil (testID `delete-data`) : modale de confirmation
+  thématisée (et non `Alert`, inopérant sur le web) → `DELETE /api/users/{id}`, session locale
+  effacée, retour à l'accueil. Supprime profil, bilan, séances, conversations et sessions d'auth.
+- **Ventes par semaine** dans la console : `weekly_codes` (8 semaines ISO) dans
+  `GET /api/admin/overview` + histogramme « VENTES PAR SEMAINE » (envoyés vs activés).
+- **Webhook Shopify signé** : `SHOPIFY_WEBHOOK_SECRET` installée → l'envoi automatique du code
+  d'accès à chaque commande payée est opérationnel (signature invalide → 401, rejeu idempotent).
+
+## Tests session 6
+`/app/backend/tests/test_session6_regress.py` → 14/14 OK (weekly_codes, webhook signé de bout en
+bout, suppression protégée par session, non-régressions). Frontend : les 3 bugs signalés sont
+corrigés et vérifiés sur 6 écrans, plus retest final 7/7 (libellé « Série », modale de
+suppression, suppression réelle d'un compte jetable, 5 onglets sans erreur).

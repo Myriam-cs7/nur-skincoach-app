@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { theme } from '../src/theme';
-import { GoldDivider, Wordmark } from '../src/ui';
+import { GoldDivider, BrandHeader } from '../src/ui';
 import { useT } from '../src/i18n';
 
 const CODE_RE = /NUR-[A-Z0-9-]{3,}/i;
@@ -45,8 +45,7 @@ export default function ScanQR() {
           <View style={styles.iconCircle}>
             <Feather name="maximize" size={24} color={theme.color.brand} />
           </View>
-          <Wordmark label="NŪR PROTOCOL" />
-          <Text style={styles.title}>{t('scanqr.title')}</Text>
+          <BrandHeader title={t('scanqr.title')} />
           <GoldDivider marginV={theme.spacing.md} />
           <Text style={styles.sub}>{unsupported ? t('notif.web_unsupported') : t('scanqr.perm_sub')}</Text>
 
@@ -112,14 +111,14 @@ const styles = StyleSheet.create({
     shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
   },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 28, textAlign: 'center', marginTop: theme.spacing.md },
-  sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   cta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingVertical: 18,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
     marginTop: theme.spacing.xl, ...theme.shadow.cta,
   },
-  ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
-  link: { color: theme.color.onSurfaceSecondary, fontSize: 12, textAlign: 'center', textDecorationLine: 'underline', marginTop: theme.spacing.md },
+  ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
+  link: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', textDecorationLine: 'underline', marginTop: theme.spacing.md },
   overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(4,4,10,0.55)' },
   frame: {
     width: 240, height: 240, borderRadius: theme.radius.lg,
@@ -133,6 +132,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: theme.color.borderGold, gap: 6,
   },
   camTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 20, textAlign: 'center' },
-  camSub: { color: theme.color.onSurfaceSecondary, fontSize: 12, textAlign: 'center', lineHeight: 18 },
-  err: { color: theme.color.error, fontSize: 12, textAlign: 'center', marginTop: 4 },
+  camSub: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 18 },
+  err: { color: theme.color.error, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', marginTop: 4 },
 });

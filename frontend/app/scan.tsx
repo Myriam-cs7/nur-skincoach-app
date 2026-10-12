@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -197,8 +197,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.color.surface },
   safe: { flex: 1, justifyContent: 'space-between' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm },
-  kicker: { color: theme.color.brand, fontSize: 10, letterSpacing: 3, fontWeight: '600' },
-  skipTopText: { color: theme.color.brand, fontSize: 12, fontWeight: '500' },
+  kicker: { color: theme.color.brand, fontSize: 10, fontFamily: theme.font.sansMedium, letterSpacing: 3, fontWeight: '600' },
+  skipTopText: { color: theme.color.brand, fontSize: 12, fontFamily: theme.font.sans, fontWeight: '500' },
   permCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: theme.spacing.xl, gap: theme.spacing.md },
   iconCircle: {
     width: 80, height: 80, borderRadius: 999,
@@ -208,14 +208,14 @@ const styles = StyleSheet.create({
     shadowColor: theme.color.brand, shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: 4 },
   },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, marginTop: theme.spacing.lg, letterSpacing: -0.3, textAlign: 'center' },
-  subtitle: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: theme.spacing.sm },
+  subtitle: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20, paddingHorizontal: theme.spacing.sm },
   privacyBox: {
     flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
     marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.lg, paddingVertical: 12,
     borderRadius: theme.radius.md, backgroundColor: theme.color.surfaceSecondary,
     borderWidth: 1, borderColor: theme.color.borderGold,
   },
-  privacyText: { color: theme.color.onSurfaceTertiary, fontSize: 11, flex: 1, letterSpacing: 0.2 },
+  privacyText: { color: theme.color.onSurfaceTertiary, fontSize: 11, fontFamily: theme.font.sans, flex: 1, letterSpacing: 0.2 },
   guideContainer: { alignItems: 'center', justifyContent: 'center' },
   faceGuide: { width: GUIDE, height: GUIDE * 1.3, borderRadius: GUIDE },
   corner: { position: 'absolute', width: 32, height: 32, borderColor: theme.color.brand },
@@ -225,20 +225,20 @@ const styles = StyleSheet.create({
   br: { bottom: 0, right: 0, borderBottomWidth: 2, borderRightWidth: 2, borderBottomRightRadius: 8 },
   bottomPanel: { paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.lg, gap: theme.spacing.sm, alignItems: 'center' },
   tipRow: { flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center' },
-  tip: { color: theme.color.onCamera, fontSize: 12 },
+  tip: { color: theme.color.onCamera, fontSize: 12, fontFamily: theme.font.sans },
   cta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingHorizontal: theme.spacing.xl,
     paddingVertical: 16, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
     minWidth: width * 0.78, justifyContent: 'center',
     shadowColor: theme.color.brand, shadowOpacity: 0.4, shadowRadius: 22, shadowOffset: { width: 0, height: 6 },
   },
-  ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
-  linkText: { color: theme.color.onCamera, fontSize: 13, textDecorationLine: 'underline' },
-  sep: { color: theme.color.onCamera, fontSize: 13 },
+  ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
+  linkText: { color: theme.color.onCamera, fontSize: 13, fontFamily: theme.font.sans, textDecorationLine: 'underline' },
+  sep: { color: theme.color.onCamera, fontSize: 13, fontFamily: theme.font.sans },
   bottomActions: { flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
   shutter: { marginTop: theme.spacing.lg },
   shutterRing: { width: 76, height: 76, borderRadius: 999, borderWidth: 2, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
   shutterCore: { width: 60, height: 60, borderRadius: 999, backgroundColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
   skipBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
-  skipText: { color: theme.color.brand, fontSize: 13, fontWeight: '600' },
+  skipText: { color: theme.color.brand, fontSize: 13, fontFamily: theme.font.sansMedium, fontWeight: '600' },
 });

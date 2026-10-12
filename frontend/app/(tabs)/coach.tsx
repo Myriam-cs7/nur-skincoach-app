@@ -28,7 +28,7 @@ import {
   useAudioRecorderState,
 } from 'expo-audio';
 import { theme } from '../../src/theme';
-import { Wordmark, GoldDivider } from '../../src/ui';
+import { GoldDivider, BrandHeader } from '../../src/ui';
 import { api, getStoredUserId } from '../../src/api';
 import { useT, getLang } from '../../src/i18n';
 import CoachAvatar, { type CoachState } from '../../src/components/CoachAvatar';
@@ -360,21 +360,15 @@ export default function Coach() {
     >
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
-          <Wordmark label={t('coach.kicker')} />
-          {messages.length > 0 || turn !== 'idle' ? (
-            <View style={styles.avatarRow}>
-              <CoachAvatar state={turn} size={64} />
-            </View>
-          ) : null}
-          {statusLabel ? (
-            <Text style={styles.status} testID="coach-status">
-              {statusLabel}
-            </Text>
-          ) : (
-            <Text style={styles.title}>{t('coach.title')}</Text>
-          )}
+          <BrandHeader
+            title={t('coach.title')}
+            right={messages.length > 0 || turn !== 'idle' ? <CoachAvatar state={turn} size={32} /> : undefined}
+          />
+          <Text style={styles.status} testID="coach-status" numberOfLines={1}>
+            {statusLabel || t('coach.kicker')}
+          </Text>
         </View>
-        <GoldDivider marginV={theme.spacing.sm} />
+        <GoldDivider marginV={theme.spacing.md} />
 
         <ScrollView ref={scrollRef} contentContainerStyle={styles.messages} keyboardShouldPersistTaps="handled">
           {messages.length === 0 ? (
@@ -611,7 +605,7 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', paddingTop: theme.spacing.sm, paddingHorizontal: theme.spacing.xl },
   avatarRow: { marginTop: theme.spacing.sm },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 24, marginTop: theme.spacing.xs, letterSpacing: -0.3 },
-  status: { color: theme.color.brand, fontSize: 12, letterSpacing: 1.6, marginTop: theme.spacing.sm, textTransform: 'uppercase' },
+  status: { color: theme.color.brand, fontSize: 12, fontFamily: theme.font.sans, letterSpacing: 1.6, marginTop: theme.spacing.sm, textTransform: 'uppercase' },
   messages: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl, gap: theme.spacing.md, flexGrow: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.lg, paddingTop: theme.spacing.md },
   portraitCard: {
@@ -622,20 +616,20 @@ const styles = StyleSheet.create({
   portrait: { width: '100%', height: 260 },
   portraitCaption: { paddingVertical: theme.spacing.md, alignItems: 'center', gap: 2, backgroundColor: theme.color.surfaceElevated },
   portraitName: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 19 },
-  portraitRole: { color: theme.color.brand, fontSize: 9, letterSpacing: 2 },
-  intro: { color: theme.color.onSurfaceTertiary, fontSize: 14, textAlign: 'center', lineHeight: 22, paddingHorizontal: theme.spacing.md },
+  portraitRole: { color: theme.color.brand, fontSize: 9, fontFamily: theme.font.sans, letterSpacing: 2 },
+  intro: { color: theme.color.onSurfaceTertiary, fontSize: 14, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 22, paddingHorizontal: theme.spacing.md },
   startBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill,
     paddingHorizontal: theme.spacing.xl, paddingVertical: 14, ...theme.shadow.cta,
   },
-  startTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, letterSpacing: 1 },
+  startTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
   suggestList: { gap: theme.spacing.sm, width: '100%' },
   suggest: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
     borderRadius: theme.radius.md, paddingHorizontal: theme.spacing.lg, paddingVertical: 14, ...theme.shadow.soft,
   },
-  suggestTxt: { color: theme.color.onSurfaceTertiary, fontSize: 13 },
+  suggestTxt: { color: theme.color.onSurfaceTertiary, fontSize: 13, fontFamily: theme.font.sans },
   bubbleRow: { flexDirection: 'row' },
   userRow: { justifyContent: 'flex-end' },
   assistantRow: { justifyContent: 'flex-start' },
@@ -645,25 +639,25 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
     borderBottomLeftRadius: 4, ...theme.shadow.soft,
   },
-  bubbleTxt: { color: theme.color.onSurfaceTertiary, fontSize: 14, lineHeight: 21 },
+  bubbleTxt: { color: theme.color.onSurfaceTertiary, fontSize: 14, fontFamily: theme.font.sans, lineHeight: 21 },
   photoWrap: { width: 200, height: PHOTO_H, borderRadius: theme.radius.md, overflow: 'hidden', backgroundColor: theme.color.surfaceTertiary },
   photo: { width: '100%', height: '100%' },
   speakBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 4 },
-  speakTxt: { color: theme.color.brand, fontSize: 11, letterSpacing: 0.8 },
+  speakTxt: { color: theme.color.brand, fontSize: 11, fontFamily: theme.font.sans, letterSpacing: 0.8 },
   photoCard: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.brand,
     borderRadius: theme.radius.lg, padding: theme.spacing.lg, gap: theme.spacing.sm, alignItems: 'center', ...theme.shadow.soft,
   },
   photoCardHead: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  photoCardTitle: { color: theme.color.onSurface, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' },
-  photoCardTip: { color: theme.color.onSurfaceSecondary, fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  photoCardTitle: { color: theme.color.onSurface, fontSize: 13, fontFamily: theme.font.sans, letterSpacing: 1, textTransform: 'uppercase' },
+  photoCardTip: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 18 },
   photoCta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill,
     paddingHorizontal: theme.spacing.xl, paddingVertical: 13, marginTop: theme.spacing.xs, ...theme.shadow.cta,
   },
-  photoCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, letterSpacing: 1 },
-  photoLater: { color: theme.color.onSurfaceSecondary, fontSize: 12, textDecorationLine: 'underline', paddingTop: theme.spacing.xs },
-  hint: { color: theme.color.brand, fontSize: 12, textAlign: 'center', paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg },
+  photoCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
+  photoLater: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textDecorationLine: 'underline', paddingTop: theme.spacing.xs },
+  hint: { color: theme.color.brand, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg },
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.sm,
@@ -677,10 +671,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1, backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
     borderRadius: theme.radius.lg, paddingHorizontal: theme.spacing.md, paddingVertical: 12,
-    color: theme.color.onSurface, fontSize: 14, maxHeight: 100,
+    color: theme.color.onSurface, fontSize: 14, fontFamily: theme.font.sans, maxHeight: 100,
   },
   sendBtn: { width: 44, height: 44, borderRadius: 999, backgroundColor: theme.color.brand, alignItems: 'center', justifyContent: 'center', ...theme.shadow.cta },
-  foot: { color: theme.color.onSurfaceSecondary, fontSize: 10, textAlign: 'center', opacity: 0.6, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm, lineHeight: 14 },
+  foot: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, textAlign: 'center', opacity: 0.6, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm, lineHeight: 14 },
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(6,6,10,0.8)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: theme.color.surfaceSecondary, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl,
@@ -692,17 +686,17 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center',
   },
   sheetTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 22, textAlign: 'center' },
-  sheetSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  sheetSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   sheetCta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingHorizontal: theme.spacing.xl,
     paddingVertical: 15, minWidth: 220, alignItems: 'center', ...theme.shadow.cta,
   },
-  sheetCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, letterSpacing: 1 },
-  sheetCancel: { color: theme.color.onSurfaceSecondary, fontSize: 13, paddingTop: theme.spacing.xs },
+  sheetCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
+  sheetCancel: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, paddingTop: theme.spacing.xs },
   camRoot: { flex: 1, backgroundColor: theme.color.surface },
   camSafe: { flex: 1, justifyContent: 'space-between' },
   camHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm },
-  camKicker: { color: theme.color.brand, fontSize: 10, letterSpacing: 3, fontWeight: '600', textTransform: 'uppercase' },
+  camKicker: { color: theme.color.brand, fontSize: 10, fontFamily: theme.font.sansMedium, letterSpacing: 3, fontWeight: '600', textTransform: 'uppercase' },
   guideWrap: { alignItems: 'center', justifyContent: 'center' },
   guide: { width: 240, height: 310, borderRadius: 240 },
   corner: { position: 'absolute', width: 30, height: 30, borderColor: theme.color.brand },
@@ -711,7 +705,7 @@ const styles = StyleSheet.create({
   bl: { bottom: 0, left: 0, borderBottomWidth: 2, borderLeftWidth: 2, borderBottomLeftRadius: 8 },
   br: { bottom: 0, right: 0, borderBottomWidth: 2, borderRightWidth: 2, borderBottomRightRadius: 8 },
   camBottom: { alignItems: 'center', gap: theme.spacing.lg, paddingBottom: theme.spacing.xl, paddingHorizontal: theme.spacing.xl },
-  camTip: { color: theme.color.onCamera, fontSize: 12, textAlign: 'center' },
+  camTip: { color: theme.color.onCamera, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center' },
   camPerm: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.md, paddingHorizontal: theme.spacing.xl },
   shutterRing: { width: 76, height: 76, borderRadius: 999, borderWidth: 2, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
   shutterCore: { width: 60, height: 60, borderRadius: 999, backgroundColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },

@@ -165,6 +165,7 @@ export type AdminOverview = {
     trial_days_left?: number | null; created_at?: string; has_intake: boolean; has_diagnosis: boolean;
   }[];
   partner_codes: { code: string; label?: string; kind?: string; multi_use?: boolean; active?: boolean; uses?: number }[];
+  weekly_codes: { week_start: string; label: string; issued: number; activated: number }[];
   order_codes: { code: string; order_name: string; email: string; first_name?: string | null; created_at: string; used: boolean }[];
   requests: { email: string; created_at: string; last_try?: string }[];
   allowed: { email: string; label?: string; created_at?: string }[];

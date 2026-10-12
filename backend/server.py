@@ -1129,8 +1129,43 @@ async def admin_overview(limit: int = Query(default=100, ge=1, le=500)):
         "order_codes_used": sum(1 for oc in order_codes if oc.get("used")),
         "leads": await db.leads.count_documents({}),
     }
+
+    # Weekly sales view: codes e-mailed vs codes actually activated (last 8 ISO weeks)
+    activated_at = {
+        c["code"]: c.get("activated_at")
+        for c in codes if c.get("kind") == "order" and c.get("activated_at")
+    }
+    weeks: dict[str, dict] = {}
+    today = datetime.now(timezone.utc).date()
+    for i in range(7, -1, -1):
+        monday = today - timedelta(days=today.weekday() + 7 * i)
+        iso = monday.isocalendar()
+        weeks[monday.isoformat()] = {
+            "week_start": monday.isoformat(),
+            "label": f"S{iso[1]:02d}",
+            "issued": 0,
+            "activated": 0,
+        }
+
+    def _bucket(iso_value: Optional[str]) -> Optional[str]:
+        parsed = _parse_iso(iso_value)
+        if not parsed:
+            return None
+        day = parsed.date()
+        monday = (day - timedelta(days=day.weekday())).isoformat()
+        return monday if monday in weeks else None
+
+    for oc in await db.order_codes.find({}, {"_id": 0}).to_list(length=5000):
+        key = _bucket(oc.get("created_at"))
+        if key:
+            weeks[key]["issued"] += 1
+        key_act = _bucket(activated_at.get(oc["code"]))
+        if key_act:
+            weeks[key_act]["activated"] += 1
+
     return {
         "counts": counts,
+        "weekly_codes": list(weeks.values()),
         "users": users,
         "partner_codes": partner_codes,
         "order_codes": order_codes,

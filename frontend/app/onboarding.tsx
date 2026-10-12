@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: theme.color.brand },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.xxl, paddingBottom: theme.spacing.xxxl },
   title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 32, lineHeight: 40, marginBottom: theme.spacing.sm, letterSpacing: -0.5 },
-  subtitle: { color: theme.color.onSurfaceSecondary, fontSize: 13, marginBottom: theme.spacing.xl, lineHeight: 20, letterSpacing: 0.2 },
+  subtitle: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, marginBottom: theme.spacing.xl, lineHeight: 20, letterSpacing: 0.2 },
   input: {
     backgroundColor: theme.color.surfaceSecondary,
     borderRadius: theme.radius.md,
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
   },
   optionSelected: { borderColor: theme.color.brand, backgroundColor: theme.color.brandTint },
-  optionText: { color: theme.color.onSurfaceTertiary, fontSize: 15, letterSpacing: 0.3 },
+  optionText: { color: theme.color.onSurfaceTertiary, fontSize: 15, fontFamily: theme.font.sans, letterSpacing: 0.3 },
   optionTextSelected: { color: theme.color.brand, fontWeight: '600' },
   bottom: { paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.lg, paddingTop: theme.spacing.sm },
   cta: {
@@ -257,5 +257,5 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 6 },
   },
-  ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, letterSpacing: 1 },
+  ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
 });

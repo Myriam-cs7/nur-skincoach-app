@@ -152,9 +152,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: theme.color.borderGold,
     backgroundColor: theme.color.brandTint,
   },
-  secondaryCtaText: { color: theme.color.brandDeep, fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
-  linkText: { color: theme.color.onSurfaceSecondary, fontSize: 12, textDecorationLine: 'underline', letterSpacing: 0.5 },
+  secondaryCtaText: { color: theme.color.brandDeep, fontSize: 12, fontFamily: theme.font.sansMedium, fontWeight: '600', letterSpacing: 0.4 },
+  linkText: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textDecorationLine: 'underline', letterSpacing: 0.5 },
   privacyRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: theme.spacing.sm, paddingHorizontal: theme.spacing.xl },
-  privacyText: { color: theme.color.onSurfaceSecondary, fontSize: 10, opacity: 0.7, flex: 1, textAlign: 'center', letterSpacing: 0.3 },
-  footnote: { color: theme.color.brand, opacity: 0.5, fontSize: 9, letterSpacing: 2.5, textAlign: 'center', fontWeight: '600' },
+  privacyText: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, opacity: 0.7, flex: 1, textAlign: 'center', letterSpacing: 0.3 },
+  footnote: { color: theme.color.brand, opacity: 0.5, fontSize: 9, fontFamily: theme.font.sansMedium, letterSpacing: 2.5, textAlign: 'center', fontWeight: '600' },
 });

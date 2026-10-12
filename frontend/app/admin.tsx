@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { theme } from '../src/theme';
-import { Wordmark, SectionLabel, GoldDivider } from '../src/ui';
+import { SectionLabel, GoldDivider, BrandHeader } from '../src/ui';
 import { admin, type AdminOverview } from '../src/api';
 
 const KEY_STORE = 'nur.admin_key';
@@ -183,15 +183,17 @@ export default function Admin() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={theme.color.brand} />}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Pressable onPress={() => router.back()} hitSlop={12} testID="admin-close">
-              <Feather name="chevron-left" size={22} color={theme.color.onSurface} />
-            </Pressable>
-            <Wordmark label="ESPACE NŪR" />
-            <Pressable onPress={lock} hitSlop={12} testID="admin-lock">
-              <Feather name="log-out" size={18} color={theme.color.brand} />
-            </Pressable>
-          </View>
+          <BrandHeader
+            title="Espace Nūr"
+            logoWidth={96}
+            onBack={() => router.back()}
+            right={
+              <Pressable onPress={lock} hitSlop={12} testID="admin-lock">
+                <Feather name="log-out" size={18} color={theme.color.brand} />
+              </Pressable>
+            }
+          />
+          <Pressable onPress={() => router.back()} testID="admin-close" style={styles.hiddenHit} />
 
           {notice ? <Text style={styles.notice} testID="admin-notice">{notice}</Text> : null}
 
@@ -214,6 +216,32 @@ export default function Admin() {
               Shopify : {data?.shopify.configured ? data?.shopify.store : 'non configuré'} · webhook{' '}
               {data?.shopify.webhook ? 'actif' : 'en attente de clé'}
             </Text>
+          </View>
+
+          <GoldDivider marginV={theme.spacing.lg} />
+          <SectionLabel label="Ventes par semaine" />
+          <Text style={styles.help}>Codes envoyés (barre pleine) et codes activés par les clientes.</Text>
+          <View style={styles.weekRow}>
+            {(data?.weekly_codes || []).map((w) => {
+              const max = Math.max(1, ...(data?.weekly_codes || []).map((x) => x.issued));
+              return (
+                <View key={w.week_start} style={styles.weekCol}>
+                  <Text style={styles.weekVal} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                    {w.issued}
+                  </Text>
+                  <View style={styles.weekBarWrap}>
+                    <View style={[styles.weekBar, { height: Math.max(4, (w.issued / max) * 64) }]} />
+                    <View style={[styles.weekBarActive, { height: Math.max(0, (w.activated / max) * 64) }]} />
+                  </View>
+                  <Text style={styles.weekLabel} numberOfLines={1}>
+                    {w.label}
+                  </Text>
+                  <Text style={styles.weekActive} numberOfLines={1}>
+                    {w.activated}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
 
           <GoldDivider marginV={theme.spacing.lg} />
@@ -418,6 +446,15 @@ function Kpi({ label, value }: { label: string; value: number | string }) {
 }
 
 const styles = StyleSheet.create({
+  hiddenHit: { height: 0, opacity: 0 },
+  weekRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, paddingTop: theme.spacing.sm },
+  weekCol: { flex: 1, minWidth: 0, alignItems: 'center', gap: 4 },
+  weekVal: { ...theme.type.cardLabel, color: theme.color.onSurface },
+  weekBarWrap: { width: '100%', height: 64, justifyContent: 'flex-end', backgroundColor: theme.color.surfaceSecondary, borderRadius: 4, overflow: 'hidden' },
+  weekBar: { width: '100%', backgroundColor: theme.color.brandSoft },
+  weekBarActive: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: theme.color.brand },
+  weekLabel: { ...theme.type.micro, color: theme.color.onSurfaceSecondary },
+  weekActive: { ...theme.type.micro, color: theme.color.brand },
   root: { flex: 1, backgroundColor: theme.color.surface },
   lockSafe: { flex: 1 },
   backBtn: { padding: theme.spacing.lg },
@@ -427,22 +464,22 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center',
   },
   lockTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, marginTop: theme.spacing.md },
-  lockSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  lockSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   pinInput: {
     marginTop: theme.spacing.lg, width: '100%', backgroundColor: theme.color.surfaceSecondary,
     borderWidth: 1, borderColor: theme.color.borderGold, borderRadius: theme.radius.md,
     paddingHorizontal: theme.spacing.lg, paddingVertical: 15, color: theme.color.onSurface,
     fontSize: 14, letterSpacing: 1, textAlign: 'center', fontFamily: theme.font.mono,
   },
-  error: { color: theme.color.error, fontSize: 12 },
+  error: { color: theme.color.error, fontSize: 12, fontFamily: theme.font.sans },
   cta: {
     marginTop: theme.spacing.sm, backgroundColor: theme.color.brand, borderRadius: theme.radius.pill,
     paddingVertical: 16, width: '100%', alignItems: 'center', ...theme.shadow.cta,
   },
-  ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, letterSpacing: 2 },
+  ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 2 },
   scroll: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.huge },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.md },
-  notice: { color: theme.color.brand, fontSize: 12, textAlign: 'center', paddingBottom: theme.spacing.sm },
+  notice: { color: theme.color.brand, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', paddingBottom: theme.spacing.sm },
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   kpi: {
     flexGrow: 1, minWidth: '30%', backgroundColor: theme.color.surfaceSecondary, borderWidth: 1,
@@ -450,15 +487,15 @@ const styles = StyleSheet.create({
     alignItems: 'center', gap: 2,
   },
   kpiValue: { color: theme.color.brand, fontSize: 20, fontFamily: theme.font.serif },
-  kpiLabel: { color: theme.color.onSurfaceSecondary, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase' },
+  kpiLabel: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, letterSpacing: 0.8, textTransform: 'uppercase' },
   shopifyRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginTop: theme.spacing.md },
-  shopifyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 11, flex: 1 },
-  help: { color: theme.color.onSurfaceSecondary, fontSize: 11, lineHeight: 17, paddingBottom: theme.spacing.sm },
+  shopifyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, flex: 1 },
+  help: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, lineHeight: 17, paddingBottom: theme.spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, paddingBottom: theme.spacing.sm },
   input: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
     borderRadius: theme.radius.md, paddingHorizontal: theme.spacing.md, paddingVertical: 11,
-    color: theme.color.onSurface, fontSize: 13,
+    color: theme.color.onSurface, fontSize: 13, fontFamily: theme.font.sans
   },
   smallBtn: { width: 44, height: 44, borderRadius: 999, backgroundColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
   card: {
@@ -466,17 +503,17 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md, padding: theme.spacing.md, marginBottom: theme.spacing.sm, gap: 4,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
-  cardTitle: { color: theme.color.onSurface, fontSize: 14, flexShrink: 1 },
-  cardSub: { color: theme.color.onSurfaceTertiary, fontSize: 12 },
-  cardMeta: { color: theme.color.onSurfaceSecondary, fontSize: 11 },
+  cardTitle: { color: theme.color.onSurface, fontSize: 14, fontFamily: theme.font.sans, flexShrink: 1 },
+  cardSub: { color: theme.color.onSurfaceTertiary, fontSize: 12, fontFamily: theme.font.sans },
+  cardMeta: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans },
   code: { color: theme.color.brand, fontFamily: theme.font.mono, fontSize: 14, letterSpacing: 1 },
   chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radius.pill, borderWidth: 1 },
   chipOn: { backgroundColor: theme.color.brandTint, borderColor: theme.color.brand },
   chipOff: { backgroundColor: theme.color.surfaceTertiary, borderColor: theme.color.border },
   chipAlert: { backgroundColor: theme.color.surfaceTertiary, borderColor: theme.color.error },
-  chipTxt: { color: theme.color.onSurfaceTertiary, fontSize: 10, letterSpacing: 0.6 },
-  link: { color: theme.color.brand, fontSize: 12, textDecorationLine: 'underline', paddingTop: 4 },
-  listLine: { color: theme.color.onSurfaceTertiary, fontSize: 12, paddingVertical: 3 },
+  chipTxt: { color: theme.color.onSurfaceTertiary, fontSize: 10, fontFamily: theme.font.sans, letterSpacing: 0.6 },
+  link: { color: theme.color.brand, fontSize: 12, fontFamily: theme.font.sans, textDecorationLine: 'underline', paddingTop: 4 },
+  listLine: { color: theme.color.onSurfaceTertiary, fontSize: 12, fontFamily: theme.font.sans, paddingVertical: 3 },
   dangerBtn: { marginTop: theme.spacing.xl, alignItems: 'center' },
-  dangerTxt: { color: theme.color.onSurfaceSecondary, fontSize: 11, textDecorationLine: 'underline' },
+  dangerTxt: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, textDecorationLine: 'underline' },
 });

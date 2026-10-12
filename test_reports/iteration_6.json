@@ -1,0 +1,50 @@
+{
+  "summary": "Session 6 UX/UI refresh validated end-to-end. Backend: 14/14 pass (test_session6_regress.py) — weekly_codes list of 8 ISO weeks sorted ASC with last week == current Monday, consistency sum(issued/activated) <= order_codes, simulate-order increments current week's issued; Shopify webhook now 401 without signature (secret installed), 200 with valid HMAC + idempotent on replay; DELETE /api/users/{id} works and is Bearer-gated. Frontend: no 'YOUR BEAUTY EXPERT' two-line gold banner above any screen title anymore; BrandHeader (logo + centered title + optional subtitle) present on /home, /coach, /protocol, /library, /profile, /admin — logo not deformed, texts centered. STREAK/SESSIONS/WEEK (EN) and SÉANCES/SEMAINE and MINUTES DE LUMIÈRE (FR) all render on a single line (measured height==line-height). Admin /admin unlocks with the ADMIN_TOKEN, 'VENTES PAR SEMAINE' section renders 8 columns (count on top, SXX label at bottom) and all KPI labels (Clientes / Vérifiées / Découverte / En pause / Codes commande / Bilans) are single-line. Delete-data button present in /profile with red text 'Delete my data / Profile, assessment, sessions and chats — permanent'. 0 console errors on all 6 verified screens. One FR localization miss found: home.stat.streak renders 'Streak' instead of 'Série' (i18n.ts line 240).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "home stat card (FR)",
+        "issue": "In French locale the first stat card still displays 'Streak' instead of 'Série'. Problem statement explicitly asked for SÉRIE / SÉANCES / SEMAINE. Reference: /app/frontend/src/i18n.ts:240 — 'home.stat.streak': 'Streak' should be 'Série'. SÉANCES and SEMAINE are correct.",
+        "testID": "n/a (text in home.tsx stat card)",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Profile → Delete my data confirmation",
+        "issue": "The Alert.alert('Delete my data', ...) call in /app/frontend/app/(tabs)/profile.tsx:57 does NOT render a visible confirmation dialog in the Expo web preview — react-native-web's Alert is a known no-op (nothing in the DOM, no window.confirm). The button is tappable and wired to Alert.alert; on an actual iOS/Android build the native confirmation will appear. Confirm end-to-end on a device build or swap to a custom Modal for parity on web.",
+        "affected_testIDs": ["delete-data"]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_session6_regress.py",
+    "/app/test_reports/pytest/pytest_session6.xml"
+  ],
+  "action_items": [
+    "Fix FR translation: in /app/frontend/src/i18n.ts line 240, change 'home.stat.streak': 'Streak' → 'Série' (keep EN at line 574 unchanged).",
+    "(Optional) Replace Alert.alert on delete-data with a themed Modal so the confirmation dialog is also visible/testable in the web preview — currently works on native builds only.",
+    "(No-op nice-to-have, carried over) migrate RN deprecated shadow* props to boxShadow and move props.pointerEvents to style.pointerEvents to silence the recurring console warnings."
+  ],
+  "critical_code_review_comments": [
+    "BrandHeader uses numberOfLines={2} on title/subtitle + a flex-stretched row with 56-px side slots — robust against the previous truncation bug; verified visually on all 6 screens.",
+    "weekly_codes bucket code in server.py (lines 1133-1164) is clean but iterates db.order_codes twice (once for `used`, once for weekly buckets). Could be collapsed into a single pass if the collection grows large.",
+    "Alert.alert (react-native-web) is a known silent no-op; wrapping delete-data in a cross-platform Modal would make the confirmation testable from Playwright and consistent across targets."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_session6_regress.py (new)",
+    "/app/test_reports/pytest/pytest_session6.xml (generated)"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 on test_session6_regress.py — weekly_codes, Shopify webhook signed, DELETE user, non-regression)",
+    "frontend": "~95% — all visual bugs reported by the client are fixed; one FR string miss ('Streak' not translated to 'Série') and one web-only limitation (Alert.alert no-op) remain."
+  },
+  "seed_data_creation": "One throwaway user created via NUR-CREATOR during delete-data check; test suite also uses NUR-CREATOR per activation (expected). Legacy test_security_hardening.py also uses NUR-CREATOR — these accumulate but do not touch production data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The two remaining items are tiny: (1) one-line i18n fix (Streak→Série in FR), (2) optionally swap Alert.alert for a cross-platform Modal in profile.tsx. Everything else from session 6 (fonts, BrandHeader, single-line labels, weekly_codes histogram, signed Shopify webhook, delete-data wiring) is verified green. The _layout.tsx font gate works — no font loading errors in console on any screen. Admin /admin unlocks fine with X-Admin-Token=NqarDTCRkoy3ZYJ74-r3JLp13V8gl_oKILlndz86Jfo pasted into the 'Clé d'accès' field; the admin-lockout 5-strike bucket is still global, so avoid running TestRateLimits before TestAdminAuth.",
+  "rca_of_issue": "FR 'Streak' not translated: /app/frontend/src/i18n.ts:240 was never updated when the French stat labels were introduced (SÉANCES and SEMAINE on 241-242 were, STREAK on 240 was copied from English as placeholder). Fix: change the value to 'Série'. Alert.alert invisibility on web preview: react-native-web ships Alert as a stub that logs to console (see https://github.com/necolas/react-native-web — Alert module). Playwright's page.on('dialog') therefore captures nothing because no window.confirm/alert is invoked. The Pressable itself is wired correctly (onPress → Alert.alert → onConfirm → wipeAccount → DELETE /api/users/{id} + clearStoredUser + router.replace('/')); the DELETE call was tested green by backend test_delete_user_success_then_404."
+}
