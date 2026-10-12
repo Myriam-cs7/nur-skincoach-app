@@ -224,3 +224,42 @@ Le Skincoach n'est plus un simple chat : c'est une consultation.
 `/app/backend/tests/test_voice_photo.py` → 14/14 OK (TTS, cache, STT, consultation 4-5 tours,
 photo, garde-fous). Frontend : 7/7 OK (avatar, envoi texte, points de réflexion, bouton Écouter,
 micro web, carte photo, « Plus tard »).
+
+---
+
+# Session juin 2026 (suite) — Console admin, code d'accès à l'achat, nouvel avatar
+
+## Console privée « Espace Nūr » (`/app/frontend/app/admin.tsx`)
+Accès : URL `/admin` ou **appui long de 1,2 s sur le titre de l'onglet Profil**. PIN `ADMIN_PIN`
+(= `NUR2026`), mémorisé dans SecureStore, bouton cadenas pour verrouiller.
+Contenu : 6 indicateurs (clientes, vérifiées, découverte, en pause, codes de commande utilisés/total,
+bilans), statut Shopify, **commande de test** (émet et envoie de vrais codes), **codes de commande**
+(avec renvoi de l'e-mail), **clientes** (statut + jours de découverte restants + n° de commande),
+**codes partenaires** (création + interrupteur actif/révoqué), **accès manuels** et **demandes d'accès**.
+API : `GET /api/admin/overview`, `POST /api/admin/simulate-order`, `/api/admin/partner-code`,
+`/api/admin/code-state`, `/api/admin/resend-codes` (toutes protégées par le PIN).
+
+## Code d'accès envoyé automatiquement à l'achat
+`POST /api/shopify/webhook/orders-paid` — webhook `orders/paid` à déclarer dans Shopify.
+- Signature HMAC SHA256 base64 vérifiée (`X-Shopify-Hmac-Sha256`) contre `SHOPIFY_WEBHOOK_SECRET`.
+  Secret absent → 503 ; signature invalide → 401.
+- **Un code par masque commandé** (format `NUR-XXXX-XXXX`, alphabet sans O/0/I/1/S/5, usage unique).
+- E-mail envoyé AVANT l'écriture en base (aucun code fantôme), idempotent par `order_id`.
+- L'e-mail précise explicitement : **« Ce masque est un cadeau ? Transmettez ce code à la personne
+  qui le recevra — un code = une personne. »** Traduit dans les 7 langues (`_ORDER_COPY` dans `emailer.py`).
+- Collections : `order_codes` {code, order_id, order_name, email, lang, created_at, sent_at}
+  + entrée `activation_codes` kind="order".
+- `POST /api/admin/simulate-order` rejoue le même chemin sans Shopify (tests avant mise en ligne).
+
+## Reste à faire côté Nūr
+1. Créer le webhook Shopify `orders/paid` vers `https://<domaine>/api/shopify/webhook/orders-paid`
+   et coller la clé de signature dans `SHOPIFY_WEBHOOK_SECRET` (+ `SHOPIFY_STORE_DOMAIN` / `SHOPIFY_ADMIN_TOKEN`)
+
+## Avatar du Skincoach
+Nouvelle photo fournie par la cliente (fond gris) : `assets/images/nur-avatar.png` (cercle animé
+dans l'en-tête du chat) et `nur-coach-portrait.png` (grand portrait sur l'écran d'accueil du coach,
+pour éclaircir l'écran — demande explicite : « sinon ça fait trop noir partout »).
+
+## Tests session 4
+`/app/backend/tests/test_admin_console.py` → 18/18 OK (3 ignorés quand le quota e-mail est épuisé).
+Frontend : 9/9 OK (PIN, KPI, création et révocation de code, cadenas) + non-régression de `/coach`.

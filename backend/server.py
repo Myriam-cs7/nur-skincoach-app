@@ -6,6 +6,8 @@ import secrets
 import logging
 import re
 import hashlib
+import hmac
+import base64
 import tempfile
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -17,7 +19,7 @@ import qrcode
 from PIL import Image
 from qrcode.constants import ERROR_CORRECT_H
 
-from fastapi import FastAPI, APIRouter, HTTPException, Query, Response, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Request, Response, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -26,7 +28,7 @@ from dotenv import load_dotenv
 from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
 from emergentintegrations.llm.openai import OpenAISpeechToText, OpenAITextToSpeech
 
-from emailer import send_otp_email
+from emailer import send_otp_email, send_order_codes_email
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -38,6 +40,7 @@ EMERGENT_LLM_KEY = os.environ["EMERGENT_LLM_KEY"]
 SHOPIFY_STORE_DOMAIN = (os.environ.get("SHOPIFY_STORE_DOMAIN") or "").strip()
 SHOPIFY_ADMIN_TOKEN = (os.environ.get("SHOPIFY_ADMIN_TOKEN") or "").strip()
 SHOPIFY_API_VERSION = (os.environ.get("SHOPIFY_API_VERSION") or "2025-01").strip()
+SHOPIFY_WEBHOOK_SECRET = (os.environ.get("SHOPIFY_WEBHOOK_SECRET") or "").strip()
 ADMIN_PIN = (os.environ.get("ADMIN_PIN") or "NUR2026").strip()
 PUBLIC_APP_URL = (os.environ.get("PUBLIC_APP_URL") or "https://nurprotocol.com").strip()
 
@@ -820,6 +823,245 @@ async def admin_access_requests(pin: str = Query(...)):
     items = await db.access_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=300)
     allowed = await db.allowed_emails.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=300)
     return {"requests": items, "allowed": allowed}
+
+
+# ---------- Access codes issued when a Shopify order is paid ----------
+_CODE_ALPHABET = "ACDEFGHJKLMNPQRTUVWXY34789"  # no O/0, no I/1, no S/5
+
+
+async def _unique_access_code() -> str:
+    for _ in range(20):
+        body = "".join(secrets.choice(_CODE_ALPHABET) for _ in range(8))
+        code = f"NUR-{body[:4]}-{body[4:]}"
+        if not await db.activation_codes.find_one({"code": code}):
+            return code
+    raise HTTPException(status_code=500, detail="code_generation_failed")
+
+
+def _order_lang(order: dict) -> str:
+    locale = (order.get("customer_locale") or (order.get("customer") or {}).get("locale") or "fr")
+    prefix = str(locale).split("-")[0].lower()
+    return prefix if prefix in {"fr", "en", "es", "it", "de", "ru", "ar"} else "fr"
+
+
+def _order_quantity(order: dict) -> int:
+    items = order.get("line_items") or []
+    total = sum(int(i.get("quantity") or 1) for i in items) or 1
+    return max(1, min(total, 10))
+
+
+async def issue_order_codes(order: dict) -> dict:
+    """One access code per mask ordered — idempotent per Shopify order."""
+    order_id = str(order.get("id") or order.get("admin_graphql_api_id") or "")
+    order_name = order.get("name") or order.get("order_number") or order_id
+    email = (order.get("email") or (order.get("customer") or {}).get("email") or "").strip().lower()
+    if not order_id:
+        raise HTTPException(status_code=400, detail="order_id_missing")
+    if not EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="order_email_missing")
+
+    existing = await db.order_codes.find({"order_id": order_id}, {"_id": 0}).to_list(length=20)
+    if existing:
+        return {"ok": True, "already_issued": True, "order": order_name,
+                "codes": [c["code"] for c in existing], "emailed": False}
+
+    lang = _order_lang(order)
+    quantity = _order_quantity(order)
+    first_name = (order.get("customer") or {}).get("first_name")
+    codes = [await _unique_access_code() for _ in range(quantity)]
+
+    # Email first: a failed send must not leave unusable codes behind
+    await send_order_codes_email(to=email, codes=codes, order_name=str(order_name), lang=lang)
+
+    now = utc_now_iso()
+    for code in codes:
+        await db.activation_codes.insert_one({
+            "code": code, "created_at": now, "kind": "order", "multi_use": False,
+            "active": True, "uses": 0, "label": f"Commande {order_name}",
+            "order_id": order_id, "order_name": str(order_name), "email": email,
+        })
+        await db.order_codes.insert_one({
+            "code": code, "order_id": order_id, "order_name": str(order_name),
+            "email": email, "first_name": first_name, "lang": lang,
+            "created_at": now, "sent_at": now,
+        })
+    await db.allowed_emails.update_one(
+        {"email": email},
+        {"$set": {"email": email, "label": f"Commande {order_name}", "first_name": first_name,
+                  "created_at": now}},
+        upsert=True,
+    )
+    await db.access_requests.delete_one({"email": email})
+    logger.info("Issued %d access code(s) for order %s (%s)", quantity, order_name, email)
+    return {"ok": True, "already_issued": False, "order": order_name, "codes": codes, "emailed": True}
+
+
+@api.post("/shopify/webhook/orders-paid")
+async def shopify_orders_paid(request: Request):
+    raw = await request.body()
+    if not SHOPIFY_WEBHOOK_SECRET:
+        logger.warning("Shopify webhook received but SHOPIFY_WEBHOOK_SECRET is not set")
+        raise HTTPException(status_code=503, detail="webhook_not_configured")
+
+    sent = request.headers.get("X-Shopify-Hmac-Sha256") or ""
+    digest = base64.b64encode(
+        hmac.new(SHOPIFY_WEBHOOK_SECRET.encode(), raw, hashlib.sha256).digest()
+    ).decode()
+    if not hmac.compare_digest(sent, digest):
+        raise HTTPException(status_code=401, detail="invalid_signature")
+
+    try:
+        order = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise HTTPException(status_code=400, detail="invalid_payload")
+
+    financial = (order.get("financial_status") or "").lower()
+    if financial and financial not in {"paid", "partially_paid", "authorized"}:
+        return {"ok": True, "skipped": financial}
+
+    return await issue_order_codes(order)
+
+
+class SimulateOrderRequest(BaseModel):
+    pin: str
+    email: str
+    order_name: Optional[str] = None
+    quantity: int = 1
+    lang: str = "fr"
+    first_name: Optional[str] = None
+
+
+@api.post("/admin/simulate-order")
+async def admin_simulate_order(req: SimulateOrderRequest):
+    """Same path as the Shopify webhook — used before the store credentials are wired."""
+    _check_pin(req.pin)
+    order_name = req.order_name or f"#TEST{secrets.randbelow(9000) + 1000}"
+    order = {
+        "id": f"sim-{uuid.uuid4()}",
+        "name": order_name,
+        "email": (req.email or "").strip().lower(),
+        "financial_status": "paid",
+        "customer_locale": req.lang,
+        "customer": {"first_name": req.first_name, "email": (req.email or "").strip().lower()},
+        "line_items": [{"quantity": max(1, min(req.quantity, 10)), "title": "Nūr Protocol LED Mask"}],
+    }
+    return await issue_order_codes(order)
+
+
+# ---------- Admin console ----------
+class AdminPartnerCodeRequest(BaseModel):
+    pin: str
+    code: str
+    label: Optional[str] = None
+    multi_use: bool = True
+
+
+class AdminCodeStateRequest(BaseModel):
+    pin: str
+    code: str
+    active: bool
+
+
+class AdminResendRequest(BaseModel):
+    pin: str
+    email: str
+
+
+@api.get("/admin/overview")
+async def admin_overview(pin: str = Query(...), limit: int = Query(default=100, ge=1, le=500)):
+    _check_pin(pin)
+    users_raw = await db.users.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=limit)
+    users = []
+    for u in users_raw:
+        status, days_left = _resolve_access(u)
+        users.append({
+            "id": u["id"],
+            "email": u.get("shopify_email") or u.get("email"),
+            "first_name": u.get("first_name") or (u.get("intake") or {}).get("name"),
+            "activation_code": u.get("activation_code"),
+            "order_ref": u.get("order_ref"),
+            "access_status": status,
+            "trial_days_left": days_left,
+            "created_at": u.get("created_at"),
+            "has_intake": bool(u.get("intake")),
+            "has_diagnosis": bool(u.get("diagnosis")),
+        })
+
+    codes = await db.activation_codes.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=300)
+    partner_codes = [c for c in codes if c.get("kind") in {"partner", "demo"}]
+    order_codes = await db.order_codes.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=200)
+    used = {c["code"]: c for c in codes if c.get("kind") == "order"}
+    for oc in order_codes:
+        oc["used"] = bool((used.get(oc["code"]) or {}).get("activated_by"))
+
+    requests = await db.access_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=200)
+    allowed = await db.allowed_emails.find({}, {"_id": 0}).sort("created_at", -1).to_list(length=200)
+
+    counts = {
+        "users": await db.users.count_documents({}),
+        "verified": sum(1 for u in users if u["access_status"] == "verified"),
+        "trial": sum(1 for u in users if u["access_status"] == "trial"),
+        "paused": sum(1 for u in users if u["access_status"] == "paused"),
+        "sessions": await db.sessions.count_documents({}),
+        "diagnoses": await db.diagnoses.count_documents({}),
+        "order_codes": await db.order_codes.count_documents({}),
+        "order_codes_used": sum(1 for oc in order_codes if oc.get("used")),
+        "leads": await db.leads.count_documents({}),
+    }
+    return {
+        "counts": counts,
+        "users": users,
+        "partner_codes": partner_codes,
+        "order_codes": order_codes,
+        "requests": requests,
+        "allowed": allowed,
+        "shopify": {"configured": shopify_configured(), "webhook": bool(SHOPIFY_WEBHOOK_SECRET),
+                    "store": SHOPIFY_STORE_DOMAIN or None},
+    }
+
+
+@api.post("/admin/partner-code")
+async def admin_partner_code(req: AdminPartnerCodeRequest):
+    _check_pin(req.pin)
+    code = (req.code or "").strip().upper()
+    if len(code) < 4:
+        raise HTTPException(status_code=400, detail="code_too_short")
+    await db.activation_codes.update_one(
+        {"code": code},
+        {"$set": {"code": code, "kind": "partner", "label": req.label or "Partenaire",
+                  "multi_use": req.multi_use, "active": True},
+         "$setOnInsert": {"created_at": utc_now_iso(), "uses": 0}},
+        upsert=True,
+    )
+    doc = await db.activation_codes.find_one({"code": code}, {"_id": 0})
+    return {"ok": True, "code": doc}
+
+
+@api.post("/admin/code-state")
+async def admin_code_state(req: AdminCodeStateRequest):
+    _check_pin(req.pin)
+    code = (req.code or "").strip().upper()
+    res = await db.activation_codes.update_one({"code": code}, {"$set": {"active": req.active}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="code_not_found")
+    return {"ok": True, "code": code, "active": req.active}
+
+
+@api.post("/admin/resend-codes")
+async def admin_resend_codes(req: AdminResendRequest):
+    _check_pin(req.pin)
+    email = (req.email or "").strip().lower()
+    if not EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="invalid_email")
+    items = await db.order_codes.find({"email": email}, {"_id": 0}).sort("created_at", -1).to_list(length=10)
+    if not items:
+        raise HTTPException(status_code=404, detail="no_code_for_email")
+    codes = [i["code"] for i in items]
+    order_name = items[0].get("order_name") or ""
+    lang = items[0].get("lang") or "fr"
+    await send_order_codes_email(to=email, codes=codes, order_name=str(order_name), lang=lang)
+    await db.order_codes.update_many({"email": email}, {"$set": {"sent_at": utc_now_iso()}})
+    return {"ok": True, "email": email, "codes": codes}
 
 
 # ---------- Progress (charts) ----------

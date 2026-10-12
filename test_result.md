@@ -225,6 +225,65 @@ frontend:
     working: "NA"
     file: "/app/frontend/app/(tabs)/protocol.tsx"
 
+## Session 4 — Console admin privée, code d'accès envoyé à l'achat, nouvel avatar
+
+user_problem_statement: >
+  (1) Un écran privé pour suivre les activations, les périodes d'essai et les codes partenaires.
+  (2) Envoi automatique du code d'accès par e-mail dès qu'une commande Shopify est payée, en
+  précisant que le code doit être transmis à la personne à qui le masque est offert (cadeau).
+  (3) L'avatar du Skincoach était « hideuse » → nouvelle photo avec fond gris pour éclaircir l'écran.
+
+backend:
+  - task: "POST /api/shopify/webhook/orders-paid — 1 code d'accès par masque commandé"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, /app/backend/emailer.py"
+    comment: |
+      HMAC SHA256 base64 vérifié (en-tête X-Shopify-Hmac-Sha256) contre SHOPIFY_WEBHOOK_SECRET.
+      Secret absent → 503 webhook_not_configured. Mauvaise signature → 401. Signature valide →
+      codes générés (format NUR-XXXX-XXXX, alphabet sans O/0/I/1/S/5), e-mail envoyé AVANT la
+      persistance, idempotent par order_id (rejoué → already_issued=true, aucun nouvel e-mail).
+      Statut financier non payé → {"ok":true,"skipped":...}. Vérifié en local (401/200/replay).
+  - task: "POST /api/admin/simulate-order (PIN) — même chemin sans Shopify"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "Vérifié : 2 codes émis et envoyés à delivered+order@resend.dev pour #1042."
+  - task: "GET /api/admin/overview (PIN) — console"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "counts, users (statut + jours d'essai), partner_codes, order_codes (used), requests, allowed, shopify."
+  - task: "POST /api/admin/partner-code · /api/admin/code-state · /api/admin/resend-codes"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    comment: "Création/MAJ d'un code partenaire, activation/révocation, renvoi de l'e-mail des codes d'une cliente."
+  - task: "Activation avec un code de commande"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "NUR-DPNP-RG8Q → user créé, access_status=verified, order_ref='Commande #1043', code marqué utilisé."
+
+frontend:
+  - task: "Console admin /admin — PIN puis tableau de bord"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/admin.tsx"
+    comment: |
+      PIN mémorisé dans SecureStore, bouton cadenas pour verrouiller. KPI, statut Shopify,
+      commande de test, codes de commande (+ renvoi), clientes (statut/jours d'essai),
+      codes partenaires (interrupteur actif/révoqué), accès manuels, demandes d'accès.
+      Vérifié au screenshot avec PIN NUR2026.
+  - task: "Entrée discrète vers la console (appui long 1,2 s sur le titre du Profil)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/profile.tsx"
+  - task: "Nouvel avatar (fond gris) + portrait sur l'accueil du Skincoach"
+    implemented: true
+    working: true
+    file: "/app/frontend/assets/images/nur-avatar.png, nur-coach-portrait.png, /app/frontend/app/(tabs)/coach.tsx"
+
 ## Session 3 — Consultation vocale & analyse photo dans le Skincoach
 
 user_problem_statement: >

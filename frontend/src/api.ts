@@ -107,6 +107,40 @@ export type ProgressData = {
   target_per_week: number;
 };
 
+export type AdminOverview = {
+  counts: {
+    users: number; verified: number; trial: number; paused: number;
+    sessions: number; diagnoses: number; order_codes: number; order_codes_used: number; leads: number;
+  };
+  users: {
+    id: string; email?: string | null; first_name?: string | null; activation_code?: string | null;
+    order_ref?: string | null; access_status: 'verified' | 'trial' | 'paused';
+    trial_days_left?: number | null; created_at?: string; has_intake: boolean; has_diagnosis: boolean;
+  }[];
+  partner_codes: { code: string; label?: string; kind?: string; multi_use?: boolean; active?: boolean; uses?: number }[];
+  order_codes: { code: string; order_name: string; email: string; first_name?: string | null; created_at: string; used: boolean }[];
+  requests: { email: string; created_at: string; last_try?: string }[];
+  allowed: { email: string; label?: string; created_at?: string }[];
+  shopify: { configured: boolean; webhook: boolean; store?: string | null };
+};
+
+export const admin = {
+  overview: (pin: string) => request<AdminOverview>(`/admin/overview?pin=${encodeURIComponent(pin)}`),
+  allowEmail: (pin: string, email: string, label?: string) =>
+    request<{ ok: boolean }>('/admin/allow-email', { method: 'POST', body: JSON.stringify({ pin, email, label }) }),
+  partnerCode: (pin: string, code: string, label?: string) =>
+    request<{ ok: boolean }>('/admin/partner-code', { method: 'POST', body: JSON.stringify({ pin, code, label, multi_use: true }) }),
+  codeState: (pin: string, code: string, active: boolean) =>
+    request<{ ok: boolean }>('/admin/code-state', { method: 'POST', body: JSON.stringify({ pin, code, active }) }),
+  resendCodes: (pin: string, email: string) =>
+    request<{ ok: boolean; codes: string[] }>('/admin/resend-codes', { method: 'POST', body: JSON.stringify({ pin, email }) }),
+  simulateOrder: (pin: string, email: string, quantity: number, order_name?: string) =>
+    request<{ ok: boolean; order: string; codes: string[]; already_issued: boolean }>('/admin/simulate-order', {
+      method: 'POST',
+      body: JSON.stringify({ pin, email, quantity, order_name, lang: 'fr' }),
+    }),
+};
+
 export const api = {
   requestCode: (email: string, lang = 'fr') =>
     request<{ ok: boolean; expires_in: number; resend_after: number; masked_email: string }>('/auth/request-code', {

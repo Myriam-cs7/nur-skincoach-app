@@ -234,3 +234,113 @@ async def send_otp_email(*, to: str, code: str, lang: str = "fr") -> str | None:
     c = _OTP_COPY.get(lang, _OTP_COPY["fr"])
     subject = c["subject"].format(code=code)
     return await send_email(to=to, subject=subject, html=_otp_html(code, lang))
+
+
+# ---------- Access codes delivered right after a paid Shopify order ----------
+_ORDER_COPY = {
+    "fr": {
+        "subject": "Votre accès Nūr Protocol — commande {order}",
+        "hello": "Votre accès est prêt",
+        "intro": "Merci pour votre commande {order}. Voici votre code d'accès à l'application Nūr Protocol, votre Skincoach personnel.",
+        "intro_multi": "Merci pour votre commande {order}. Voici vos {count} codes d'accès à l'application Nūr Protocol — un par masque.",
+        "gift": "Ce masque est un cadeau ? Transmettez ce code à la personne qui le recevra : c'est lui qui ouvre son espace personnel et son Skincoach. Un code = une personne.",
+        "use": "Ouvrez l'application, choisissez « J'ai un code » et saisissez-le. Votre code n'expire pas.",
+        "foot": "Envoyé par {brand}. Nous ne vous demanderons jamais votre mot de passe ni vos informations bancaires par e-mail.",
+    },
+    "en": {
+        "subject": "Your Nūr Protocol access — order {order}",
+        "hello": "Your access is ready",
+        "intro": "Thank you for your order {order}. Here is your access code for the Nūr Protocol app and your personal Skincoach.",
+        "intro_multi": "Thank you for your order {order}. Here are your {count} access codes for the Nūr Protocol app — one per mask.",
+        "gift": "Is this mask a gift? Pass the code on to the person receiving it: it opens their own space and Skincoach. One code = one person.",
+        "use": "Open the app, choose “I have a code” and enter it. Your code does not expire.",
+        "foot": "Sent by {brand}. We will never ask for your password or payment details by email.",
+    },
+    "es": {
+        "subject": "Tu acceso Nūr Protocol — pedido {order}",
+        "hello": "Tu acceso está listo",
+        "intro": "Gracias por tu pedido {order}. Este es tu código de acceso a la aplicación Nūr Protocol y a tu Skincoach personal.",
+        "intro_multi": "Gracias por tu pedido {order}. Aquí tienes tus {count} códigos de acceso — uno por mascarilla.",
+        "gift": "¿Es un regalo? Entrega el código a la persona que recibirá la mascarilla: abre su propio espacio y su Skincoach. Un código = una persona.",
+        "use": "Abre la aplicación, elige «Tengo un código» e introdúcelo. Tu código no caduca.",
+        "foot": "Enviado por {brand}. Nunca te pediremos tu contraseña ni tus datos bancarios por correo.",
+    },
+    "it": {
+        "subject": "Il tuo accesso Nūr Protocol — ordine {order}",
+        "hello": "Il tuo accesso è pronto",
+        "intro": "Grazie per il tuo ordine {order}. Ecco il tuo codice di accesso all'app Nūr Protocol e al tuo Skincoach personale.",
+        "intro_multi": "Grazie per il tuo ordine {order}. Ecco i tuoi {count} codici di accesso — uno per maschera.",
+        "gift": "È un regalo? Consegna il codice alla persona che riceverà la maschera: apre il suo spazio e il suo Skincoach. Un codice = una persona.",
+        "use": "Apri l'app, scegli «Ho un codice» e inseriscilo. Il codice non scade.",
+        "foot": "Inviato da {brand}. Non chiederemo mai la tua password o i dati bancari via email.",
+    },
+    "de": {
+        "subject": "Ihr Nūr Protocol Zugang — Bestellung {order}",
+        "hello": "Ihr Zugang ist bereit",
+        "intro": "Vielen Dank für Ihre Bestellung {order}. Hier ist Ihr Zugangscode für die Nūr Protocol App und Ihren persönlichen Skincoach.",
+        "intro_multi": "Vielen Dank für Ihre Bestellung {order}. Hier sind Ihre {count} Zugangscodes — einer pro Maske.",
+        "gift": "Ist die Maske ein Geschenk? Geben Sie den Code an die beschenkte Person weiter: er öffnet ihren eigenen Bereich und Skincoach. Ein Code = eine Person.",
+        "use": "Öffnen Sie die App, wählen Sie „Ich habe einen Code“ und geben Sie ihn ein. Der Code verfällt nicht.",
+        "foot": "Gesendet von {brand}. Wir fragen niemals per E-Mail nach Ihrem Passwort oder Ihren Bankdaten.",
+    },
+    "ru": {
+        "subject": "Ваш доступ Nūr Protocol — заказ {order}",
+        "hello": "Ваш доступ готов",
+        "intro": "Спасибо за заказ {order}. Это ваш код доступа к приложению Nūr Protocol и вашему персональному Skincoach.",
+        "intro_multi": "Спасибо за заказ {order}. Вот ваши {count} кода доступа — по одному на маску.",
+        "gift": "Маска в подарок? Передайте код тому, кто её получит: он откроет личный кабинет и Skincoach. Один код — один человек.",
+        "use": "Откройте приложение, выберите «У меня есть код» и введите его. Код не истекает.",
+        "foot": "Отправлено {brand}. Мы никогда не спрашиваем пароль или банковские данные по email.",
+    },
+    "ar": {
+        "subject": "دخولك إلى نُور بروتوكول — الطلب {order}",
+        "hello": "حسابك جاهز",
+        "intro": "شكراً لطلبك {order}. هذا رمز الدخول الخاص بكِ إلى تطبيق نُور بروتوكول و Skincoach.",
+        "intro_multi": "شكراً لطلبك {order}. هذه رموز الدخول الخاصة بكِ ({count}) — رمز لكل قناع.",
+        "gift": "هل القناع هدية؟ أعطي الرمز للشخص الذي سيستلمه: الرمز يفتح مساحته الخاصة و Skincoach. رمز واحد لشخص واحد.",
+        "use": "افتحي التطبيق، اختاري «لدي رمز» ثم أدخليه. الرمز لا تنتهي صلاحيته.",
+        "foot": "أُرسلت بواسطة {brand}. لن نطلب منكِ كلمة المرور أو بيانات البطاقة عبر البريد.",
+    },
+}
+
+
+def _order_codes_html(codes: list[str], order_name: str, lang: str) -> str:
+    c = _ORDER_COPY.get(lang, _ORDER_COPY["fr"])
+    brand = escape(EMAIL_FROM_NAME)
+    order = escape(order_name or "")
+    intro = (c["intro_multi"].format(order=order, count=len(codes)) if len(codes) > 1
+             else c["intro"].format(order=order))
+    code_blocks = "".join(
+        '<tr><td align="center" style="padding:8px 0">'
+        '<div style="display:inline-block;background:#FBF7F0;border:1px solid #C9A961;border-radius:14px;'
+        'padding:16px 24px;font-family:Menlo,Consolas,monospace;font-size:26px;letter-spacing:4px;'
+        f'color:#3A2F21">{escape(code)}</div></td></tr>'
+        for code in codes
+    )
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#FBF7F0;padding:32px 0;font-family:Georgia,\'Times New Roman\',serif">'
+        '<tr><td align="center">'
+        '<table role="presentation" width="460" cellpadding="0" cellspacing="0" '
+        'style="background:#FFFFFF;border:1px solid #E8DCC4;border-radius:18px;padding:36px 32px">'
+        f'<tr><td align="center" style="font-size:12px;letter-spacing:4px;color:#A98C4E">{brand.upper()}</td></tr>'
+        f'<tr><td align="center" style="padding-top:16px;font-size:23px;color:#3A2F21">{escape(c["hello"])}</td></tr>'
+        '<tr><td align="center" style="padding:12px 0"><span style="color:#C9A961">&#9670;</span></td></tr>'
+        '<tr><td align="center" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;'
+        f'line-height:21px;color:#6B5F4F">{escape(intro)}</td></tr>'
+        f'<tr><td style="padding:18px 0">{code_blocks}</td></tr>'
+        '<tr><td align="center" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;'
+        f'line-height:20px;color:#6B5F4F">{escape(c["use"])}</td></tr>'
+        '<tr><td align="center" style="padding-top:20px"><div style="background:#FBF7F0;'
+        'border:1px solid #E8DCC4;border-radius:12px;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;'
+        f'font-size:12px;line-height:19px;color:#6B5F4F">{escape(c["gift"])}</div></td></tr>'
+        '<tr><td align="center" style="padding-top:22px;font-family:Arial,Helvetica,sans-serif;'
+        f'font-size:11px;line-height:17px;color:#ADA392">{escape(c["foot"]).format(brand=brand)}</td></tr>'
+        '</table></td></tr></table>'
+    )
+
+
+async def send_order_codes_email(*, to: str, codes: list[str], order_name: str, lang: str = "fr") -> str | None:
+    c = _ORDER_COPY.get(lang, _ORDER_COPY["fr"])
+    subject = c["subject"].format(order=order_name or "")
+    return await send_email(to=to, subject=subject, html=_order_codes_html(codes, order_name, lang))

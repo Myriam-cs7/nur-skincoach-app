@@ -46,6 +46,7 @@ type Msg = {
 };
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+const PORTRAIT = require('../../assets/images/nur-coach-portrait.png');
 const PHOTO_H = 220;
 const SILENCE_MS = 1800;
 const MAX_REC_MS = 60000;
@@ -354,9 +355,11 @@ export default function Coach() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
           <Wordmark label={t('coach.kicker')} />
-          <View style={styles.avatarRow}>
-            <CoachAvatar state={turn} size={messages.length === 0 ? 104 : 64} />
-          </View>
+          {messages.length > 0 || turn !== 'idle' ? (
+            <View style={styles.avatarRow}>
+              <CoachAvatar state={turn} size={64} />
+            </View>
+          ) : null}
           {statusLabel ? (
             <Text style={styles.status} testID="coach-status">
               {statusLabel}
@@ -370,6 +373,13 @@ export default function Coach() {
         <ScrollView ref={scrollRef} contentContainerStyle={styles.messages} keyboardShouldPersistTaps="handled">
           {messages.length === 0 ? (
             <View style={styles.empty}>
+              <View style={styles.portraitCard}>
+                <Image source={PORTRAIT} style={styles.portrait} resizeMode="cover" />
+                <View style={styles.portraitCaption}>
+                  <Text style={styles.portraitName}>Nūr Skincoach</Text>
+                  <Text style={styles.portraitRole}>{t('coach.kicker')}</Text>
+                </View>
+              </View>
               <Text style={styles.intro}>{t('coach.intro')}</Text>
               <Pressable style={styles.startBtn} onPress={() => sendMessage(t('coach.startMsg'))} testID="coach-start">
                 <Feather name="mic" size={15} color={theme.color.onBrand} />
@@ -584,6 +594,15 @@ const styles = StyleSheet.create({
   status: { color: theme.color.brand, fontSize: 12, letterSpacing: 1.6, marginTop: theme.spacing.sm, textTransform: 'uppercase' },
   messages: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl, gap: theme.spacing.md, flexGrow: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.lg, paddingTop: theme.spacing.md },
+  portraitCard: {
+    width: 220, borderRadius: theme.radius.lg, overflow: 'hidden',
+    borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: theme.color.surfaceElevated,
+    ...theme.shadow.card,
+  },
+  portrait: { width: '100%', height: 260 },
+  portraitCaption: { paddingVertical: theme.spacing.md, alignItems: 'center', gap: 2, backgroundColor: theme.color.surfaceElevated },
+  portraitName: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 19 },
+  portraitRole: { color: theme.color.brand, fontSize: 9, letterSpacing: 2 },
   intro: { color: theme.color.onSurfaceTertiary, fontSize: 14, textAlign: 'center', lineHeight: 22, paddingHorizontal: theme.spacing.md },
   startBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,

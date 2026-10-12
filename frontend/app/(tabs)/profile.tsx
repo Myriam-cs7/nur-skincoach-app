@@ -53,7 +53,9 @@ export default function Profile() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Wordmark label="NŪR PROTOCOL" />
-          <Text style={styles.title} testID="profile-title">{intake.name || t('profile.title')}</Text>
+          <Pressable onLongPress={() => router.push('/admin')} delayLongPress={1200} testID="profile-admin-gate">
+            <Text style={styles.title} testID="profile-title">{intake.name || t('profile.title')}</Text>
+          </Pressable>
           <Text style={styles.code}>{t('profile.code')} · {user.activation_code}</Text>
           <GoldDivider marginV={theme.spacing.xl} />
 
