@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Pressable, Text, useWindowDimensions } from 'react-native';
+import { View, Pressable, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,9 +40,8 @@ export default function Welcome() {
   }, []);
 
   const haloStyle = useAnimatedStyle(() => ({
-    // The dot itself stays at full colour; only the glow behind it breathes
-    opacity: 0.25 + pulse.value * 0.55,
-    transform: [{ scale: 1 + pulse.value * 0.35 }],
+    // A faint breath of intensity only — never a change of size
+    opacity: 0.55 + pulse.value * 0.45,
   }));
 
   return (
@@ -57,16 +56,12 @@ export default function Welcome() {
         {/* The only vivid colours in the app: the 7 LED lights */}
         <View style={styles.ledRing}>
           {LED_ORDER.map((id) => (
-            <View key={id} style={styles.ledSlot}>
-              <Animated.View
-                style={[styles.ledHalo, { backgroundColor: LED_META[id].hex }, haloStyle]}
-                pointerEvents="none"
-              />
-              <View
-                style={[styles.ledDot,
-                  { backgroundColor: LED_META[id].hex, shadowColor: LED_META[id].hex, borderColor: ledRim(id) }]}
-              />
-            </View>
+            <Animated.View
+              key={id}
+              style={[styles.ledDot,
+                { backgroundColor: LED_META[id].hex, shadowColor: LED_META[id].hex, borderColor: ledRim(id) },
+                haloStyle]}
+            />
           ))}
         </View>
 
@@ -108,12 +103,10 @@ const styles = makeStyles(() => ({
     paddingTop: theme.spacing.md,
   },
   ledRing: { flexDirection: 'row', justifyContent: 'space-between', marginTop: theme.spacing.xxl, paddingHorizontal: theme.spacing.xl },
-  ledSlot: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
-  ledHalo: { position: 'absolute', width: 22, height: 22, borderRadius: 999 },
   ledDot: {
-    width: 11, height: 11, borderRadius: 999,
-    shadowOpacity: 1, shadowRadius: 14, shadowOffset: { width: 0, height: 0 },
-    borderWidth: 1, borderColor: theme.color.border, elevation: 6,
+    width: 8, height: 8, borderRadius: 999,
+    shadowOpacity: 1, shadowRadius: 10, shadowOffset: { width: 0, height: 0 },
+    borderWidth: StyleSheet.hairlineWidth, elevation: 4,
   },
   centerBlock: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xl },
   title: {
