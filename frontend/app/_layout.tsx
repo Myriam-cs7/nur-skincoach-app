@@ -9,6 +9,7 @@ import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { useBrandFonts } from "../src/hooks/use-brand-fonts";
 import { initLang } from "../src/i18n";
 import { setScheme, theme } from "../src/theme";
+import { installPwaTags } from "../src/web-pwa";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,6 +22,7 @@ export default function RootLayout() {
   setScheme(scheme);
 
   useEffect(() => { initLang().then(() => setLangReady(true)); }, []);
+  useEffect(() => { installPwaTags(); }, []);
 
   useEffect(() => {
     if ((loaded || error) && (brandLoaded || brandError) && langReady) {

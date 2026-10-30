@@ -1,0 +1,42 @@
+{
+  "summary": "Session 11 — Retest ciblé après correction du seul blocage de l'itération 10 (balises PWA absentes du HTML servi). VERDICT : ✅ 100% VERT, le fix via injection runtime dans src/web-pwa.ts (appelé depuis app/_layout.tsx) fonctionne parfaitement, aucun doublon détecté. Détails PWA vérifiés dans le DOM (JS evaluate, pas curl, conformément à la demande) : document.title = 'Nūr Skincoach' ; link[rel=manifest] → /manifest.json (1 occurrence) ; link[rel=apple-touch-icon] → /apple-touch-icon.png (1) ; meta[name=apple-mobile-web-app-capable] = 'yes' (1) ; meta[name=mobile-web-app-capable] = 'yes' (1) ; meta[name=apple-mobile-web-app-title] = 'Nūr Skincoach' (1) ; meta[name=apple-mobile-web-app-status-bar-style] = 'black-translucent' (1) ; DEUX meta[name=theme-color] : #000000 (dark) + #FFFFFF (light). Même tableau exact sur route profonde /open et après navigation interne (/ → clic activate-button → /activate) : AUCUN DOUBLON (compteurs restent 1,1,1,1,1,1,2). Non-régression OK : / affiche logo + signature + testID activate-button ; /open affiche open-copy-link + open-qr (520×520, src=/api/qr…, naturalWidth=520, image complète) ; /home du compte démo (demo-charts-user) affiche today-device-settings ; les 5 onglets (home, coach, protocol, library, profile) chargent sans message d'erreur console ni PageError. Ressources statiques toutes en 200 (manifest.json, icon-192.png, icon-512.png, apple-touch-icon.png). /_preview-site-page.html s'affiche : bouton #nur-open href = https://nur-protocol-skin.preview.emergentagent.com (actif), #nur-ios et #nur-android aria-disabled='true' avec libellé 'SOON'. Seuls warnings console = expo-notifications unsupported-on-web (bruit connu, non bloquant). Aucun fix appliqué par l'agent de test.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_11.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "src/web-pwa.ts est propre et idempotent (le `continue` sur document.head.querySelector évite les doublons même si installPwaTags est appelé plusieurs fois) — bonne décision par rapport à l'alternative +html.tsx + web.output:'static' qui cassait le rendu.",
+    "Petit point d'amélioration future (non bloquant) : _layout.tsx:25 appelle installPwaTags() dans un useEffect sans dépendances, donc une seule fois au montage. Si un jour le layout est démonté/remonté (ex. HMR dev), la logique idempotente dans web-pwa.ts protège déjà — rien à changer."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "non testé (frontend only)", "frontend": "100% (3/3 critères du retest validés : balises PWA présentes et non dupliquées, non-régression des écrans, ressources PWA et preview-site-page toujours servies)"},
+  "seed_data_creation": "localStorage pour compte démo (nur.user_id=demo-charts-user, nur.session_token=HNFnCBteCIVkMP9oTNBe0ZOrukf3TkszMxRzEubSMCs, nur.lang=fr) — nettoyé par navigation sans persistance côté serveur.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Le blocage PWA de l'itération 10 est corrigé. Le fix se trouve dans /app/frontend/src/web-pwa.ts (idempotent, Platform.OS==='web' only) et est câblé dans /app/frontend/app/_layout.tsx:25. app.json conserve `expo.web.output: single` (volontaire — le passage à `static` cassait tout). Aucune action pendante. Le livrable est prêt côté frontend.",
+  "detailed_results": {
+    "pwa_tags_in_runtime_dom": {
+      "route_root": {"title": "Nūr Skincoach", "manifest": 1, "appleTouchIcon": 1, "appleCapable_yes": true, "mobileCapable_yes": true, "appleTitle_Nur_Skincoach": true, "appleStatus_black_translucent": true, "themeColor_dark_000000": true, "themeColor_light_FFFFFF": true},
+      "route_open": {"manifest": 1, "appleTouchIcon": 1, "appleCapable_yes": true, "appleTitle_Nur_Skincoach": true, "themeColor_count": 2},
+      "after_internal_navigation_root_to_activate": {"manifest": 1, "appleTouchIcon": 1, "appleCapable": 1, "mobileCapable": 1, "appleTitle": 1, "appleStatus": 1, "themeColor": 2, "no_duplicates": true},
+      "after_visiting_all_5_tabs": {"manifest": 1, "appleTouchIcon": 1, "appleCapable": 1, "appleTitle": 1, "appleStatus": 1, "themeColor": 2, "title": "Nūr Skincoach"}
+    },
+    "non_regression": {
+      "home_activate_button": true,
+      "home_signature_visible": true,
+      "home_logo_image_present": true,
+      "open_copy_link": true,
+      "open_qr_loaded": {"naturalWidth": 520, "naturalHeight": 520, "src_contains_api_qr": true, "complete": true},
+      "demo_dashboard_today_device_settings": true,
+      "five_tabs_no_error": {"home": true, "coach": true, "protocol": true, "library": true, "profile": true}
+    },
+    "pwa_resources_http": {"manifest.json": 200, "icon-192.png": 200, "icon-512.png": 200, "apple-touch-icon.png": 200, "_preview-site-page.html": 200},
+    "preview_site_page": {"nur_open_href": "https://nur-protocol-skin.preview.emergentagent.com", "nur_ios_aria_disabled": "true", "nur_android_aria_disabled": "true", "soon_label_visible": true},
+    "console_warnings_non_blocking": ["expo-notifications unsupported on web (push token listener, notifications handling) — bruit attendu, pas d'erreur"]
+  }
+}

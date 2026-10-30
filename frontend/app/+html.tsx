@@ -10,8 +10,18 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
+        <title>Nūr Skincoach</title>
+        {/* Installable from the browser: icon, name, full screen, black launch */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Nūr Skincoach" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
         {/*
           Disable body scrolling on web to make ScrollView components work correctly.
           If you want to enable scrolling, remove `ScrollViewStyleReset` and
@@ -24,6 +34,7 @@ export default function Root({ children }: PropsWithChildren) {
               body > div:first-child { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
+              @media (prefers-color-scheme: light) { body { background-color: #FFFFFF !important; } }
             `,
           }}
         />
@@ -35,7 +46,7 @@ export default function Root({ children }: PropsWithChildren) {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#06060A",
+          backgroundColor: "#000000",
         }}
       >
         {children}

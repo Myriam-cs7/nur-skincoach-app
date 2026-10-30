@@ -1,210 +1,111 @@
-# Nūr Skincoach — Identité beauty tech, rituel fidèle au masque, accès d'essai
+# Accès à l'app depuis un téléphone — sans passer par l'appareil photo
 
-L'application d'accompagnement du masque LED Nūr Protocol : activation, bilan de peau, rituel LED
-personnalisé et consultation avec le Skincoach. Cette étape donne à l'app une écriture de marque
-beauty tech, nettoie son entrée et aligne le rituel sur le vrai boîtier.
+Une page d'accès qui ouvre Nūr Skincoach sur n'importe quel téléphone en tapant un lien, plus la
+page `nurprotocol.com/app` que le QR de la carte gold ouvrira chez les clientes.
+Le QR d'aperçu, détourné par une autre application installée sur le téléphone, cesse d'être le
+chemin obligatoire pour tester l'app.
 
 ## Pour qui
 
-- La cliente qui vient de recevoir son masque et scanne le QR code de la carte gold.
-- La cliente équipée qui rouvre l'app pour sa séance du jour.
-- La marque, qui doit pouvoir essayer l'app en conditions réelles et y retrouver sa charte.
+- La marque, qui doit pouvoir ouvrir l'app sur son propre téléphone en quelques secondes.
+- Les influenceuses, qui reçoivent un lien et doivent pouvoir essayer sans rien comprendre
+  à Expo Go ni à un QR code.
+- La cliente finale, qui scannera le QR de sa carte gold et doit arriver sur une page de marque,
+  jamais sur une erreur ni dans une application étrangère.
+
+## Ce qui est corrigé, et pourquoi
+
+Le QR de l'aperçu ne contient pas une adresse web : il contient une adresse technique réservée à
+l'application Expo Go. L'appareil photo ne peut donc pas l'ouvrir dans un navigateur et propose la
+seule application installée qui se déclare capable de traiter ce type de lien — sur ce téléphone,
+Doctolib. C'est aussi pour cela que les autres QR codes (menus, factures) fonctionnent
+normalement : ils contiennent, eux, une adresse web.
+
+Ce QR est généré par la plateforme d'aperçu et n'est pas modifiable. La correction consiste donc à
+ne plus en dépendre : un lien web ordinaire ouvre l'app complète dans le navigateur du téléphone,
+sans Expo Go et sans appareil photo.
 
 ## Contenu et expérience
 
-**Nouvelle écriture visuelle, dans l'esprit beauty tech**
-- Plus aucun serif : une police sans empattement géométrique pour les titres et les chiffres, une
-  seconde très lisible pour les textes et l'interface. Lettres légèrement espacées, chiffres larges,
-  hiérarchie nette — l'esprit « appareil de soin » plutôt que « magazine ».
-- Palette resserrée : noir, blanc, gris, or champagne en touches fines. Les 7 couleurs LED restent
-  les seules couleurs vives de l'app.
-- Deux ambiances : l'app suit le réglage du téléphone. Le noir reste l'ambiance par défaut et la
-  signature de la marque ; une version claire, blanche et clinique, s'active pour les clientes dont
-  le téléphone est en mode clair.
-- Mise en page plus aérée : marges constantes, blocs alignés, une seule information par niveau de
-  lecture, aucun ornement décoratif.
+**Page « Ouvrir Nūr sur mon téléphone » (privée)**
+- L'adresse de l'app écrite en grand, lisible et recopiable d'un seul geste.
+- Un QR code de secours qui contient, lui, une vraie adresse web : scanné avec l'appareil photo,
+  il ouvre le navigateur et jamais une autre application.
+- Trois étapes courtes : ouvrir le lien, ajouter l'app à l'écran d'accueil, entrer le code d'essai.
+- Un encadré de dépannage : que faire si l'appareil photo propose encore une autre application
+  (scanner depuis Expo Go, ou simplement taper le lien), et comment retirer cette proposition dans
+  les réglages du téléphone.
+- Page réservée à la marque et aux influenceuses : aucun lien depuis l'app des clientes.
 
-**« AT-HOME CLINIC » disparaît, « YOUR SKIN, YOUR PROTOCOL » le remplace**
-Retiré partout (haut de l'accueil, sous-titre du tableau de bord, pied de page) et remplacé à deux
-endroits seulement : surtitre de l'accueil et sous-titre du tableau de bord, sous le prénom. La
-phrase reste en anglais dans les sept langues, comme une signature de marque.
+**Installation sur l'écran d'accueil**
+L'app ouverte dans le navigateur peut être ajoutée à l'écran d'accueil : icône Nūr, nom Nūr
+Skincoach, ouverture en plein écran sans barre de navigateur, fond noir au lancement. L'essai
+ressemble alors à une vraie application, ce qui compte pour les retours des influenceuses.
 
-**Écran d'accueil réduit à l'essentiel**
-- Suppression du texte « Your private beauty space. AI assessment and bespoke LED ritual ».
-- Suppression du bouton « Scanner ma carte Nūr » et de l'écran de scan : le QR code de la carte amène
-  déjà sur cet écran.
-- Suppression du bouton de prescription gratuite et de la ligne de copyright.
-- Une seule action reste : « Activate my Skincoach & Nūr Protocol ». La mention de confidentialité
-  (cadenas) est conservée, sur une seule ligne.
+**Page `nurprotocol.com/app` prête à coller**
+La page que le QR de la carte gold ouvrira, livrée en un seul fichier à déposer sur le site :
+- en-tête de marque : logo, signature « YOUR SKIN, YOUR PROTOCOL » ;
+- un bouton principal « Ouvrir mon Skincoach » ;
+- deux emplacements App Store et Google Play, visibles mais inactifs tant que les applications ne
+  sont pas publiées, avec la mention « bientôt » ;
+- « Comment activer » : le code reçu par e-mail à l'achat, ou le code de la carte, et la consigne
+  de transmettre le code à la personne à qui le masque est offert ;
+- une ligne de confidentialité et le rappel que les photos ne sont jamais conservées ;
+- français et anglais selon la langue du téléphone.
 
-**Rituel fidèle au boîtier réel**
-Les 7 couleurs restent la grammaire de l'app, et chaque séance indique le réglage exact à faire sur
-la télécommande : le mode parmi les quatre réels (Skin Beautification, Cleansing, Wrinkle Reduction,
-Oil Control), le niveau de luminosité (1 à 3) et la durée parmi les valeurs du minuteur (5, 10, 15 ou
-20 minutes). La cliente lit « Rouge · Wrinkle Reduction · Luminosité 2 · 15 min » et reproduit à
-l'identique.
-
-**Préoccupations de peau nommées et traitées**
-Le questionnaire retient huit préoccupations (acné, rides, taches, rougeurs, pores dilatés, teint
-terne, sensibilité, cicatrices). Deux d'entre elles sont clarifiées et mieux prises en charge :
-- **Rougeurs · couperose** : le libellé est explicite dans toutes les langues, le protocole privilégie
-  les lumières apaisantes, la luminosité la plus douce et des séances courtes, avec un mot de
-  prudence rappelé avant la séance.
-- **Rides et relâchement** : protocole en lumières régénérantes sur le mode Wrinkle Reduction, avec
-  les durées les plus longues du minuteur, car c'est le motif d'achat le plus fréquent.
-Chaque préoccupation cochée se traduit par une ligne lisible dans le rituel : la couleur, le mode du
-boîtier, la luminosité et la durée. Rien n'est laissé implicite.
-
-**Le Skincoach : expert, jamais médecin**
-- Le Skincoach répond avec la compétence d'un expert des soins de la peau : il explique les
-  mécanismes, les actifs et les durées, et il assume une position claire plutôt que des généralités.
-- Il ne pose jamais de diagnostic et ne donne jamais d'avis médical ; il renvoie vers un
-  professionnel de santé dès qu'un signe sort du champ cosmétique, et le rappelle sans dramatiser.
-- Il ne recommande que des types de produits et des actifs, jamais de marques.
-- Il ne doit rien inventer : sur les lumières, il s'en tient aux indications retenues ci-dessous, et
-  dit honnêtement quand une preuve est limitée plutôt que de promettre un résultat.
-- Première question de toute consultation : **« Your concern »** — ce qui préoccupe la cliente
-  aujourd'hui. Toute la suite, séances comprises, découle de cette réponse et du bilan.
-
-**Les sept champs de traitement, assumés**
-Les lumières couvrent volontairement un large spectre de résultats, et chaque champ a sa place dans
-l'app, son protocole et le vocabulaire du Skincoach :
-éclat et glow · teint et grain de peau · rides et ridules · relâchement et fermeté · rougeurs et
-couperose · hydratation et confort · renouvellement cellulaire et réparation.
-Pour chaque champ, l'app indique la lumière, le mode du boîtier, la luminosité, la durée et le
-nombre de séances par semaine — avec un niveau de certitude honnête : solidement établi pour le
-rouge (collagène, fermeté, rides, réparation) et le bleu (imperfections), soutenu pour l'apaisement
-des rougeurs, plus exploratoire pour le vert sur les taches, sans jamais présenter une piste comme
-une garantie.
-
-**Cadre de la consultation : photos et provocations**
-L'app sera entre les mains du public ; certaines personnes enverront n'importe quoi.
-- La photo se prend **uniquement avec l'appareil photo**, jamais depuis la galerie : impossible
-  d'envoyer une image trouvée ailleurs.
-- Avant toute analyse, l'app vérifie qu'il s'agit bien d'un visage humain. Si ce n'est pas le cas
-  (animal, objet, autre partie du corps), elle refuse poliment, en une phrase neutre, et redemande
-  une photo de visage. Elle ne décrit pas ce qu'elle a vu et ne plaisante pas.
-- Toute image à caractère sexuel ou manifestement provocatrice est refusée sèchement et sans
-  commentaire, la conversation revenant immédiatement au soin de la peau. Aucune escalade, aucun
-  jugement, aucune description.
-- Dans la conversation, les provocations, insultes et sujets hors soin reçoivent une réponse courte
-  et professionnelle qui ramène au sujet. Le Skincoach ne se laisse pas détourner de son rôle.
-- En revanche, la vigilance reste entière sur les vraies photos : un signe inhabituel est relevé
-  clairement, avec la recommandation de consulter un professionnel de santé.
-- À chaque demande de photo, un rappel visible : la photo n'est ni enregistrée, ni conservée, ni
-  partagée — elle est analysée puis immédiatement oubliée. C'est une règle de l'app, pas une option.
-
-**Nouvel écran « Mon masque »**
-Tout le livret papier, consultable à tout moment : le branchement en 2 étapes (câble adaptateur dans
-le port USB de la télécommande, puis masque visage et bandeau cou sur l'adaptateur — les deux ports
-sont interchangeables), les 6 étapes d'une séance, le rôle de chaque bouton, la charge, l'entretien
-du silicone, le rythme conseillé (3 à 5 séances par semaine pendant 4 semaines) et les précautions
-(grossesse, allaitement, photosensibilité, affections oculaires ou cutanées héréditaires).
-
-**Test de sensibilité avant la première séance**
-Test guidé de 10 minutes sur l'avant-bras, avec ce qu'il faut observer et la conduite à tenir.
-Reportable, rappelé tant qu'il n'est pas fait, sans jamais bloquer l'accès au reste de l'app.
-
-**Version d'essai pour les influenceuses et la marque**
-L'app n'est pas encore ouverte aux clientes : il s'agit d'une version de mise au point.
-- Un code confidentiel très simple, **0000**, ouvre l'app immédiatement, sans e-mail ni attente.
-  Chaque personne qui l'utilise démarre avec son propre profil sur son téléphone.
-- Les codes d'accès réels (carte, achat) continuent de fonctionner en parallèle, pour tester le vrai
-  parcours quand c'est utile.
-- Depuis le profil, « recommencer mon bilan » permet de refaire le questionnaire, la photo et le
-  diagnostic autant de fois que voulu : c'est ce qui permet aux influenceuses de rejouer le parcours
-  et de signaler ce qui cloche.
-- Le verrouillage sérieux revient avant la publication sur les stores : le code 0000 est alors retiré
-  et seule l'activation par carte ou par achat subsiste.
-
-**Skin Analysis : ce qui existe et ce qui vient**
-Aujourd'hui, la photo du visage est analysée par l'IA et donne un bilan écrit, avec une animation de
-scan pendant l'analyse ; la photo n'est jamais conservée. L'expérience spectaculaire — tracé du
-visage qui se dessine, zones révélées une à une, puis une fiche de scores par critère (hydratation,
-grain de peau, éclat, fermeté, rougeurs, taches) et leur évolution dans le temps — fait l'objet de
-l'étape suivante, pour être traitée avec le soin qu'elle mérite plutôt que bâclée.
+Le contenu du QR de la carte gold ne change pas : il reste `https://nurprotocol.com/app`, l'adresse
+définitive prévue pour ne jamais être réimprimée.
 
 ## Parcours
 
-1. La cliente scanne le QR de la carte gold → l'accueil s'ouvre : signature « YOUR SKIN, YOUR
-   PROTOCOL », logo, titre, un seul bouton.
-2. Activation : son e-mail et le code reçu par e-mail, ou le code d'accès reçu à l'achat.
-3. Questionnaire de peau, photo facultative avec consentement, bilan, rituel.
-4. Proposition du test de sensibilité avant la première séance.
-5. Tableau de bord : prénom, signature, séance du jour avec couleur, mode du boîtier, luminosité et
-   durée, puis suivi des séances.
-6. « Mon masque » accessible à tout moment pour le branchement, le mode d'emploi et les précautions.
+1. La marque ou une influenceuse reçoit un seul lien, par message ou par e-mail.
+2. Le lien ouvre l'app directement dans le navigateur du téléphone : accueil, signature, logo,
+   bouton d'activation.
+3. Activation avec le code d'essai, puis questionnaire, bilan et rituel comme sur l'app finale.
+4. Option « ajouter à l'écran d'accueil » pour retrouver Nūr comme une application.
+5. Plus tard, la cliente scanne le QR de sa carte gold, arrive sur `nurprotocol.com/app`, et ouvre
+   l'app — ou l'installe depuis les stores une fois les applications publiées.
 
 ## Esprit visuel
 
-Noir profond ou blanc clinique selon le téléphone, or champagne en filets discrets, typographie
-d'ingénierie très lisible, chiffres mis en avant. Beaucoup de vide, des blocs strictement alignés,
-des réglages présentés comme une ordonnance : trois lignes courtes lisibles d'un coup d'œil. La seule
-couleur vive vient des 7 lumières LED.
+Même écriture que l'app : noir profond ou blanc clinique selon le téléphone, or champagne en filets
+fins, typographie d'ingénierie, beaucoup de vide. Les deux pages sont pensées pour le pouce :
+le lien et le bouton principal occupent toute la largeur, les zones tactiles sont larges, rien
+n'exige de zoomer.
 
 ## Étapes
 
 **Étape 1 — réalisée maintenant**
-Nouvelle typographie et nouvelle palette appliquées à toute l'app, ambiance claire ou sombre selon le
-téléphone, nettoyage complet de l'accueil, remplacement de « AT-HOME CLINIC » par « YOUR SKIN, YOUR
-PROTOCOL », suppression de l'écran de scan, posture et cadrage du Skincoach (expertise, « Your
-concern » en ouverture, sept champs de traitement, refus net des photos non conformes et des
-provocations, aucune affirmation médicale), affichage du mode du
-boîtier, de la luminosité et de la durée sur chaque séance, écran « Mon masque » complet (branchement
-inclus), test de sensibilité avant la première séance, code d'essai 0000 et reprise du bilan.
+Page d'accès privée avec lien recopiable, QR web de secours et dépannage ; installation de l'app
+sur l'écran d'accueil (icône, nom, plein écran) ; page `nurprotocol.com/app` complète et prête à
+coller, en français et en anglais.
 
-**Étape 2 — ensuite**
-Skin Analysis spectaculaire : tracé du visage animé, zones révélées une à une, fiche de scores par
-critère et suivi de l'évolution, plus les illustrations du livret redessinées à la charte.
+**Étape 2 — à la publication des builds**
+Mise en service des liens de marque sur les téléphones : le lien de la carte ouvre directement
+l'application lorsqu'elle est installée, et la page web sinon ; activation des boutons App Store et
+Google Play ; vérification du QR de la carte de bout en bout sur iOS et Android.
 
 **Étape 3 — plus tard**
-Écran de séance plein écran : minuteur synchronisé avec la durée du boîtier, couleur du jour, signal
-de fin et enregistrement automatique de la séance. Puis, avant la publication sur les stores, retrait
-du code 0000 et retour à l'activation par carte ou par achat uniquement.
+Comptage des scans de carte (combien de cartes activées, par semaine) dans la console privée, puis
+retrait du code d'essai au profit de la seule activation par carte ou par achat avant la mise en
+ligne sur les stores.
 
 ## Hypothèses retenues
 
-- Polices retenues, dans l'esprit Medicube et libres de droits : une géométrique neutre (type Archivo
-  ou Manrope) pour les titres, les chiffres et les boutons, et une police d'interface très lisible
-  (type Inter) pour les textes. Le logo reste une image, inchangé.
-- En version claire, l'or champagne est légèrement assombri pour rester lisible sur blanc ; le noir
-  et le blanc restent les deux couleurs dominantes dans les deux ambiances.
-- Le noir reste l'ambiance par défaut : une cliente dont le téléphone est en mode sombre, ou sans
-  préférence, voit l'app noire.
-- Correspondance couleur → mode du boîtier, à corriger si elle ne convient pas : rouge et violet →
-  Wrinkle Reduction ; jaune, vert et blanc → Skin Beautification ; cyan → Cleansing ; bleu →
-  Oil Control.
-- Couperose : traitée comme une peau sensible — lumière jaune et cyan, luminosité 1, séances de 5 à
-  10 minutes, et recommandation d'avis médical en cas de rosacée diagnostiquée ou de poussée.
-- Rides : lumières rouge et violet, mode Wrinkle Reduction, 15 à 20 minutes, luminosité 2 puis 3
-  après deux semaines d'habituation.
-- Indications retenues pour les sept lumières, fondées sur les données disponibles : rouge →
-  collagène, fermeté, rides, réparation et renouvellement cellulaire ; violet → combinaison
-  régénérante ; bleu → imperfections et excès de sébum ; cyan et jaune → apaisement des rougeurs et
-  éclat du teint ; vert → taches et homogénéité, présenté comme une piste et non une promesse ;
-  blanc → séance complète de fermeté. Aucune autre indication n'est affirmée.
-- Le Skincoach parle de « confort », « apparence », « aspect » et jamais de « traitement » d'une
-  maladie ; aucune pathologie n'est nommée comme étant prise en charge par l'app.
-- Luminosité conseillée : niveau 1 pour une peau sensible ou les deux premières semaines, niveau 2 en
-  rythme de croisière, niveau 3 pour les peaux habituées.
-- Les durées affichées sont toujours réglables sur le minuteur (5, 10, 15 ou 20 minutes).
-- Les noms des quatre modes restent en anglais, exactement comme sérigraphiés sur la télécommande.
-- « YOUR SKIN, YOUR PROTOCOL » s'écrit en capitales et n'est pas traduite.
-- Le bouton principal garde le libellé « Activate my Skincoach & Nūr Protocol », avec son équivalent
-  français pour les clientes francophones.
-- Le parcours de prescription gratuite n'est plus proposé dans l'app ; la page reste atteignable par
-  son lien direct pour les campagnes du site et des réseaux.
-- Les précautions sont présentées comme des conseils d'usage du fabricant, jamais comme un avis
-  médical.
-- Les illustrations du livret ne sont pas reprises telles quelles à l'étape 1 : les textes sont
-  intégrés, les dessins sont redessinés à l'étape 2.
-- Le code 0000 est un code d'essai assumé : toute personne qui connaît le lien de l'app peut entrer.
-  C'est acceptable tant que l'app n'est pas publiée et qu'il n'y a pas de clientes, et c'est retiré
-  avant la mise en ligne sur les stores.
-- Les protections déjà en place restent actives en arrière-plan sans rien demander à l'utilisatrice :
-  chaque profil reste cloisonné, les photos ne sont pas conservées et les appels à l'IA restent
-  plafonnés pour éviter les dérapages de facture. Seule la porte d'entrée est simplifiée.
-- La console privée garde sa propre clé, mémorisée sur le téléphone : elle n'est plus à ressaisir,
-  mais elle n'est pas remplacée par 0000 puisqu'elle donnera accès aux e-mails des clientes.
-- Le refus d'une photo non conforme ne consomme pas de séance et ne laisse aucune trace dans
-  l'historique de la cliente.
+- Le QR d'aperçu Expo Go est généré par la plateforme et ne peut pas être modifié : il est
+  contourné, pas corrigé.
+- La bannière « Ouvrir dans Doctolib » vient d'un réglage du téléphone, pas de l'app. Elle peut
+  être retirée dans Réglages → Applications → Doctolib → Ouvrir par défaut → Effacer, mais ce n'est
+  plus nécessaire une fois le lien utilisé à la place de l'appareil photo.
+- L'app ouverte dans le navigateur donne accès à tout le parcours. La caméra et le micro demandent
+  une autorisation du navigateur et restent moins fiables qu'en application installée ; les
+  notifications, elles, n'existeront qu'après génération des builds.
+- La page d'accès reste privée : elle n'apparaît nulle part dans l'app des clientes.
+- La page `nurprotocol.com/app` est livrée en fichier autonome, sans dépendance au serveur de
+  l'app, pour être collée telle quelle sur le site ou sur Shopify. Les liens des stores y sont
+  préparés et resteront inactifs jusqu'à la publication.
+- Les textes des deux pages sont en français et en anglais ; les autres langues de l'app affichent
+  l'anglais.
+- L'icône et le nom utilisés pour l'écran d'accueil sont ceux déjà en place dans l'app.
+- Le travail sur l'analyse spectaculaire et les courbes d'évolution reprend immédiatement après
+  l'étape 1, sans rien perdre de ce qui a été décidé.

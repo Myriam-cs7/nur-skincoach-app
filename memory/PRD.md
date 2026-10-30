@@ -402,8 +402,7 @@ et les influenceuses.
 - **Code d'essai `0000`** multi-usage pour la marque et les créatrices + « recommencer mon bilan »
   dans le profil.
 
-## Tests session 8
-`/app/backend/tests/test_session7_beauty_tech.py` → 13/13 OK (2 ignorés : limiteur d'activation
+## Tests session 8`/app/backend/tests/test_session7_beauty_tech.py` → 13/13 OK (2 ignorés : limiteur d'activation
 saturé par le test précédent, pas une régression) ; frontend : 19 icônes Feather chargées sur le
 tableau de bord, 5 onglets + `/mask`, `/patch-test`, `/scan`, `/admin`, chat et animations
 vérifiés dans les deux ambiances. `expo-doctor` 20/20.
@@ -426,8 +425,31 @@ expo-router 58, TypeScript 6).
   dans `activate.tsx`, exceptions documentées pour `Date.now()` hors rendu.
 - Résultat : `tsc --noEmit` et `eslint` sans erreur, `expo-doctor` 20/20, backend inchangé.
 
-## Étapes suivantes (déjà cadrées avec la cliente)
-- Étape 2 : Skin Analysis spectaculaire (tracé du visage animé, zones révélées, fiche de scores
+# Session juin 2026 — Ouvrir l'app sur un téléphone sans appareil photo
+
+Le QR de l'aperçu contient une adresse `exp://` réservée à Expo Go : l'appareil photo ne sait pas
+l'ouvrir et propose une autre application installée (Doctolib chez la cliente). Ce QR est généré
+par la plateforme et n'est pas modifiable → il est contourné, pas corrigé.
+
+- **Page privée `/open`** : adresse de l'app en grand et recopiable, bouton de partage, QR de
+  secours (`/api/qr?data=<url>` → vraie adresse web), 3 étapes, encadré de dépannage.
+  Aucun lien vers cette page depuis l'app des clientes.
+- **Installation sur l'écran d'accueil** : `public/manifest.json` + icônes, balises injectées au
+  runtime par `src/web-pwa.ts`. `expo.web.output` doit rester **`single`** (avec `static`, l'app
+  ne s'affiche plus du tout) ; les balises se vérifient dans le DOM, pas par `curl`.
+- **Page du site prête à coller** : `deliverables/page-nurprotocol-app.html` (signature, bouton
+  « Ouvrir mon Skincoach », stores grisés « bientôt », activation, mention cadeau,
+  confidentialité, FR/EN, clair/sombre) + `README-ouvrir-sur-telephone.md`. Aperçu :
+  `/_preview-site-page.html`.
+- Le contenu du QR de la carte gold ne change pas : `https://nurprotocol.com/app`.
+
+## Tests session 10-11
+Itération 10 : tout vert sauf les balises PWA absentes du HTML servi → corrigé par injection
+runtime (la piste `web.output: static` a été testée puis abandonnée : app entièrement noire).
+Itération 11 : 100 % vert — balises présentes sur `/` et `/open`, aucun doublon après navigation,
+ressources en 200, page du site conforme, aucune régression sur les 5 onglets.
+
+## Étapes suivantes (déjà cadrées avec la cliente)- Étape 2 : Skin Analysis spectaculaire (tracé du visage animé, zones révélées, fiche de scores
   par critère et suivi) + illustrations du livret redessinées.
 - Étape 3 : écran de séance plein écran (minuteur synchronisé, signal de fin, enregistrement
   automatique) puis retrait du code `0000` avant publication sur les stores.

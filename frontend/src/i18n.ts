@@ -368,13 +368,32 @@ const FR: Dict = {
   'profile.mask': 'Mon masque',  'profile.patch': 'Test de sensibilité',
   'profile.redo_full': 'Recommencer mon bilan',
   'profile.redo_full.hint': 'Questionnaire, photo et bilan — autant de fois que vous voulez',
-  'library.settings': 'Réglages du boîtier',
-  'library.perWeek': '{n} séances par semaine',
+  'library.settings': 'Réglages du boîtier',  'library.perWeek': '{n} séances par semaine',
   'device.perWeek': 'Séances / semaine',
   'library.evidence': 'Niveau de certitude',
   'evidence.solid': 'Solidement établi',
   'evidence.supported': 'Soutenu par les données',
   'evidence.exploratory': 'Piste exploratoire, pas une promesse',
+
+  // ---- Private access page (brand & influencers) ----
+  'open.title': 'Ouvrir Nūr sur mon téléphone',
+  'open.sub': 'Un lien web ordinaire. Ni Expo Go, ni appareil photo.',
+  'open.link': 'Adresse de l’app',
+  'open.copy': 'Appuyez pour copier le lien',
+  'open.copied': 'Lien copié',
+  'open.share': 'Envoyer le lien',
+  'open.share.msg': 'Essayez Nūr Skincoach :',
+  'open.qr.title': 'QR de secours',
+  'open.qr.hint': 'Celui-ci contient une vraie adresse web : l’appareil photo l’ouvre dans le navigateur, jamais dans une autre application.',
+  'open.steps.title': 'En 3 étapes',
+  'open.step.1': 'Ouvrez le lien dans le navigateur du téléphone.',
+  'open.step.2': 'Ajoutez l’app à l’écran d’accueil : menu Partager puis « Sur l’écran d’accueil » (iPhone), ou menu ⋮ puis « Installer l’application » (Android).',
+  'open.step.3': 'Activez avec le code d’essai 0000, puis laissez-vous guider.',
+  'open.fix.title': 'Si l’appareil photo insiste',
+  'open.fix.1': 'Utilisez le lien ci-dessus plutôt que l’appareil photo : c’est le chemin le plus sûr.',
+  'open.fix.2': 'Le QR de l’aperçu Expo ne contient pas une adresse web : seule l’application Expo Go sait l’ouvrir. Scannez-le depuis Expo Go, jamais depuis l’appareil photo.',
+  'open.fix.3': 'Pour retirer la proposition : Réglages → Applications → l’application concernée → Ouvrir par défaut → Effacer.',
+  'open.private': 'Page réservée à la marque et aux créatrices. Elle n’apparaît nulle part dans l’app des clientes.',
 };
 
 const EN: Dict = {
@@ -741,6 +760,26 @@ const EN: Dict = {
   'evidence.solid': 'Solidly established',
   'evidence.supported': 'Supported by the data',
   'evidence.exploratory': 'An exploratory lead, not a promise',
+
+  // ---- Private access page (brand & influencers) ----
+  'open.title': 'Open Nūr on my phone',
+  'open.sub': 'A plain web link. No Expo Go, no camera.',
+  'open.link': 'App address',
+  'open.copy': 'Tap to copy the link',
+  'open.copied': 'Link copied',
+  'open.share': 'Send the link',
+  'open.share.msg': 'Try Nūr Skincoach:',
+  'open.qr.title': 'Backup QR',
+  'open.qr.hint': 'This one holds a real web address: the camera opens it in the browser, never in another app.',
+  'open.steps.title': 'In 3 steps',
+  'open.step.1': 'Open the link in the phone’s browser.',
+  'open.step.2': 'Add the app to the home screen: Share menu then “Add to Home Screen” (iPhone), or the ⋮ menu then “Install app” (Android).',
+  'open.step.3': 'Activate with the trial code 0000, then follow the guide.',
+  'open.fix.title': 'If the camera insists',
+  'open.fix.1': 'Use the link above instead of the camera — it is the safest route.',
+  'open.fix.2': 'The Expo preview QR does not hold a web address: only the Expo Go app can open it. Scan it from inside Expo Go, never from the camera.',
+  'open.fix.3': 'To remove the suggestion: Settings → Apps → the app in question → Open by default → Clear.',
+  'open.private': 'Reserved for the brand and creators. It appears nowhere in the client app.',
 };
 
 const AR: Dict = {

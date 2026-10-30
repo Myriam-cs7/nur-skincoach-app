@@ -225,6 +225,35 @@ frontend:
     working: "NA"
     file: "/app/frontend/app/(tabs)/protocol.tsx"
 
+## Session 10 — Accès depuis un téléphone sans appareil photo
+
+### Ce qui a changé (frontend + livrables uniquement, backend intact)
+1. **Page privée `/open`** (`app/open.tsx`) : lien de l'app en grand et recopiable (expo-clipboard),
+   bouton de partage, QR de secours généré par `/api/qr?data=<url de l'app>` (contient une VRAIE
+   adresse web, donc ouvert par l'appareil photo dans le navigateur), 3 étapes, encadré de
+   dépannage, mention « page réservée ». Aucun lien vers `/open` dans l'app des clientes.
+2. **Installable sur l'écran d'accueil** : `public/manifest.json` + icônes (`icon-192`, `icon-512`,
+   `apple-touch-icon`), balises dans `app/+html.tsx` ET injection au runtime
+   (`src/web-pwa.ts`, appelée par `app/_layout.tsx`).
+   ⚠️ IMPORTANT : `expo.web.output` doit rester **`single`**. Testé avec `static` (pour que
+   `+html.tsx` soit servi) → **l'app ne s'affiche plus du tout** (page noire, prerender Node).
+   D'où l'injection au runtime : les balises sont bien dans le DOM (vérifié), même si `curl` du
+   HTML brut ne les montre pas — les contrôler via `document.querySelector`, jamais par curl.
+3. **Page du site réécrite** : `deliverables/page-nurprotocol-app.html` (logo texte, signature,
+   bouton « Ouvrir mon Skincoach », App Store / Google Play grisés « bientôt » tant que
+   `data-ios-url` / `data-android-url` sont vides, comment activer, mention cadeau,
+   confidentialité, FR/EN selon `navigator.language`, clair/sombre).
+   Aperçu servi via un lien symbolique : `public/_preview-site-page.html` → le fichier du livrable.
+4. `deliverables/README-ouvrir-sur-telephone.md` : lien à partager, explication du QR Expo
+   (`exp://` → l'appareil photo propose une autre app), installation écran d'accueil, code 0000.
+
+### Vérifié par l'agent principal
+`/open` en sombre (copie du lien, QR 520×520 chargé), `/manifest.json` + icônes en 200,
+balises PWA présentes dans le DOM (title, manifest, apple-touch-icon, apple-mobile-web-app-*,
+2 × theme-color), page du site en FR et EN avec stores grisés.
+
+---
+
 ## Session 8 — Montée vers Expo SDK 58 (demande cliente)
 
 Migration SDK 54 → 58 (React Native 0.81 → 0.88, React 19.1 → 19.3) via la skill

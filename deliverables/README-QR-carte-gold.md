@@ -39,4 +39,15 @@ Régénérables à tout moment :
 ## Avant la première livraison client
 
 La page `https://nurprotocol.com/app` doit être en ligne.
-Contenu prêt à coller : `page-nurprotocol-app.html` (ce dossier).
+Contenu prêt à coller : `page-nurprotocol-app.html` (ce dossier) — en-tête de marque, bouton
+« Ouvrir mon Skincoach », emplacements App Store et Google Play (grisés avec la mention
+« bientôt » tant que les adresses ne sont pas renseignées), mode d'activation, mention cadeau et
+ligne de confidentialité. Français et anglais selon la langue du téléphone.
+
+Trois attributs à renseigner en haut du fichier : `data-app-url`, `data-ios-url`,
+`data-android-url`.
+
+## Tester l'app sur un téléphone dès maintenant
+
+Voir `README-ouvrir-sur-telephone.md` (ce dossier) : lien web direct, installation sur l'écran
+d'accueil et dépannage de l'appareil photo.

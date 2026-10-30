@@ -1,62 +1,194 @@
 <!--
-  PAGE À CRÉER SUR TON SITE : https://nurprotocol.com/app
-  C'est l'adresse inscrite dans le QR code de la carte gold. Elle ne doit jamais changer.
+  ════════════════════════════════════════════════════════════════════════════
+  PAGE À CRÉER SUR LE SITE : https://nurprotocol.com/app
+  C'est l'adresse inscrite dans le QR code de la carte gold. Elle ne change jamais.
+  ════════════════════════════════════════════════════════════════════════════
 
   Shopify : Boutique en ligne → Pages → Ajouter une page
     • Titre : App
-    • Vérifier que l'URL finale est bien /pages/app puis créer une redirection
+    • Vérifier l'URL finale (/pages/app) puis créer la redirection
       Paramètres → Navigation → Redirections d'URL : /app  →  /pages/app
-    • Dans l'éditeur de la page, cliquer sur « <> » (afficher le code HTML)
-      puis coller TOUT le bloc ci-dessous (sans ce commentaire).
+    • Dans l'éditeur, cliquer sur « <> » (afficher le code HTML) et coller
+      TOUT le bloc ci-dessous (sans ce commentaire).
 
-  Remplacer les 2 liens quand les applications seront publiées :
-    APPLE_LINK  → https://apps.apple.com/app/idXXXXXXXX
-    GOOGLE_LINK → https://play.google.com/store/apps/details?id=com.emergent.nurprotocolskin.zl0vs4
+  ── LES 3 SEULES CHOSES À REMPLACER ──────────────────────────────────────────
+    1. data-app-url  → l'adresse de l'app une fois publiée
+       (aujourd'hui : l'adresse d'aperçu, déjà renseignée ci-dessous)
+    2. data-ios-url  → https://apps.apple.com/app/idXXXXXXXX
+    3. data-android-url → https://play.google.com/store/apps/details?id=com.emergent.nurprotocolskin.zl0vs4
+
+  Tant que 2 et 3 restent vides, les deux boutons des stores s'affichent
+  grisés avec la mention « bientôt ». Dès qu'une adresse est renseignée,
+  le bouton correspondant devient actif automatiquement.
+
+  Français et anglais : la page s'adapte seule à la langue du téléphone.
 -->
 
-<div style="max-width:520px;margin:0 auto;padding:48px 24px;text-align:center;font-family:Georgia,'Times New Roman',serif;color:#F5F1E6;background:#06060A;border-radius:24px">
-  <div style="font-size:12px;letter-spacing:5px;color:#C9A961">NŪR PROTOCOL</div>
-  <h1 style="font-size:30px;line-height:1.2;margin:18px 0 6px;color:#F5F1E6">Votre Skin Coach personnel</h1>
-  <div style="color:#C9A961;font-size:18px;margin-bottom:14px">&#9670;</div>
-  <p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;color:#A0998A;margin:0 0 28px">
-    Téléchargez l'application, entrez l'e-mail de votre commande et recevez votre bilan de peau
-    ainsi que votre rituel LED personnalisé.
-  </p>
+<div id="nur-app-page"
+     data-app-url="https://nur-protocol-skin.preview.emergentagent.com"
+     data-ios-url=""
+     data-android-url="">
 
-  <a id="nur-ios" href="APPLE_LINK"
-     style="display:block;background:#C9A961;color:#0A0A10;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:15px;letter-spacing:1px;padding:17px 24px;border-radius:999px;margin-bottom:12px">
-    Télécharger sur l'App Store
-  </a>
-
-  <a id="nur-android" href="GOOGLE_LINK"
-     style="display:block;background:transparent;color:#C9A961;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:15px;letter-spacing:1px;padding:16px 24px;border-radius:999px;border:1px solid rgba(201,169,97,0.45)">
-    Télécharger sur Google Play
-  </a>
-
-  <p style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#8C8171;margin:28px 0 0">
-    Une question ? <a href="mailto:contact@nurprotocol.com" style="color:#C9A961">contact@nurprotocol.com</a>
-  </p>
-</div>
-
-<script>
-  /* Met en avant le bon store selon le téléphone de la visiteuse. */
-  (function () {
-    var ua = navigator.userAgent || '';
-    var ios = /iPad|iPhone|iPod/.test(ua) || (/Mac/.test(ua) && 'ontouchend' in document);
-    var android = /Android/.test(ua);
-    var a = document.getElementById('nur-ios');
-    var g = document.getElementById('nur-android');
-    if (!a || !g) return;
-    if (android) {
-      g.style.background = '#C9A961';
-      g.style.color = '#0A0A10';
-      g.style.border = 'none';
-      a.style.background = 'transparent';
-      a.style.color = '#C9A961';
-      a.style.border = '1px solid rgba(201,169,97,0.45)';
-      g.parentNode.insertBefore(g, a);
-    } else if (!ios) {
-      /* Ordinateur : on garde les deux boutons visibles. */
+  <style>
+    #nur-app-page{
+      --bg:#000000; --fg:#FFFFFF; --muted:#8E8E8E; --line:#1F1F1F;
+      --gold:#C9A961; --card:#0E0E0E; --on-gold:#000000;
+      max-width:560px; margin:0 auto; padding:40px 22px 56px; text-align:center;
+      background:var(--bg); color:var(--fg); border-radius:22px;
+      font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased;
     }
-  })();
-</script>
+    @media (prefers-color-scheme: light){
+      #nur-app-page{
+        --bg:#FFFFFF; --fg:#0A0A0A; --muted:#6F6B64; --line:#E5E2DC;
+        --gold:#8A6D2B; --card:#F6F5F2; --on-gold:#FFFFFF;
+      }
+    }
+    #nur-app-page *{box-sizing:border-box}
+    #nur-app-page .nur-signature{
+      font-size:10.5px; letter-spacing:1.4px; color:var(--gold); text-transform:uppercase; margin-bottom:26px;
+    }
+    #nur-app-page .nur-logo{
+      font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+      font-weight:600; font-size:40px; letter-spacing:10px; line-height:1; margin:0 0 6px; padding-left:10px;
+    }
+    #nur-app-page .nur-logo-sub{
+      font-size:11px; letter-spacing:7px; color:var(--muted); text-transform:uppercase; padding-left:7px;
+    }
+    #nur-app-page .nur-rule{height:1px; background:var(--gold); opacity:.5; width:54px; margin:20px auto 26px}
+    #nur-app-page h1{
+      font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+      font-weight:600; font-size:26px; line-height:1.25; letter-spacing:-.3px; margin:0 0 10px; color:var(--fg);
+    }
+    #nur-app-page p.nur-lede{font-size:14.5px; line-height:22px; color:var(--muted); margin:0 auto 30px; max-width:420px}
+    #nur-app-page a.nur-cta{
+      display:block; background:var(--gold); color:var(--on-gold); text-decoration:none;
+      font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+      font-weight:600; font-size:15px; letter-spacing:.4px; padding:19px 22px; border-radius:999px;
+    }
+    #nur-app-page .nur-stores{display:flex; gap:10px; margin-top:12px}
+    #nur-app-page .nur-store{
+      flex:1; display:flex; align-items:center; justify-content:center; gap:7px; min-height:54px;
+      border:1px solid var(--line); border-radius:14px; background:var(--card);
+      color:var(--muted); text-decoration:none; font-size:12.5px; line-height:16px; padding:10px 8px;
+    }
+    #nur-app-page .nur-store[aria-disabled="true"]{opacity:.55; pointer-events:none}
+    #nur-app-page .nur-store strong{display:block; color:var(--fg); font-size:13.5px; font-weight:600}
+    #nur-app-page .nur-store small{display:block; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--gold)}
+    #nur-app-page .nur-store svg{flex:0 0 auto}
+    #nur-app-page .nur-section{
+      font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase; color:var(--muted);
+      margin:38px 0 14px; text-align:left;
+    }
+    #nur-app-page .nur-steps{text-align:left; display:grid; gap:14px}
+    #nur-app-page .nur-step{display:flex; gap:12px; align-items:flex-start}
+    #nur-app-page .nur-step span{color:var(--gold); font-size:10.5px; line-height:21px; min-width:20px}
+    #nur-app-page .nur-step p{margin:0; font-size:14px; line-height:21px; color:var(--fg)}
+    #nur-app-page .nur-gift{
+      margin-top:16px; padding:14px 16px; border:1px solid var(--line); border-radius:12px;
+      background:var(--card); text-align:left; font-size:13px; line-height:20px; color:var(--muted);
+    }
+    #nur-app-page .nur-privacy{
+      margin:30px 0 0; font-size:11.5px; line-height:18px; color:var(--muted);
+    }
+    #nur-app-page .nur-contact{margin:14px 0 0; font-size:11.5px; color:var(--muted)}
+    #nur-app-page .nur-contact a{color:var(--gold); text-decoration:none}
+  </style>
+
+  <div class="nur-signature">YOUR SKIN, YOUR PROTOCOL</div>
+
+  <div class="nur-logo">NŪR</div>
+  <div class="nur-logo-sub">Protocol</div>
+  <div class="nur-rule"></div>
+
+  <h1 data-i18n="title">Votre Skincoach Nūr</h1>
+  <p class="nur-lede" data-i18n="lede">
+    Bilan de peau, rituel LED personnalisé et consultation avec votre Skincoach —
+    directement sur votre téléphone.
+  </p>
+
+  <a class="nur-cta" id="nur-open" href="#" data-i18n="cta">Ouvrir mon Skincoach</a>
+
+  <div class="nur-stores">
+    <a class="nur-store" id="nur-ios" href="#" aria-disabled="true">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.7c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.5 0-2.8.8-3.6 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.6 2.2 2.7 2.2 1.1 0 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.2 0 1.9-1 2.6-2 .8-1.2 1.2-2.3 1.2-2.4-.1 0-2.2-.9-2.2-3.4zM14.2 5.9c.6-.7 1-1.7.9-2.7-.9 0-2 .6-2.6 1.3-.6.6-1.1 1.7-.9 2.7 1 .1 2-.5 2.6-1.3z"/></svg>
+      <span><strong>App Store</strong><small data-i18n="soon">bientôt</small></span>
+    </a>
+    <a class="nur-store" id="nur-android" href="#" aria-disabled="true">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.6 2.3zM16.3 15l-2.4-2.4v-.2L16.3 10l.1.1 2.8 1.6c.8.5.8 1.2 0 1.7L16.4 15h-.1zM15.6 15.7l-2.5-2.5-9.4 9.4c.3.3.7.3 1.2 0l10.7-6.9zM15.6 9.3L4.9 2.4c-.5-.3-.9-.3-1.2 0l9.4 9.4 2.5-2.5z"/></svg>
+      <span><strong>Google Play</strong><small data-i18n="soon">bientôt</small></span>
+    </a>
+  </div>
+
+  <div class="nur-section" data-i18n="howto">Comment activer</div>
+  <div class="nur-steps">
+    <div class="nur-step"><span>01</span><p data-i18n="s1">Ouvrez l'app, puis saisissez le code d'accès reçu par e-mail au moment de votre commande.</p></div>
+    <div class="nur-step"><span>02</span><p data-i18n="s2">Vous avez reçu une carte gold ? Le code figurant sur la carte fonctionne de la même façon.</p></div>
+    <div class="nur-step"><span>03</span><p data-i18n="s3">Répondez au questionnaire de peau : votre rituel LED personnalisé s'affiche aussitôt.</p></div>
+  </div>
+
+  <div class="nur-gift" data-i18n="gift">
+    Masque offert ? Transmettez le code d'accès à la personne qui reçoit le masque :
+    c'est elle qui créera son bilan de peau.
+  </div>
+
+  <p class="nur-privacy" data-i18n="privacy">
+    Vos données restent privées et chiffrées. Les photos de visage sont analysées
+    puis immédiatement oubliées : elles ne sont jamais conservées ni partagées.
+  </p>
+  <p class="nur-contact">
+    <span data-i18n="contact">Une question ?</span>
+    <a href="mailto:contact@nurprotocol.com">contact@nurprotocol.com</a>
+  </p>
+
+  <script>
+    (function () {
+      var root = document.getElementById('nur-app-page');
+      var appUrl = (root.getAttribute('data-app-url') || '').trim();
+      var iosUrl = (root.getAttribute('data-ios-url') || '').trim();
+      var androidUrl = (root.getAttribute('data-android-url') || '').trim();
+
+      var EN = {
+        title: 'Your Nūr Skincoach',
+        lede: 'Skin assessment, a personalised LED ritual and a consultation with your Skincoach — straight from your phone.',
+        cta: 'Open my Skincoach',
+        soon: 'soon',
+        howto: 'How to activate',
+        s1: 'Open the app, then enter the access code you received by e-mail with your order.',
+        s2: 'Received a gold card? The code printed on the card works the same way.',
+        s3: 'Answer the skin questionnaire: your personalised LED ritual appears right away.',
+        gift: 'A gift? Pass the access code on to whoever receives the mask — they are the one who will create their skin assessment.',
+        privacy: 'Your data stays private and encrypted. Face photos are analysed then immediately forgotten: never kept, never shared.',
+        contact: 'A question?'
+      };
+
+      var lang = (navigator.language || 'fr').slice(0, 2).toLowerCase();
+      if (lang !== 'fr') {
+        root.querySelectorAll('[data-i18n]').forEach(function (el) {
+          var key = el.getAttribute('data-i18n');
+          if (EN[key]) el.textContent = EN[key];
+        });
+      }
+
+      var open = document.getElementById('nur-open');
+      if (appUrl) {
+        open.setAttribute('href', appUrl);
+        open.setAttribute('rel', 'noopener');
+      } else {
+        open.setAttribute('aria-disabled', 'true');
+        open.style.opacity = '.55';
+        open.style.pointerEvents = 'none';
+      }
+
+      [['nur-ios', iosUrl], ['nur-android', androidUrl]].forEach(function (pair) {
+        var el = document.getElementById(pair[0]);
+        if (!pair[1]) return;
+        el.setAttribute('href', pair[1]);
+        el.setAttribute('rel', 'noopener');
+        el.removeAttribute('aria-disabled');
+        var small = el.querySelector('small');
+        if (small) small.remove();
+      });
+    })();
+  </script>
+</div>
