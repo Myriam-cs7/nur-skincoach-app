@@ -71,6 +71,7 @@ export async function scheduleDailyReminder(
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('nur-reminders', {
       name: 'Rappels Nūr',
+      // eslint-disable-next-line import/namespace -- re-exported through `export *`, the rule can't follow it
       importance: Notifications.AndroidImportance.DEFAULT,
       lightColor: '#C9A961',
     });

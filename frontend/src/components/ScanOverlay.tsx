@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { theme, makeStyles } from '../theme';
 
@@ -6,7 +6,7 @@ type Props = { height: number; label: string };
 
 /** Clinical scan sweep displayed over the consultation photo while the AI analyses it. */
 export default function ScanOverlay({ height, label }: Props) {
-  const y = useRef(new Animated.Value(0)).current;
+  const [y] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const loop = Animated.loop(

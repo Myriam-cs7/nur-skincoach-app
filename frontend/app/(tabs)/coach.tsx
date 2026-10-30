@@ -14,9 +14,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@react-native-vector-icons/feather';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import {
@@ -68,7 +69,7 @@ export default function Coach() {
 
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
   const recState = useAudioRecorderState(recorder, 100);
@@ -181,6 +182,7 @@ export default function Coach() {
     await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true });
     await recorder.prepareToRecordAsync({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
     recorder.record();
+    // eslint-disable-next-line react-hooks/purity -- event handler, not render
     startedAtRef.current = Date.now();
     samplesRef.current = [];
     floorRef.current = null;
@@ -266,6 +268,7 @@ export default function Coach() {
     if (turn !== 'listening') return;
     const m = recState.metering;
     if (typeof m !== 'number') return;
+    // eslint-disable-next-line react-hooks/purity -- effect body, not render
     const elapsed = Date.now() - startedAtRef.current;
     if (elapsed < 400) return;
     if (elapsed < 900) {
@@ -281,9 +284,11 @@ export default function Coach() {
       return;
     }
     if (silenceSinceRef.current === null) {
+      // eslint-disable-next-line react-hooks/purity -- effect body, not render
       silenceSinceRef.current = Date.now();
       return;
     }
+    // eslint-disable-next-line react-hooks/purity -- effect body, not render
     if (Date.now() - silenceSinceRef.current > SILENCE_MS && elapsed > 2500) {
       void stopListening();
     }

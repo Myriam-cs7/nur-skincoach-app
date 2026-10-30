@@ -6,13 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nurprotocol",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Capture votre visage pour le diagnostic IA",
-        "NSPhotoLibraryUsageDescription": "Sélectionner une photo pour le diagnostic",
         "NSMicrophoneUsageDescription": "Dictez vos questions à votre Skincoach"
       },
       "bundleIdentifier": "com.emergent.nurprotocolskin.zl0vs4",
@@ -26,10 +24,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#09090C"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "CAMERA",
-        "READ_EXTERNAL_STORAGE",
         "POST_NOTIFICATIONS",
         "RECORD_AUDIO",
         "MODIFY_AUDIO_SETTINGS"
@@ -104,12 +100,12 @@
           "microphonePermission": "Dictez vos questions à votre Skincoach"
         }
       ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Choisir une photo pour votre bilan de peau"
-        }
-      ]
+      "expo-image",
+      "expo-secure-store",
+      "expo-status-bar",
+      "expo-web-browser",
+      "@react-native-vector-icons/feather",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

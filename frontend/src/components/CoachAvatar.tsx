@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, Easing, Image, View } from 'react-native';
 import { theme, makeStyles } from '../theme';
 
@@ -9,7 +9,7 @@ type Props = { state: CoachState; size?: number };
 const AVATAR = require('../../assets/images/nur-avatar.png');
 
 export default function CoachAvatar({ state, size = 96 }: Props) {
-  const halo = useRef(new Animated.Value(0)).current;
+  const [halo] = useState(() => new Animated.Value(0));
   const active = state !== 'idle';
 
   useEffect(() => {

@@ -225,6 +225,42 @@ frontend:
     working: "NA"
     file: "/app/frontend/app/(tabs)/protocol.tsx"
 
+## Session 8 — Montée vers Expo SDK 58 (demande cliente)
+
+Migration SDK 54 → 58 (React Native 0.81 → 0.88, React 19.1 → 19.3) via la skill
+`expo-version-upgrade`.
+
+### Changements appliqués
+1. `yarn expo install expo@^58.0.0` puis `yarn expo install --fix` → toutes les dépendances Expo
+   alignées (expo-router 58.0.28, reanimated 4.7.1, svg 15.16, worklets 0.13, typescript 6).
+2. **Icônes** : `@expo/vector-icons` (déprécié) → `@react-native-vector-icons/feather` dans les
+   19 fichiers concernés. `src/hooks/use-icon-fonts.ts` ne télécharge plus la police depuis un CDN :
+   le .ttf livré par le paquet est préchargé sous le nom PostScript « Feather ».
+3. **app.json** : `newArchEnabled` et `edgeToEdgeEnabled` retirés (obsolètes depuis le SDK 55),
+   `userInterfaceStyle` passé de `dark` à **`automatic`** (sinon iOS forçait le thème sombre et le
+   mode clair ne pouvait jamais s'activer).
+4. **Nettoyage caméra uniquement** : `expo-image-picker` désinstallé, plugin et permissions
+   `NSPhotoLibraryUsageDescription` / `READ_EXTERNAL_STORAGE` supprimés.
+5. **Types stricts RN 0.88** : `makeStyles` contraint par `NamedStyles<T>` (sinon les littéraux
+   `alignItems`, `overflow`… étaient élargis en `string`), dégradés typés en tuple
+   `readonly [string, string, ...string[]]`, `useRef<ScrollViewInstance>` dans le coach.
+6. **Nouvelles règles React Compiler** : `Animated.Value` créées via `useState(() => …)` au lieu de
+   `useRef().current` (CoachAvatar, TypingDots, ScanOverlay) ; effet redondant supprimé dans
+   `activate.tsx` ; exceptions documentées pour `Date.now()` hors rendu dans le coach.
+
+### Vérifications
+- `npx tsc --noEmit` : 0 erreur. `eslint app src` : 0 erreur (5 avertissements préexistants).
+- `npx expo-doctor` : **20/20 checks passed**.
+- Rendu vérifié : accueil (sombre) et tableau de bord avec données réelles (logo, icônes,
+  réglages du boîtier, test de sensibilité) sous SDK 58.
+- Backend non modifié.
+
+### À faire vérifier par le testing agent
+Non-régression complète après montée de version : 5 onglets, nouveaux écrans, activation `0000`,
+thèmes clair/sombre, chat, voix, console admin.
+
+---
+
 ## Session 7 — identité beauty tech, rituel réel, accès d'essai (étape 1 du plan validé)
 
 ### Ce qui a changé

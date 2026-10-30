@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@react-native-vector-icons/feather';
 import * as SecureStore from 'expo-secure-store';
 import { theme, makeStyles } from '../src/theme';
 import { SectionLabel, GoldDivider, BrandHeader } from '../src/ui';
@@ -96,6 +96,8 @@ export default function Admin() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
+    // setState only happens after the await inside tryStoredPin
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void tryStoredPin();
   }, [tryStoredPin]);
 

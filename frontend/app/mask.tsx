@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@react-native-vector-icons/feather';
 import { theme, makeStyles, DEVICE_MODES } from '../src/theme';
 import { BrandHeader, SectionLabel } from '../src/ui';
 import { useT } from '../src/i18n';

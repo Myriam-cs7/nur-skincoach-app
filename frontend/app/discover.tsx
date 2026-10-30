@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, KeyboardAvoid
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@react-native-vector-icons/feather';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { theme, makeStyles } from '../src/theme';
 import { Wordmark, GoldDivider, SectionLabel } from '../src/ui';
@@ -68,7 +68,7 @@ export default function Discover() {
             { value: 'C', label: t('discover.q1.c') },
           ]}
           selected={q1}
-          onSelect={(v) => { setQ1(v); setTimeout(() => setStep('q2'), 220); }}
+          onSelect={(v: string) => { setQ1(v); setTimeout(() => setStep('q2'), 220); }}
         />
       );
     if (step === 'q2')
@@ -83,7 +83,7 @@ export default function Discover() {
             { value: 'C', label: t('discover.q2.c') },
           ]}
           selected={q2}
-          onSelect={(v) => { setQ2(v); setTimeout(() => setStep('q3'), 220); }}
+          onSelect={(v: string) => { setQ2(v); setTimeout(() => setStep('q3'), 220); }}
         />
       );
     if (step === 'q3')
@@ -98,7 +98,7 @@ export default function Discover() {
             { value: 'C', label: t('discover.q3.c') },
           ]}
           selected={q3}
-          onSelect={(v) => { setQ3(v); setTimeout(() => setStep('email'), 220); }}
+          onSelect={(v: string) => { setQ3(v); setTimeout(() => setStep('email'), 220); }}
         />
       );
     if (step === 'email')

@@ -402,6 +402,30 @@ et les influenceuses.
 - **Code d'essai `0000`** multi-usage pour la marque et les créatrices + « recommencer mon bilan »
   dans le profil.
 
+## Tests session 8
+`/app/backend/tests/test_session7_beauty_tech.py` → 13/13 OK (2 ignorés : limiteur d'activation
+saturé par le test précédent, pas une régression) ; frontend : 19 icônes Feather chargées sur le
+tableau de bord, 5 onglets + `/mask`, `/patch-test`, `/scan`, `/admin`, chat et animations
+vérifiés dans les deux ambiances. `expo-doctor` 20/20.
+
+---
+
+# Session juin 2026 — Expo SDK 58
+
+Montée demandée par la cliente : SDK 54 → 58 (React Native 0.81 → 0.88, React 19.1 → 19.3,
+expo-router 58, TypeScript 6).
+
+- Icônes : `@expo/vector-icons` (déprécié) → `@react-native-vector-icons/feather` ; la police
+  livrée par le paquet est préchargée sous le nom PostScript « Feather » (plus de CDN).
+- `app.json` : `newArchEnabled` et `edgeToEdgeEnabled` retirés, **`userInterfaceStyle: automatic`**
+  (sinon iOS forçait le sombre et l'ambiance claire ne pouvait pas s'activer), `expo-image-picker`
+  et les permissions photothèque supprimés (la photo est caméra uniquement).
+- Types stricts RN 0.88 : `makeStyles` contraint par `NamedStyles<T>`, dégradés typés en tuple,
+  `useRef<ScrollViewInstance>`.
+- Règles React Compiler : `Animated.Value` créées via `useState(() => …)`, effet redondant retiré
+  dans `activate.tsx`, exceptions documentées pour `Date.now()` hors rendu.
+- Résultat : `tsc --noEmit` et `eslint` sans erreur, `expo-doctor` 20/20, backend inchangé.
+
 ## Étapes suivantes (déjà cadrées avec la cliente)
 - Étape 2 : Skin Analysis spectaculaire (tracé du visage animé, zones révélées, fiche de scores
   par critère et suivi) + illustrations du livret redessinées.

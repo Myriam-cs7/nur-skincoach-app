@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@react-native-vector-icons/feather';
 import { theme, LED_COLORS, LED_NAMES_BY_LANG, makeStyles } from '../theme';
 import { SectionLabel } from '../ui';
 import { ProgressData } from '../api';

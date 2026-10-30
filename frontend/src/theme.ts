@@ -1,4 +1,5 @@
 import { Platform, StyleSheet } from 'react-native';
+import type { ImageStyle, TextStyle, ViewStyle } from 'react-native';
 
 /**
  * Nūr Protocol design system — beauty tech.
@@ -87,7 +88,9 @@ const color = {} as Palette;
   Object.defineProperty(color, k, { get: () => PALETTES[active][k], enumerable: true });
 });
 
-const GRADIENTS: Record<Scheme, Record<string, readonly string[]>> = {
+type Gradient = readonly [string, string, ...string[]];
+
+const GRADIENTS: Record<Scheme, Record<string, Gradient>> = {
   dark: {
     page: ['#050505', '#000000', '#000000'],
     gold: ['#E6CC85', '#C9A961'],
@@ -102,7 +105,7 @@ const GRADIENTS: Record<Scheme, Record<string, readonly string[]>> = {
   },
 };
 
-const gradient = {} as Record<'page' | 'gold' | 'goldSoft' | 'scrim', readonly string[]>;
+const gradient = {} as Record<'page' | 'gold' | 'goldSoft' | 'scrim', Gradient>;
 (['page', 'gold', 'goldSoft', 'scrim'] as const).forEach((k) => {
   Object.defineProperty(gradient, k, { get: () => GRADIENTS[active][k], enumerable: true });
 });
@@ -162,7 +165,9 @@ export const theme = {
  * Drop-in replacement for StyleSheet.create: the factory runs once per
  * ambience, and `styles.x` always returns the entry for the active one.
  */
-export function makeStyles<T extends Record<string, any>>(factory: () => T): T {
+type NamedStyles<T> = { [P in keyof T]: ViewStyle | TextStyle | ImageStyle };
+
+export function makeStyles<T extends NamedStyles<T>>(factory: () => T): T {
   const previous = active;
   active = 'dark';
   const darkSheet = StyleSheet.create(factory());

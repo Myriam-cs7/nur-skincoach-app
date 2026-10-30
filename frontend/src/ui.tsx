@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@react-native-vector-icons/feather';
 import { theme, makeStyles, getScheme } from './theme';
 
 const LOGO_DARK = require('../assets/images/nur-logo-header.png');

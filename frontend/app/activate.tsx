@@ -6,7 +6,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@react-native-vector-icons/feather';
 import { theme, makeStyles } from '../src/theme';
 import { GoldDivider, BrandHeader } from '../src/ui';
 import { api, setStoredUser, AccessResponse } from '../src/api';
@@ -28,10 +28,6 @@ export default function Activate() {
   const [info, setInfo] = useState<string | null>(params.scanned ? t('gate.card_ok') : null);
   const [cooldown, setCooldown] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (params.code) { setStep('partner'); setCode(String(params.code).toUpperCase()); }
-  }, [params.code]);
 
   useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
 

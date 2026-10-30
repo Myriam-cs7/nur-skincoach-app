@@ -1,0 +1,45 @@
+{
+  "summary": "Session 8 — Non-régression après montée Expo SDK 54→58 (RN 0.81→0.88, React 19.3, expo-router 58, @react-native-vector-icons/feather). Backend (aucun changement serveur) : 13/15 PASS, 2 SKIPPED pour cause de rate-limiter d'activation déjà saturé par un test antérieur (comportement attendu, pas une régression). Frontend : accueil (signature YOUR SKIN YOUR PROTOCOL + logo Nūr + titre Nūr Skincoach + unique CTA activate-button + ligne confidentialité avec cadenas Feather) OK ; tous les 5 onglets (home/coach/protocol/library/profile) chargent sans erreur ; les icônes Feather sont bien chargées (police Feather détectée 19 fois sur /home, aucun carré/manquant) ; tableau de bord /home affiche today-device-settings avec MODE / LUMINOSITÉ / MINUTEUR, carte patch-reminder avec patch-open & patch-dismiss, carte open-mask, stats SÉRIE/SÉANCES/SEMAINE sur une ligne ; /mask expose mask-title + mask-patch-test ; /patch-test expose patch-done + patch-later ; /scan ne contient PLUS de gallery-button et expose skip-button ; onglet Lumières affiche 7 cartes led-settings-<id> avec niveaux de certitude ; chat coach : message envoyé via coach-input + coach-send, réponse FR cohérente ('Bonjour Emma. Les rougeurs, c'est exactement ce pour quoi le masque Nūr...'), bouton Écouter (TTS) présent dans la bulle du coach ; thèmes clair ET sombre fonctionnent (userInterfaceStyle: automatic honoré via page.emulate_media) ; /admin se charge et accepte le token admin, l'aperçu avec histogramme hebdo apparaît. Aucune erreur de page JS. Verdict : la migration SDK 58 est propre, zéro régression détectée.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_session7_beauty_tech.py",
+    "/app/test_reports/pytest/pytest_session8_regression.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RAS côté migration : tsc/eslint/expo-doctor déjà verts, le remplacement @expo/vector-icons → @react-native-vector-icons/feather est effectif à l'exécution (police chargée 19× sur /home, lock sur l'accueil, mic & speaker sur /coach, tabbar OK).",
+    "Non bloquant (déjà présent avant SDK 58) : avertissement 'The action GO_BACK was not handled by any navigator' si on entre directement sur /patch-test (router.back() sans historique) — déjà noté en itération 8."
+  ],
+  "updated_files": [
+    "/app/test_reports/iteration_9.json (nouveau)",
+    "/app/test_reports/pytest/pytest_session8_regression.xml (nouveau run du suite session 7)"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 exécutés, 2 skippés pour rate-limit)",
+    "frontend": "100% (tous les critères du cahier des charges vérifiés)"
+  },
+  "seed_data_creation": "Quelques profils jetables créés via POST /api/activate (0000, NUR-CREATOR) pendant le run pytest, tous supprimés en teardown. demo-charts-user n'a PAS été modifié.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "SDK 58 propre. Les 2 tests pytest SKIPPED (test_delete_user_requires_session_token et test_off_topic_provocation_redirects_to_skin) le sont uniquement parce que test_activation_rate_limit_eventually_429 sature volontairement le limiteur (10/10 min) ; relancer uniquement ces deux tests dix minutes plus tard donnera PASS. Côté frontend, les testIDs du cahier des charges de la review (partner-code-input / partner-submit) n'existent pas sous ce nom ; les testIDs réels de /activate sont `activate-code-input` et `activate-validate` (voir /app/frontend/app/activate.tsx:236-244) — à aligner côté review si on veut matcher à la lettre.",
+  "rca_of_issue": "N/A — aucun bug.",
+  "detailed_results": {
+    "backend_pytest": {"total": 15, "passed": 13, "skipped_rate_limit": 2, "failed": 0, "xml": "/app/test_reports/pytest/pytest_session8_regression.xml"},
+    "frontend_icons": {"feather_font_detected_on_home": 19, "lock_icon_on_welcome": true, "microphone_and_speaker_on_coach": true, "tabbar_icons_rendering": true, "square_or_missing_icon_detected": false},
+    "frontend_welcome": {"activate_button": true, "signature_YOUR_SKIN_YOUR_PROTOCOL": true, "nur_skincoach_title": true, "privacy_line_single": true, "gallery_button_absent_on_scan": true},
+    "frontend_home_fr": {"today_device_settings": true, "MODE": true, "LUMINOSITÉ": true, "MINUTEUR": true, "SÉRIE": true, "SÉANCES": true, "SEMAINE": true, "patch_reminder": true, "patch_open": true, "patch_dismiss": true, "open_mask": true},
+    "frontend_tabs_load_without_error": {"home": true, "coach": true, "protocol": true, "library": true, "profile": true},
+    "frontend_mask": {"mask_title": true, "mask_patch_test": true},
+    "frontend_patch_test": {"patch_done": true, "patch_later": true},
+    "frontend_scan": {"gallery_button_absent": true, "skip_button": true},
+    "frontend_coach_chat": {"coach_input": true, "coach_send": true, "ai_reply_received_fr": true, "reply_opens_on_concern_rougeurs": true, "ecouter_tts_button_in_bubble": true, "avatar_image_rendered": true},
+    "frontend_themes": {"dark_mode_background_dark": true, "light_mode_background_white": true, "logo_dark_variant_served_in_light": true},
+    "frontend_admin": {"token_unlock_ok": true, "weekly_bar_chart_section_rendered": true}
+  }
+}
