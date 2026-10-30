@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 16 checked the fixes from iteration 15 in Chromium at 375x667, with nur.lang set to 'fr'. Backend: after a restart, pytest tests/ -q -p no:randomly gave 149 passed, 4 skipped, 0 failed. FIX A (recording timer) PASS: the status counted 'JE VOUS ÉCOUTE… 0:01' up to 0:05, then showed 'TRANSCRIPTION…', and the next recording restarted at 0:00. FIX B (Protocol dots) PASS: the diagnosis response was intercepted to add a white and a cyan day; in light mode the white dot has a #5C5C5C rim, cyan #0B7FA3 and yellow #8F6B00. FIX C (welcome dots) PASS: in both dark and light mode all 7 dots stay at opacity 1 with full colour, and only the halo pulses (opacity about 0.25 to 0.8, scale 1 to 1.35). FIX D (blocked mic on web) PASS: with permission 'denied' the sheet opens straight away with the 'bloqué pour ce site' copy and coach-mic-type ('Écrire ma question'); there is no settings or allow button, and the button closes the sheet. FIX E is PARTIAL: the 429 message 'Trop de demandes. Réessayez dans quelques minutes.' PASS; the tab label AUJOURD'HUI is no longer cut (scrollWidth equals clientWidth) PASS; the code-input placeholder 'Mon code d’accès' is STILL cut ('Mon code d’accè' is visible). Non-regression PASS: a partial code sends no request, a full typed code waits for the button, the button activates and goes to /onboarding, the paste chip submits, 6 digits auto-validate (5 digits send nothing), Mes produits saves and survives a reload with the red error line on a 500, magic and invite links sign in, and a reused magic link shows 'Lien expiré'. The e-mail provider (integrations email/send) returned 429 during this run, so request-code returned 503 email_unavailable and the app showed the correct 'momentanément indisponible' message. The OTP UI flow was therefore checked with an OTP seeded in the database. No deprecated Expo packages found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/request-code", "issue": "The upstream e-mail provider returned 429 Too Many Requests during testing, so the endpoint returned 503 email_unavailable. This is an external quota, most likely used up by the pytest suite sending real e-mails. The app handled it correctly."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Activation code input placeholder", "issue": "The placeholder 'Mon code d’accès' is still cut off at 375px wide: it shows 'Mon code d’accè'. The inputCode style (fontSize 24, letterSpacing 6) also applies to the placeholder, giving about 307px of text in a 289px content box. Reference: /app/frontend/app/activate.tsx:296", "testID": "code-input", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Coach - blocked mic sheet (web)", "issues": ["The title still says 'Autoriser le micro' while the body says the mic is blocked. A title like 'Micro bloqué' would match the body (coach.tsx:596).", "'Écrire ma question' only closes the sheet: focus stays on coach-mic, not coach-input. Focus the text input so the CTA does what it says."]},
+      {"screen": "Welcome (dark mode)", "issues": ["The halo is a solid disc in the same colour (22px, up to 0.8 opacity, scaled to 1.35x) behind an 11px dot. The red, blue, green and violet dots keep the dark #1F1F1F border rim, so each LED looks like a target (dot, dark ring, disc) rather than a glow. Consider borderWidth 0 in dark mode for those colours, or a softer halo."]},
+      {"screen": "Tab bar", "issues": ["The tab labels use fontSize 8.5px, which is below a legible minimum of about 10 to 11px. The labels are no longer cut, but they are very small."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/",
+    "/app/test_reports/pytest/pytest_results_iter16.xml",
+    "/app/backend/tests/seed_otp.py"
+  ],
+  "action_items": [
+    "activate.tsx: make the code-input placeholder fit at 375px: use letterSpacing 0 and a smaller fontSize while the value is empty, or use a shorter placeholder.",
+    "coach.tsx:596: when micSheet==='blocked' on web, use a 'Micro bloqué' type title instead of 'Autoriser le micro'. Make coach-mic-type also focus coach-input.",
+    "Optional: drop the dark #1F1F1F rim on the welcome LED dots in dark mode so they glow instead of looking like targets. Consider raising the tab label font to at least 10px."
+  ],
+  "critical_code_review_comments": [
+    "coach.tsx is about 800 lines, above the 700-line guideline. Consider extracting the mic and camera sheets and the recording logic into hooks or components.",
+    "The elapsed counter starts with setInterval when turn becomes 'listening' and resets when it leaves 'listening', which is correct."
+  ],
+  "updated_files": ["/app/backend/tests/seed_otp.py (new helper: seeds an OTP when the e-mail provider is rate-limited)"],
+  "success_rate": {"backend": "100% (149 passed, 4 skipped)", "frontend": "about 93% (14 of 15 checks; only the placeholder truncation fails)"},
+  "seed_data_creation": "New NUR-CREATOR, OTP, magic and invite users with delivered+t1i16*@resend.dev e-mails. demo-charts-user own_products was set back to ''. The Protocol white and cyan days were injected with Playwright route interception only, not written to the database.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The backend was restarted after testing because the per-IP rate limits are in memory. Set localStorage nur.lang='fr'. The protocol-title element is hidden (opacity 0), so wait with state='attached'. For the mic, stub navigator.permissions.query and getUserMedia (an OscillatorNode into MediaStreamDestination) in add_init_script and toggle window.__micState. If the e-mail provider returns 429, run python /app/backend/tests/seed_otp.py <email>, then use gate-have-code after typing the e-mail. Magic and invite tokens: python /app/backend/tests/seed_magic_token.py.",
+  "rca_of_issue": "Placeholder truncation: on react-native-web the TextInput placeholder inherits the input's fontSize 24 and letterSpacing 6. 'Mon code d’accès' is 16 characters, which is about 307px against a 289px box at a 375px viewport."
+}

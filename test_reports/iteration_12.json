@@ -1,0 +1,62 @@
+{
+  "summary": "Iteration 12 tests covered only the latest plan: magic link, invite link, the 'Mes produits' field, the web mic, the refine CTAs and the LED colors. Backend: 14/14 pytest passed. Magic 200, reuse/unknown/expired 410, empty 400. Invite 200 trial, wrong/empty 403. Products PUT works with 401/403 guards and 1500-char truncation. Chat uses the saved products and stays on topic, and products text could not override the guardrails. Admin overview returns invite_url. /activate regression passes. Frontend: magic, invite, OTP, pasted code and the 0000 button flows all work. Magic failure screen and retry work. Web mic works end-to-end in Chromium: permission sheet, cancel, listening, stop, /api/transcribe, then the chat. Denied permission shows a clear fallback. Products save, the 'Enregistré' confirmation and the reload all work. proto-refine and goto-coach go to /coach, and coach-role is shown. Two bugs found: (1) a code typed character by character auto-submits too early and leaves the field stuck; (2) LED colors used as text are unreadable in light mode in the Library. No deprecated Expo packages detected.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "rate_limit / _client_ip (server.py:253-258)", "issue": "The per-IP rate limit uses the FIRST value of X-Forwarded-For, which the client controls. Verified: 12 invalid /api/activate calls with a different spoofed XFF each never got a 429; with a constant XFF, calls 11-12 got 429. This defeats anti-guessing on access codes, invite tokens, magic links and OTPs. Fix: use the right-most hop added by the ingress (or X-Real-IP), never the left-most.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/transcribe", "issue": "Audio with no speech returns the STT prompt itself as the transcript (_STT_PROMPT at server.py:1765). The Chromium fake-mic beep was transcribed as 'Nūr Protocol, masque LED, luminothérapie, …' and auto-sent to the chat as a user message. Fix: if the text matches or is mostly the prompt, return {text:'', reason:'no_speech'}."},
+      {"endpoint": "POST /api/transcribe + src/voice.ts:129", "issue": "The web blob is always uploaded as 'recording.webm'. iOS Safari's MediaRecorder produces audio/mp4, so the backend saves an mp4 with a .webm suffix and the STT call may fail on iPhone. Fix: derive the extension from blob.type (mp4 → .mp4/.m4a)."},
+      {"endpoint": "db.magic_links", "issue": "No TTL index, so expired or used rows pile up. Older links are not revoked when a new code is sent or when the OTP succeeds, so the e-mail button stays usable for 30 minutes after sign-in and creates a second session. Low risk."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "activate.tsx code field (looksComplete + submitCode)", "issue": "Typing NUR-DEMO-2026 key by key auto-submits as soon as the field reads 'NUR-DEM', because /^[A-Z0-9]{3,}-[A-Z0-9-]{3,}$/ matches 3 characters after the dash. The call gets a 403 and Keyboard.dismiss() blurs the input, so the rest of the keystrokes are lost. The field stays stuck at 'NUR-DEM' with 'code non reconnu'. Each premature submit also counts toward the 10/10 min activation limit. Pasting or filling the code works. Fix: only auto-submit 6-digit OTPs or a full NUR-XXXX-XXXX / known pattern (or debounce about 700 ms), and don't call Keyboard.dismiss on auto-submit.", "testID": "code-input", "priority": "HIGH"},
+      {"component": "library.tsx taglinePill (line 46)", "issue": "In LIGHT mode the tagline text uses the raw LED hex. White 'Régénération' on a white card is almost invisible, and yellow 'Éclat' and cyan 'Peaux sensibles' have very low contrast. Use ledInk(id) for the text in light mode. Dark mode is fine.", "testID": "led-card-white / led-card-yellow / led-card-cyan", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Welcome (light)", "issues": ["The 7th (white) LED dot is barely visible on the cream background; needs a stronger border or ring"]},
+      {"screen": "Library (light)", "issues": ["The white colorChip (34px) has no border and disappears on the white card"]},
+      {"screen": "Protocol (light)", "issues": ["styles.dot has no border, so a white-light day would be an invisible dot on the light background (not seen in the demo data; code review)"]},
+      {"screen": "Profile", "issues": ["products-save is 118x39, below the 44pt touch target", "A failed save is silent (catch only resets savedProducts); no error message"]},
+      {"screen": "Welcome (dark)", "issues": ["The dots pulse with the halo opacity and look muted at the low phase; consider a higher minimum opacity"]},
+      {"screen": "Magic/Invite failure", "issues": ["The title still reads 'Ouverture de votre Skincoach' on the failed state", "'Recevoir un nouveau lien' only opens /activate (e-mail step); it does not send anything"]},
+      {"screen": "diagnosis.tsx:136", "issues": ["'Affiner avec mon Skincoach' is hardcoded French instead of t('coach.refine')"]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_session12_magic_invite_products.py",
+    "/app/backend/tests/seed_magic_token.py",
+    "/app/backend/tests/get_otp.py",
+    "/app/backend/tests/probe_products_injection.py",
+    "/app/test_reports/pytest/pytest_session12.xml"
+  ],
+  "action_items": [
+    "HIGH: fix the activate.tsx auto-submit. Tighten looksComplete (full code pattern only) or debounce, and remove Keyboard.dismiss() on auto-submit so typing is never interrupted.",
+    "HIGH: fix _client_ip to use the right-most (ingress-appended) X-Forwarded-For entry, so rate limits can't be bypassed by spoofing the header.",
+    "MEDIUM: library.tsx tagline text should use ledInk(id) (readable ink) instead of the raw hex in light mode. Add a visible border to the white chip/dot on welcome, library and protocol in light mode.",
+    "MEDIUM: /api/transcribe should drop transcripts that echo _STT_PROMPT (no-speech hallucination) instead of sending them to the chat.",
+    "LOW: name the web upload from blob.type (mp4 on iOS Safari). Add a TTL index on magic_links.expires_at. Show an error when the products save fails. Make products-save at least 44px tall. Use i18n for the diagnosis refine label."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 2154 lines and coach.tsx 780 lines; both are above 700 and should be split (routers/services; coach mic hooks).",
+    "activate_magic marks the link used before checking expiry; fine, since an expired link is unusable anyway.",
+    "own_products is injected verbatim into the system prompt. The guardrails held in my probe (geography/code questions refused), but fencing it as quoted data would be safer.",
+    "/api/transcribe is unauthenticated (rate limit only) and that limit can be bypassed via XFF, so the paid STT is open to abuse."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_session12_magic_invite_products.py",
+    "/app/backend/tests/seed_magic_token.py",
+    "/app/backend/tests/get_otp.py",
+    "/app/backend/tests/probe_products_injection.py"
+  ],
+  "success_rate": {"backend": "100% (14/14 pytest)", "frontend": "about 85% (all flows work; activation-code typing bug and light-mode LED text contrast fail)"},
+  "seed_data_creation": "Test magic_links rows were inserted with test_seed='TEST_t1' (sha256 of the token, same as issue_magic_link). Several NUR-CREATOR, 0000 and invite test users were created. demo-charts-user own_products was set during the UI test and reset to ''.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Raw magic tokens are not stored (sha256 hash only). Use `python /app/backend/tests/seed_magic_token.py N` to get valid tokens plus the invite token, and `python /app/backend/tests/get_otp.py <email>` for OTPs. Backend URL is EXPO_PUBLIC_BACKEND_URL in frontend/.env (not EXPO_BACKEND_URL). The browser defaults to English; set localStorage nur.lang='fr'. The web mic works in headless Chromium after context.grant_permissions(['microphone']). The fake-mic beep is transcribed as the STT prompt text.",
+  "rca_of_issue": "Activation code typing: onChangeCode calls looksComplete(next) on every keystroke. Its regex /^[A-Z0-9]{3,}-[A-Z0-9-]{3,}$/ is true for 'NUR-DEM', so submitCode fires, calls Keyboard.dismiss() (which blurs the input on web) and gets a 403. Repro: /activate → 'J'ai déjà mon code' → type NUR-DEMO-2026 at about 120 ms per key; the field ends as 'NUR-DEM' with an error, and only 1 /api/activate call is made. Mitigation: match only complete formats or debounce, and keep focus."
+}

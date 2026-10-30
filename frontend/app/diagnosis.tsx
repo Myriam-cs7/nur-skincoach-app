@@ -131,6 +131,10 @@ export default function Diagnosis() {
             <Text style={styles.ctaText}>Démarrer mon rituel</Text>
             <Feather name="arrow-right" size={18} color={theme.color.onBrand} />
           </Pressable>
+          <Pressable style={styles.refine} onPress={() => router.replace('/(tabs)/coach')} testID="goto-coach">
+            <Feather name="message-circle" size={14} color={theme.color.brand} />
+            <Text style={styles.refineTxt}>Affiner avec mon Skincoach</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     </View>
@@ -151,6 +155,12 @@ function ScoreCard({ label, value }: { label: string; value: number }) {
 }
 
 const styles = makeStyles(() => ({
+  refine: {
+    marginTop: theme.spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: theme.spacing.sm, paddingVertical: 14, borderRadius: theme.radius.pill,
+    borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: theme.color.brandTint,
+  },
+  refineTxt: { ...theme.type.button, color: theme.color.brand },
   root: { flex: 1, backgroundColor: theme.color.surface },
   center: { alignItems: 'center', justifyContent: 'center' },
   headerRow: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.sm, alignItems: 'center' },

@@ -37,6 +37,7 @@ import TypingDots from '../../src/components/TypingDots';
 import ScanOverlay from '../../src/components/ScanOverlay';
 import PhotoConsentSheet from '../../src/components/PhotoConsentSheet';
 import { playUiSound, speak, stopSpeaking, stopUiSound, transcribeRecording } from '../../src/voice';
+import { startWebRecording, webMicState, webMicSupported, WebMicException, type WebRecording } from '../../src/voiceWeb';
 
 type Msg = {
   id: string;
@@ -61,7 +62,12 @@ export default function Coach() {
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [askPhoto, setAskPhoto] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
-  const [micSheet, setMicSheet] = useState<'hidden' | 'ask' | 'blocked'>('hidden');
+  const [micSheet, setMicSheet] = useState<'hidden' | 'ask' | 'blocked' | 'web'>('hidden');
+  const webRecRef = useRef<WebRecording | null>(null);
+  const isWeb = Platform.OS === 'web';
+  // Seconds spoken so far: she needs to see that the mask is really listening
+  const [elapsed, setElapsed] = useState(0);
+  const inputRef = useRef<React.ComponentRef<typeof TextInput> | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [photoConsent, setPhotoConsent] = useState(false);
@@ -99,6 +105,17 @@ export default function Coach() {
     const id = setTimeout(() => setHint(null), 4000);
     return () => clearTimeout(id);
   }, [hint]);
+
+  // Elapsed seconds, so a long recording never feels frozen
+  useEffect(() => {
+    if (turn !== 'listening') {
+      setElapsed(0);
+      return;
+    }
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [turn]);
+
 
   // Pre-warm the audio session (never request the mic on mount)
   useEffect(() => {
@@ -191,10 +208,34 @@ export default function Coach() {
     watchdogRef.current = setTimeout(() => void stopListening(), MAX_REC_MS);
   };
 
+  /** Browser recording: the permission belongs to the site, not to the app. */
+  const armWebRecorder = async () => {
+    stopSpeaking();
+    setSpeakingId(null);
+    try {
+      webRecRef.current = await startWebRecording({ onSilence: () => void stopListening(), silenceMs: SILENCE_MS });
+      setTurn('listening');
+      watchdogRef.current = setTimeout(() => void stopListening(), MAX_REC_MS);
+    } catch (e) {
+      const reason = e instanceof WebMicException ? e.reason : 'failed';
+      setTurn('idle');
+      setHint(reason === 'failed' ? t('coach.micError') : t(`coach.mic.web.${reason}`));
+    }
+  };
+
   const startListening = async () => {
     if (preparingRef.current || turnRef.current !== 'idle') return;
-    if (Platform.OS === 'web') {
-      setHint(t('coach.micError'));
+    if (isWeb) {
+      if (!webMicSupported()) { setHint(t('coach.mic.web.unsupported')); return; }
+      preparingRef.current = true;
+      try {
+        const state = await webMicState();
+        if (state === 'denied') { setMicSheet('blocked'); return; }
+        if (state !== 'granted') { setMicSheet('web'); return; }
+        await armWebRecorder();
+      } finally {
+        preparingRef.current = false;
+      }
       return;
     }
     preparingRef.current = true;
@@ -215,6 +256,11 @@ export default function Coach() {
   };
 
   const grantMicAndRecord = async () => {
+    if (isWeb) {
+      setMicSheet('hidden');
+      await armWebRecorder();
+      return;
+    }
     try {
       const res = await requestRecordingPermissionsAsync();
       if (!res.granted) {
@@ -238,6 +284,24 @@ export default function Coach() {
     if (turnRef.current !== 'listening') return;
     setTurn('transcribing');
     const myTurn = ++sttTurnRef.current;
+    if (isWeb) {
+      try {
+        const url = await webRecRef.current?.stop();
+        webRecRef.current = null;
+        if (!url) { setTurn('idle'); setHint(t('coach.micEmpty')); return; }
+        const text = await transcribeRecording(url, getLang());
+        URL.revokeObjectURL(url);
+        if (myTurn !== sttTurnRef.current) return;
+        if (!text) { setTurn('idle'); setHint(t('coach.micEmpty')); return; }
+        setTurn('idle');
+        await sendMessage(text);
+      } catch (e) {
+        console.warn('[coach] web transcription failed', e);
+        setTurn('idle');
+        setHint(t('coach.micError'));
+      }
+      return;
+    }
     try {
       await recorder.stop();
       await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false });
@@ -301,13 +365,15 @@ export default function Coach() {
         if (watchdogRef.current) clearTimeout(watchdogRef.current);
         stopSpeaking();
         stopUiSound('analysis');
+        webRecRef.current?.cancel();
+        webRecRef.current = null;
         try {
-          if (recorder.isRecording) recorder.stop().catch(() => {});
+          if (!isWeb && recorder.isRecording) recorder.stop().catch(() => {});
         } catch {
           // recorder already released by useAudioRecorder
         }
       },
-      [recorder]
+      [recorder, isWeb]
     )
   );
 
@@ -355,7 +421,7 @@ export default function Coach() {
 
   const statusLabel =
     turn === 'listening'
-      ? t('coach.listening')
+      ? `${t('coach.listening')}   ${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`
       : turn === 'transcribing'
       ? t('coach.transcribing')
       : turn === 'thinking'
@@ -392,6 +458,7 @@ export default function Coach() {
                 <Image source={PORTRAIT} style={styles.portrait} resizeMode="cover" />
               </View>
               <Text style={styles.intro}>{t('coach.intro')}</Text>
+              <Text style={styles.role} testID="coach-role">{t('coach.role')}</Text>
               <Pressable style={styles.startBtn} onPress={() => sendMessage(t('coach.startMsg'))} testID="coach-start">
                 <Feather name="mic" size={15} color={theme.color.onBrand} />
                 <Text style={styles.startTxt}>{t('coach.start')}</Text>
@@ -483,6 +550,7 @@ export default function Coach() {
             />
           </Pressable>
           <TextInput
+            ref={inputRef}
             value={input}
             onChangeText={setInput}
             placeholder={t('coach.placeholder')}
@@ -527,12 +595,30 @@ export default function Coach() {
             <View style={styles.sheetIcon}>
               <Feather name="mic" size={22} color={theme.color.brand} />
             </View>
-            <Text style={styles.sheetTitle}>{t('coach.mic.title')}</Text>
-            <Text style={styles.sheetSub}>{micSheet === 'blocked' ? t('coach.mic.blocked') : t('coach.mic.sub')}</Text>
+            <Text style={styles.sheetTitle}>
+              {isWeb && micSheet === 'blocked' ? t('coach.mic.web.blockedTitle')
+                : micSheet === 'web' ? t('coach.mic.web.title')
+                : t('coach.mic.title')}
+            </Text>
+            <Text style={styles.sheetSub}>
+              {micSheet === 'blocked' ? (isWeb ? t('coach.mic.web.denied') : t('coach.mic.blocked'))
+                : micSheet === 'web' ? t('coach.mic.web.sub')
+                : t('coach.mic.sub')}
+            </Text>
             {micSheet === 'blocked' ? (
-              <Pressable style={styles.sheetCta} onPress={() => Linking.openSettings()} testID="coach-mic-settings">
-                <Text style={styles.sheetCtaTxt}>{t('coach.mic.settings')}</Text>
-              </Pressable>
+              isWeb ? (
+                <Pressable
+                  style={styles.sheetCta}
+                  onPress={() => { setMicSheet('hidden'); inputRef.current?.focus(); }}
+                  testID="coach-mic-type"
+                >
+                  <Text style={styles.sheetCtaTxt}>{t('coach.mic.web.type')}</Text>
+                </Pressable>
+              ) : (
+                <Pressable style={styles.sheetCta} onPress={() => Linking.openSettings()} testID="coach-mic-settings">
+                  <Text style={styles.sheetCtaTxt}>{t('coach.mic.settings')}</Text>
+                </Pressable>
+              )
             ) : (
               <Pressable style={styles.sheetCta} onPress={grantMicAndRecord} testID="coach-mic-allow">
                 <Text style={styles.sheetCtaTxt}>{t('coach.mic.allow')}</Text>
@@ -627,6 +713,7 @@ const styles = makeStyles(() => ({
   },
   portrait: { width: '100%', height: 260 },
   intro: { color: theme.color.onSurfaceTertiary, fontSize: 14, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 22, paddingHorizontal: theme.spacing.md },
+  role: { ...theme.type.bodySm, color: theme.color.brand, textAlign: 'center', paddingHorizontal: theme.spacing.md },
   startBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill,

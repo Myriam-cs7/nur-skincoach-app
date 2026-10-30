@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
@@ -23,6 +23,10 @@ export default function Profile() {
   const { t } = useT();
   const [user, setUser] = useState<any>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [products, setProducts] = useState('');
+  const [savingProducts, setSavingProducts] = useState(false);
+  const [productsErr, setProductsErr] = useState(false);
+  const [savedProducts, setSavedProducts] = useState(false);
   const currentLang = getLang();
 
   useEffect(() => {
@@ -32,9 +36,26 @@ export default function Profile() {
       try {
         const u = await api.getUser(uid);
         setUser(u);
+        setProducts(u?.own_products || '');
       } catch {}
     })();
   }, []);
+
+  const onSaveProducts = async () => {
+    const uid = await getStoredUserId();
+    if (!uid) return;
+    setSavingProducts(true);
+    try {
+      await api.saveProducts(uid, products);
+      setSavedProducts(true);
+      setProductsErr(false);
+    } catch {
+      setSavedProducts(false);
+      setProductsErr(true);
+    } finally {
+      setSavingProducts(false);
+    }
+  };
 
   const [deleting, setDeleting] = useState(false);
 
@@ -91,6 +112,40 @@ export default function Profile() {
           <Row label="Sleep" value={intake.sleep_hours} />
           <Row label="Stress" value={intake.stress_level} />
           <Row label="Hydration" value={intake.water_intake} />
+
+          <SectionLabel label={t('products.title')} />
+          <View style={styles.productsCard}>
+            <Text style={styles.productsSub}>{t('products.sub')}</Text>
+            <TextInput
+              value={products}
+              onChangeText={(v) => { setProducts(v); setSavedProducts(false); }}
+              placeholder={t('products.placeholder')}
+              placeholderTextColor={theme.color.onSurfaceSecondary}
+              multiline
+              numberOfLines={4}
+              maxLength={1500}
+              style={styles.productsInput}
+              testID="products-input"
+            />
+            <View style={styles.productsRow}>
+              <Pressable
+                style={[styles.productsSave, savingProducts && { opacity: 0.5 }]}
+                onPress={onSaveProducts}
+                disabled={savingProducts}
+                testID="products-save"
+              >
+                <Text style={styles.productsSaveTxt}>
+                  {savedProducts ? t('products.saved') : t('products.save')}
+                </Text>
+              </Pressable>
+              <Text
+                style={[styles.productsPrivate, productsErr && styles.productsErrTxt]}
+                testID="products-error-line"
+              >
+                {productsErr ? t('products.error') : t('products.private')}
+              </Text>
+            </View>
+          </View>
 
           <SectionLabel label={t('profile.actions')} />
           <Pressable style={styles.actionRow} onPress={() => router.push('/mask')} testID="open-mask">
@@ -179,6 +234,25 @@ function Row({ label, value }: { label: string; value?: string }) {
 }
 
 const styles = makeStyles(() => ({
+  productsCard: {
+    backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.md,
+    borderWidth: 1, borderColor: theme.color.border, padding: theme.spacing.lg, gap: theme.spacing.md,
+  },
+  productsSub: { ...theme.type.bodySm, color: theme.color.onSurfaceSecondary },
+  productsInput: {
+    minHeight: 96, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: theme.color.borderGold,
+    backgroundColor: theme.color.surface, padding: theme.spacing.md, textAlignVertical: 'top',
+    ...theme.type.body, color: theme.color.onSurface,
+  },
+  productsRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  productsSave: {
+    backgroundColor: theme.color.brand, borderRadius: theme.radius.pill,
+    minHeight: 46, justifyContent: 'center', alignItems: 'center',
+    paddingVertical: 11, paddingHorizontal: theme.spacing.xl,
+  },
+  productsSaveTxt: { ...theme.type.button, color: theme.color.onBrand },
+  productsPrivate: { ...theme.type.micro, color: theme.color.onSurfaceSecondary, flex: 1 },
+  productsErrTxt: { color: theme.color.error },
   // kept for accessibility/tests, visually replaced by BrandHeader
   hiddenTitle: { height: 0, opacity: 0, fontSize: 1, fontFamily: theme.font.sans },
   root: { flex: 1, backgroundColor: theme.color.surface },

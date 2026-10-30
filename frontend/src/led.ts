@@ -5,7 +5,8 @@ export type LedId = 'red' | 'blue' | 'green' | 'yellow' | 'cyan' | 'violet' | 'w
 
 export const LED_ORDER: LedId[] = ['red', 'blue', 'green', 'yellow', 'cyan', 'violet', 'white'];
 
-export const LED_META: Record<LedId, { hex: string; minutes: number }> = {  red: { hex: theme.color.ledRed, minutes: 15 },
+export const LED_META: Record<LedId, { hex: string; minutes: number }> = {
+  red: { hex: theme.color.ledRed, minutes: 15 },
   blue: { hex: theme.color.ledBlue, minutes: 12 },
   green: { hex: theme.color.ledGreen, minutes: 15 },
   yellow: { hex: theme.color.ledYellow, minutes: 12 },
@@ -13,6 +14,19 @@ export const LED_META: Record<LedId, { hex: string; minutes: number }> = {  red:
   violet: { hex: theme.color.ledViolet, minutes: 15 },
   white: { hex: theme.color.ledWhite, minutes: 15 },
 };
+
+/** The same light written as text — readable on a white background too. */
+export function ledInk(id: LedId): string {
+  const key = ('ledText' + id.charAt(0).toUpperCase() + id.slice(1)) as
+    'ledTextRed' | 'ledTextBlue' | 'ledTextGreen' | 'ledTextYellow' | 'ledTextCyan' | 'ledTextViolet' | 'ledTextWhite';
+  return theme.color[key];
+}
+
+/** Outline for a dot filled with the raw light: white and yellow would vanish on white.
+ *  The strong colours get their own hue as rim, so the dot reads as pure light. */
+export function ledRim(id: LedId): string {
+  return id === 'white' || id === 'yellow' || id === 'cyan' ? ledInk(id) : LED_META[id].hex;
+}
 
 export type LedText = { name: string; wavelength: string; tagline: string; action: string; best_for: string[] };
 
@@ -22,8 +36,7 @@ export type LedText = { name: string; wavelength: string; tagline: string; actio
  */
 export type Evidence = 'solid' | 'supported' | 'exploratory';
 
-export const LED_PROTOCOL: Record<LedId, {
-  mode: string; brightness: number; minutes: number; perWeek: number; evidence: Evidence;
+export const LED_PROTOCOL: Record<LedId, {  mode: string; brightness: number; minutes: number; perWeek: number; evidence: Evidence;
 }> = {
   red: { mode: 'Wrinkle Reduction', brightness: 2, minutes: 20, perWeek: 4, evidence: 'solid' },
   blue: { mode: 'Oil Control', brightness: 2, minutes: 10, perWeek: 3, evidence: 'solid' },

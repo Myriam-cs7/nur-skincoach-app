@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 
 import pytest
+from rate_exempt import exempt_headers
 import requests
 
 BASE_URL = None
@@ -27,6 +28,7 @@ assert BASE_URL, "EXPO_PUBLIC_BACKEND_URL not set"
 def api_client():
     s = requests.Session()
     s.headers.update({"Content-Type": "application/json"})
+    s.headers.update(exempt_headers())
     return s
 
 
@@ -35,7 +37,10 @@ def test_user_id(api_client):
     """Create a fresh test user via NUR-CREATOR (multi-use, no email required)."""
     r = api_client.post(f"{BASE_URL}/api/activate", json={"activation_code": "NUR-CREATOR"}, timeout=15)
     assert r.status_code == 200, r.text
-    uid = r.json()["user_id"]
+    body = r.json()
+    uid = body["user_id"]
+    # Protected routes are authorized against the session, not the URL id
+    api_client.headers["Authorization"] = f"Bearer {body['session_token']}"
     # Save minimal intake so chat has a profile
     intake = {
         "age_range": "25-34",

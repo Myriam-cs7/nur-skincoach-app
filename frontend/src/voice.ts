@@ -126,7 +126,9 @@ export async function transcribeRecording(uri: string, lang: string): Promise<st
   const form = new FormData();
   if (Platform.OS === 'web') {
     const blob = await (await fetch(uri)).blob();
-    form.append('audio', blob, 'recording.webm');
+    // iPhone Safari records mp4, Chrome webm; anything else the provider decodes as webm
+    const ext = /mp4|aac|m4a/.test(blob.type) ? 'mp4' : 'webm';
+    form.append('audio', blob, `recording.${ext}`);
   } else {
     form.append('audio', new File(uri) as any, 'recording.m4a');
   }

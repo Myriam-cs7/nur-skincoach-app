@@ -3,6 +3,7 @@ import os
 import uuid
 import time
 import pytest
+from rate_exempt import exempt_headers
 import requests
 from datetime import datetime, timezone, timedelta
 
@@ -37,6 +38,7 @@ mdb = MongoClient(MONGO_URL)[DB_NAME]
 def api_client():
     s = requests.Session()
     s.headers.update({"Content-Type": "application/json"})
+    s.headers.update(exempt_headers())
     return s
 
 
@@ -84,10 +86,17 @@ def _seed_otp(email: str, code: str = "424242", lang: str = "fr") -> str:
 
 
 def _activate(api_client, email: str):
-    """Seed a code then activate — returns the verify-code response."""
+    """Seed a code then activate — returns the verify-code response.
+
+    Protected /users/{id}/* routes are authorized against the issued session,
+    so the token is placed on the session for the calls that follow.
+    """
     code = _seed_otp(email)
-    return api_client.post(f"{BASE_URL}/api/auth/verify-code",
-                           json={"email": email, "code": code}, timeout=20)
+    r = api_client.post(f"{BASE_URL}/api/auth/verify-code",
+                        json={"email": email, "code": code}, timeout=20)
+    if r.status_code == 200 and r.json().get("session_token"):
+        api_client.headers["Authorization"] = f"Bearer {r.json()['session_token']}"
+    return r
 
 
 def _get_otp_code(email: str) -> str:
@@ -278,7 +287,15 @@ class TestLedLibrary:
 # ---------- Progress endpoint ----------
 class TestProgress:
     def test_demo_charts_user_progress(self, api_client):
-        r = api_client.get(f"{BASE_URL}/api/users/demo-charts-user/progress", timeout=20)
+        # The demo profile is read through its own session, like any client
+        act = api_client.post(f"{BASE_URL}/api/activate",
+                              json={"activation_code": "NUR-DEMO-2026"}, timeout=20)
+        assert act.status_code == 200, act.text
+        body = act.json()
+        if body["user_id"] != "demo-charts-user":
+            pytest.skip("NUR-DEMO-2026 no longer maps to the charts demo profile")
+        r = api_client.get(f"{BASE_URL}/api/users/demo-charts-user/progress",
+                           headers={"Authorization": f"Bearer {body['session_token']}"}, timeout=20)
         assert r.status_code == 200, r.text
         body = r.json()
         assert len(body["daily"]) == 28

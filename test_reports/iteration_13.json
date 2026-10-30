@@ -1,0 +1,46 @@
+{
+  "summary": "Retest of the iteration 12 fixes. Backend: the new file test_iteration13_ratelimit_stt_magic.py passed 14/14. The full regression run passed 132, failed 1 and skipped 6; the one failure is the known e-mail provider 503 (email_unavailable) in test_session12 test_request_code_issues_magic_row. What works: (1) BUG2: a forged X-Forwarded-For no longer gets around the rate limit. I logged the real XFF chain temporarily and then reverted server.py; it is client, CDN, ingress, so TRUSTED_PROXY_HOPS=2 picks the real client. 12 spoofed attempts returned 403 x9 and then 429. (2) An invalid or empty X-Rate-Limit-Bypass value is still rate-limited, and the bypass header alone on /api/admin/overview returns 401. (3) BUG4: pure silence and a low hum both return text '' and reason no_speech, and real TTS-generated French questions transcribe correctly. (4) verify-code burns the magic link, and reusing it returns 410. Frontend: typing NUR-DEMO-2026 at normal speed fires no early request and activates; pasting works; a 6-digit OTP auto-submits via verify-code and activates; the keyboard and focus stay after a failed auto-submit. The Lien expiré title shows. products-save is 46px tall and shows the error line on a mocked 500. LED labels have no text below 3:1 contrast on Library, Protocol or Welcome in light or dark. Remaining issues: (a) a slow typist who pauses 700ms after 'NUR-DEMO-20' still auto-submits that partial code, because the regex accepts any 2+ character groups; (b) a 429 is shown as 'Wrong code. Please check the 6 digits'; (c) the STT echo filter drops short real questions such as 'Rétinol ou vitamine C ?'; (d) the white LED dot on the light-mode Welcome screen is barely visible; (e) .ogg is not in the backend's allowed suffix list.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/transcribe", "issue": "_is_prompt_echo gives false positives on short genuine questions made mostly of hint words, which are returned as no_speech. Confirmed by calling the function directly: 'Rétinol ou vitamine C ?', 'SPF et vitamine C ?' and 'Acide hyaluronique ou niacinamide ?' all return True (treated as echo). The rule is hinted >= max(3, 70%) with no length floor relative to the prompt. Suggest: only treat text as an echo when it is long (for example >=6 hint words in prompt order) or matches a contiguous slice of _STT_PROMPT. Reference: server.py:1807-1812"},
+      {"endpoint": "POST /api/transcribe", "issue": "The suffix allowlist {.m4a,.mp3,.mp4,.mpeg,.mpga,.wav,.webm} has no .ogg. Web recordings now arrive as recording.ogg (Firefox, src/voice.ts:130), and the backend silently renames them to .m4a, so OpenAI may fail to decode them (502). Not verified at runtime because ffmpeg is unavailable. Add '.ogg' (and '.oga'), which OpenAI supports. Reference: server.py:1825"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "activate.tsx looksComplete", "issue": "A partial code still auto-submits if the user pauses for 700ms. Typing 'NUR-DEMO-20' with a 1.5s pause fired POST /api/activate {activation_code:'NUR-DEMO-20'}, which returned 403 and showed an error. The regex /^[A-Z0-9]{3,}(-[A-Z0-9]{2,}){2,}$/ accepts 2+ characters in the last group, which is not the NUR-XXXX-XXXX shape described. Each partial try also uses up the activation quota (10 per 600s). Suggest requiring the last group to be >=4 characters, or matching the known shape exactly. Reference: activate.tsx:24", "testID": "code-input", "priority": "MEDIUM"},
+      {"component": "activate.tsx submitCode error mapping", "issue": "A 429 too_many_requests from /api/activate or verify-code falls through to t('otp.invalid'), so the user sees 'Wrong code. Please check the 6 digits you received.' even for a valid NUR-DEMO-2026. Reproduced when the IP bucket was exhausted. Add a too_many_requests branch using gate.too_many. Reference: activate.tsx:115-120", "testID": "code-error", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Welcome (light)", "issues": ["The white LED dot (11px, opacity 0.8) has a #E5E2DC border on a cream background, about 1.2:1, so it is almost invisible. Use borderStrong or a darker hairline on the light scheme. The Library white chip (34px) is visible but faint for the same reason."]},
+      {"screen": "Profile Mes produits", "issues": ["The products.error line reuses the grey productsPrivate style and has no testID. Give it the error colour and testID='products-error'."]},
+      {"screen": "Magic link failed (Lien expiré)", "issues": ["There is a large empty vertical gap (about 250px) between the title and the message on a 375x667 screen."]},
+      {"screen": "Activation / onboarding", "issues": ["With an English browser locale the app renders in English ('My access code', 'What's your name?') even though the product is French-only. The language follows the device locale (i18n.ts:941)."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_iteration13_ratelimit_stt_magic.py", "/app/test_reports/pytest/pytest_iteration13.xml"],
+  "action_items": [
+    "activate.tsx:24 – tighten looksComplete so 'NUR-DEMO-20' never auto-submits (require >=4 characters in the last group, or match the exact code shape).",
+    "activate.tsx:115-120 – map too_many_requests (429) to t('gate.too_many') instead of 'wrong code'.",
+    "server.py:1807 – reduce false positives in _is_prompt_echo for short real questions (for example require >=6 hint words, or a contiguous prompt slice).",
+    "server.py:1825 – add '.ogg' to the transcribe suffix allowlist to match voice.ts naming.",
+    "Light scheme – make the white LED dot/chip border stronger (Welcome dots especially).",
+    "profile.tsx:141 – style the products.error text in the error colour and add testID products-error."
+  ],
+  "critical_code_review_comments": [
+    "_client_ip assumes exactly 2 trusted hops. This matches the current CDN + ingress chain (verified), but if a hop is added or removed, every user ends up in one bucket or the spoofing returns. Consider logging when the chain is shorter than expected.",
+    "server.py is 2198 lines; it should be split into modules (auth, rate limit, voice, admin).",
+    "The rate-limit bypass reuses ADMIN_TOKEN. It does not grant admin (verified), but a single secret now unlocks two capabilities; a separate RATE_LIMIT_BYPASS_TOKEN would limit the damage if it leaks.",
+    "activate.tsx: the autoRef timeout is not cleared on unmount."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration13_ratelimit_stt_magic.py (new). server.py was temporarily instrumented to log the XFF chain and then restored byte-for-byte."],
+  "success_rate": {"backend": "99% (146/147 incl. full regression; only the known e-mail 503 failed)", "frontend": "90% (all requested fixes verified; slow-typing partial auto-submit still reproducible)"},
+  "seed_data_creation": "A temporary auth_session (test_seed TEST_t1) for demo-charts-user and the OTP user delivered+t1it13ui@resend.dev were created and deleted. The pytest file cleans up its own users, magic links and OTPs. The UI activations with NUR-DEMO-2026 created new onboarding users (multi-use code). demo-charts-user own_products was reset to ''.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The real XFF chain via ingress is 'client, cdn, ingress' (3 entries), so TRUSTED_PROXY_HOPS=2 is correct. Browser automation shares the egress IP with pytest, so tests that exhaust the activation bucket (10 per 600s) make UI activation return 429; restart the backend between them. For tabs, insert a db.auth_sessions row for demo-charts-user and set localStorage nur.user_id, nur.activation_code, nur.session_token and nur.lang=fr. emulate_media(color_scheme) switches the theme. ffmpeg is not installed.",
+  "rca_of_issue": "Partial auto-submit: the debounce stops a fast typist, but looksComplete treats 'NUR-DEMO-20' as complete because the last group needs only 2+ characters; any pause of 700ms or more submits it. Wrong-code-on-429: submitCode's catch block has no too_many_requests branch."
+}

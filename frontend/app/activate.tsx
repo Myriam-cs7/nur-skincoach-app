@@ -6,30 +6,59 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import Feather from '@react-native-vector-icons/feather';
 import { theme, makeStyles } from '../src/theme';
 import { GoldDivider, BrandHeader } from '../src/ui';
-import { api, setStoredUser, AccessResponse } from '../src/api';
+import { api, setStoredUser, ActivateResponse } from '../src/api';
 import { useT, getLang } from '../src/i18n';
 
-type Step = 'email' | 'otp' | 'partner';
+/** Two steps only: her e-mail, then the single code she received by e-mail. */
+type Step = 'email' | 'code';
+
+const CODE_RE = /^[A-Z0-9][A-Z0-9-]{3,23}$/;
+/** Only a finished code validates on its own: a half-typed one must never be sent.
+ *  Access codes come in several shapes (NUR-CREATOR, NUR-DEMO-2026, NUR-9HX3-N4PJ),
+ *  so typing one is validated by the button only — auto-submit is for the 6 digits. */
+const looksComplete = (value: string, hasEmail: boolean) => {
+  const digits = value.replace(/\D/g, '');
+  return hasEmail && digits.length === 6 && digits === value;
+};
 
 export default function Activate() {
   const router = useRouter();
   const { t } = useT();
-  const params = useLocalSearchParams<{ code?: string; scanned?: string }>();
-  const [step, setStep] = useState<Step>(params.code ? 'partner' : 'email');
+  const params = useLocalSearchParams<{ code?: string }>();
+  const [step, setStep] = useState<Step>(params.code ? 'code' : 'email');
   const [email, setEmail] = useState('');
   const [masked, setMasked] = useState('');
-  const [otp, setOtp] = useState('');
   const [code, setCode] = useState(params.code ? String(params.code).toUpperCase() : '');
+  const [paste, setPaste] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(params.scanned ? t('gate.card_ok') : null);
   const [cooldown, setCooldown] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const submittedRef = useRef('');
+  const autoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
+  useEffect(() => () => {
+    if (timer.current) clearInterval(timer.current);
+    if (autoRef.current) clearTimeout(autoRef.current);
+  }, []);
+
+  // Offer to paste a code that is already in the clipboard
+  useEffect(() => {
+    if (step !== 'code') return;
+    (async () => {
+      try {
+        if (!(await Clipboard.hasStringAsync())) return;
+        const raw = (await Clipboard.getStringAsync()).trim().toUpperCase();
+        if (raw && raw.length <= 24 && CODE_RE.test(raw) && raw !== code) setPaste(raw);
+      } catch {
+        // clipboard unavailable: nothing to offer
+      }
+    })();
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startCooldown = (seconds: number) => {
     setCooldown(seconds);
@@ -52,72 +81,72 @@ export default function Activate() {
     const e = email.trim().toLowerCase();
     if (!e) return;
     Keyboard.dismiss();
-    setBusy(true); setErr(null); setInfo(null);
+    setBusy(true); setErr(null);
     try {
       const r = await api.requestCode(e, getLang());
       setMasked(r.masked_email);
-      setStep('otp');
-      setOtp('');
+      setStep('code');
+      if (!resend) setCode('');
       startCooldown(r.resend_after);
     } catch (e2: any) {
       const m = String(e2?.message || '');
-      if (m.includes('resend_too_soon')) { setStep('otp'); startCooldown(60); setErr(t('gate.too_soon')); }
+      if (m.includes('resend_too_soon')) { setStep('code'); startCooldown(60); setErr(t('gate.too_soon')); }
       else if (m.includes('too_many_requests')) setErr(t('gate.too_many'));
       else if (m.includes('invalid_email')) setErr(t('gate.not_found'));
       else if (m.includes('email_unavailable')) setErr(t('gate.mail_paused'));
       else setErr(t('gate.mail_error'));
-      if (resend) setStep('otp');
+      if (resend) setStep('code');
     } finally { setBusy(false); }
   };
 
-  const verifyOtp = async () => {
-    const digits = otp.replace(/\D/g, '');
-    if (digits.length !== 6) return;
-    Keyboard.dismiss();
+  /** One field for both: the 6 digits from the e-mail and the purchase codes. */
+  const submitCode = async (value?: string, auto = false) => {
+    const raw = (value ?? code).trim().toUpperCase();
+    if (!raw || busy) return;
+    submittedRef.current = raw;
+    const digits = raw.replace(/\D/g, '');
+    const mail = email.trim().toLowerCase();
+    // Keep the keyboard when she is still typing, so a wrong guess stays editable
+    if (!auto) Keyboard.dismiss();
     setBusy(true); setErr(null);
     try {
-      const r: AccessResponse = await api.verifyCode(email.trim().toLowerCase(), digits, getLang());
+      const r: ActivateResponse = digits.length === 6 && digits === raw && mail
+        ? await api.verifyCode(mail, digits, getLang())
+        : await api.activate(raw);
       await setStoredUser(r.user_id, r.activation_code);
       route(r);
     } catch (e2: any) {
       const m = String(e2?.message || '');
       if (m.includes('code_expired')) setErr(t('otp.expired'));
       else if (m.includes('too_many_attempts')) setErr(t('otp.too_many'));
+      else if (m.includes('too_many_requests')) setErr(t('gate.too_many'));
       else if (m.includes('no_code_requested')) setErr(t('otp.not_found'));
+      else if (m.includes('403') || m.includes('invalid_activation_code')) setErr(t('code.invalid'));
       else setErr(t('otp.invalid'));
     } finally { setBusy(false); }
   };
 
-  const validatePartnerCode = async () => {
-    const c = code.trim().toUpperCase();
-    if (!c) return;
-    Keyboard.dismiss();
-    setBusy(true); setErr(null); setInfo(null);
-    try {
-      const r = await api.activate(c);
-      await setStoredUser(r.user_id, r.activation_code);
-      route(r);
-    } catch (e2: any) {
-      if (String(e2?.message || '').includes('403')) setErr(t('welcome.code_invalid'));
-      else setErr(t('common.error'));
-    } finally { setBusy(false); }
+  const onChangeCode = (v: string) => {
+    const next = v.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
+    setCode(next);
+    setErr(null);
+    setPaste('');
+    // Validation fires on its own once typing has settled on a complete code
+    if (autoRef.current) clearTimeout(autoRef.current);
+    if (next !== submittedRef.current && looksComplete(next, !!email.trim())) {
+      autoRef.current = setTimeout(() => void submitCode(next, true), 700);
+    }
   };
 
-  const titles: Record<Step, string> = {
-    email: t('gate.title'),
-    otp: t('otp.title'),
-    partner: t('welcome.code_title'),
-  };
+  const titles: Record<Step, string> = { email: t('gate.title'), code: t('code.title') };
   const subs: Record<Step, string> = {
     email: t('gate.sub'),
-    otp: t('otp.sub', { email: masked || email }),
-    partner: t('welcome.code_sub'),
+    code: masked || email ? t('code.sub', { email: masked || email }) : t('code.sub_plain'),
   };
-  const icons: Record<Step, any> = { email: 'mail', otp: 'key', partner: 'award' };
 
   const goBackStep = () => {
     if (step === 'email') router.back();
-    else { setStep('email'); setErr(null); setInfo(null); }
+    else { setStep('email'); setErr(null); }
   };
 
   return (
@@ -130,7 +159,7 @@ export default function Activate() {
           </Pressable>
 
           <View style={styles.iconCircle}>
-            <Feather name={icons[step]} size={23} color={theme.color.brand} />
+            <Feather name={step === 'email' ? 'mail' : 'key'} size={23} color={theme.color.brand} />
           </View>
           <BrandHeader title={titles[step]} />
           <GoldDivider marginV={theme.spacing.md} />
@@ -140,7 +169,7 @@ export default function Activate() {
             <>
               <TextInput
                 value={email}
-                onChangeText={(v) => { setEmail(v); setErr(null); setInfo(null); }}
+                onChangeText={(v) => { setEmail(v); setErr(null); }}
                 placeholder={t('gate.email_placeholder')}
                 placeholderTextColor={theme.color.onSurfaceSecondary}
                 autoCapitalize="none"
@@ -154,12 +183,6 @@ export default function Activate() {
                 testID="gate-email-input"
               />
               {err ? <Text style={styles.err} testID="gate-error">{err}</Text> : null}
-              {info ? (
-                <View style={styles.infoBox} testID="gate-info">
-                  <Feather name="check-circle" size={13} color={theme.color.brand} />
-                  <Text style={styles.infoTxt}>{info}</Text>
-                </View>
-              ) : null}
               <Cta
                 label={t('gate.cta')}
                 busy={busy}
@@ -167,87 +190,71 @@ export default function Activate() {
                 onPress={() => sendCode()}
                 testID="gate-verify"
               />
-              <Pressable onPress={() => { setStep('partner'); setErr(null); }} style={styles.linkWrap} testID="gate-switch-mode">
-                <Text style={styles.link}>{t('gate.have_code')}</Text>
+              <Pressable onPress={() => { setStep('code'); setErr(null); }} style={styles.linkWrap} testID="gate-have-code">
+                <Text style={styles.link}>{t('code.already')}</Text>
               </Pressable>
               <View style={styles.whyRow}>
                 <Feather name="lock" size={10} color={theme.color.brand} />
                 <Text style={styles.whyTxt}>{t('gate.why')}</Text>
               </View>
             </>
-          ) : null}
-
-          {step === 'otp' ? (
-            <>
-              <TextInput
-                value={otp}
-                onChangeText={(v) => { setOtp(v.replace(/\D/g, '').slice(0, 6)); setErr(null); }}
-                placeholder={t('otp.placeholder')}
-                placeholderTextColor={theme.color.borderStrong}
-                keyboardType="number-pad"
-                inputMode="numeric"
-                textContentType="oneTimeCode"
-                autoComplete="sms-otp"
-                maxLength={6}
-                returnKeyType="go"
-                onSubmitEditing={verifyOtp}
-                autoFocus
-                style={[styles.input, styles.inputOtp, !!err && styles.inputErr]}
-                testID="otp-input"
-              />
-              {err ? <Text style={styles.err} testID="otp-error">{err}</Text> : null}
-              <Cta
-                label={t('otp.cta')}
-                busy={busy}
-                disabled={otp.length !== 6 || busy}
-                onPress={verifyOtp}
-                testID="otp-verify"
-              />
-              <Pressable
-                style={styles.ghost}
-                disabled={cooldown > 0 || busy}
-                onPress={() => sendCode(true)}
-                testID="otp-resend"
-              >
-                <Feather name="refresh-cw" size={13} color={cooldown > 0 ? theme.color.onSurfaceSecondary : theme.color.brandDeep} />
-                <Text style={[styles.ghostTxt, cooldown > 0 && { color: theme.color.onSurfaceSecondary }]}>
-                  {cooldown > 0 ? t('otp.resend_in', { s: cooldown }) : t('otp.resend')}
-                </Text>
-              </Pressable>
-              <Text style={styles.hint}>{t('otp.spam_hint')}</Text>
-              <Pressable onPress={() => { setStep('email'); setErr(null); setOtp(''); }} style={styles.linkWrap} testID="otp-change-email">
-                <Text style={styles.link}>{t('otp.change_email')}</Text>
-              </Pressable>
-            </>
-          ) : null}
-
-          {step === 'partner' ? (
+          ) : (
             <>
               <TextInput
                 value={code}
-                onChangeText={(v) => { setCode(v.toUpperCase()); setErr(null); }}
-                placeholder={t('welcome.code_placeholder')}
-                placeholderTextColor={theme.color.onSurfaceSecondary}
+                onChangeText={onChangeCode}
+                placeholder={t('code.placeholder')}
+                placeholderTextColor={theme.color.borderStrong}
                 autoCapitalize="characters"
                 autoCorrect={false}
+                autoComplete="one-time-code"
+                textContentType="oneTimeCode"
+                maxLength={24}
                 returnKeyType="go"
-                onSubmitEditing={validatePartnerCode}
-                style={[styles.input, !!err && styles.inputErr]}
-                testID="activate-code-input"
+                onSubmitEditing={() => submitCode()}
+                autoFocus
+                style={[styles.input, styles.inputCode, !!err && styles.inputErr]}
+                testID="code-input"
               />
-              {err ? <Text style={styles.err}>{err}</Text> : null}
+              {paste ? (
+                <Pressable
+                  style={styles.pasteChip}
+                  onPress={() => { setPaste(''); setCode(paste); void submitCode(paste); }}
+                  testID="code-paste"
+                >
+                  <Feather name="clipboard" size={13} color={theme.color.brand} />
+                  <Text style={styles.pasteTxt} numberOfLines={1}>{t('code.paste', { code: paste })}</Text>
+                </Pressable>
+              ) : null}
+              {err ? <Text style={styles.err} testID="code-error">{err}</Text> : null}
               <Cta
-                label={t('welcome.code_validate')}
+                label={t('code.cta')}
                 busy={busy}
                 disabled={!code || busy}
-                onPress={validatePartnerCode}
-                testID="activate-validate"
+                onPress={() => submitCode()}
+                testID="code-validate"
               />
-              <Pressable onPress={() => { setStep('email'); setErr(null); }} style={styles.linkWrap} testID="gate-use-email">
-                <Text style={styles.link}>{t('gate.use_email')}</Text>
+              {email.trim() ? (
+                <>
+                  <Pressable
+                    style={styles.ghost}
+                    disabled={cooldown > 0 || busy}
+                    onPress={() => sendCode(true)}
+                    testID="otp-resend"
+                  >
+                    <Feather name="refresh-cw" size={13} color={cooldown > 0 ? theme.color.onSurfaceSecondary : theme.color.brandDeep} />
+                    <Text style={[styles.ghostTxt, cooldown > 0 && { color: theme.color.onSurfaceSecondary }]}>
+                      {cooldown > 0 ? t('otp.resend_in', { s: cooldown }) : t('otp.resend')}
+                    </Text>
+                  </Pressable>
+                  <Text style={styles.hint}>{t('code.hint')}</Text>
+                </>
+              ) : null}
+              <Pressable onPress={() => { setStep('email'); setErr(null); }} style={styles.linkWrap} testID="code-change-email">
+                <Text style={styles.link}>{t('code.by_email')}</Text>
               </Pressable>
             </>
-          ) : null}
+          )}
         </ScrollView>
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -279,7 +286,6 @@ const styles = makeStyles(() => ({
     alignItems: 'center', justifyContent: 'center', marginBottom: theme.spacing.lg,
     shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
   },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 29, textAlign: 'center', marginTop: theme.spacing.md, letterSpacing: -0.5 },
   sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   input: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
@@ -287,15 +293,16 @@ const styles = makeStyles(() => ({
     marginTop: theme.spacing.xl, fontFamily: theme.font.mono, letterSpacing: 2, textAlign: 'center',
   },
   inputEmail: { fontFamily: theme.font.sans, letterSpacing: 0.3, fontSize: 16 },
-  inputOtp: { fontSize: 30, fontFamily: theme.font.sans, letterSpacing: 12, paddingVertical: 20, color: theme.color.onSurface },
+  inputCode: { fontSize: 22, fontFamily: theme.font.sansMedium, letterSpacing: 4, paddingVertical: 20, color: theme.color.onSurface },
   inputErr: { borderColor: theme.color.error },
   err: { color: theme.color.error, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', marginTop: theme.spacing.sm, lineHeight: 18 },
-  infoBox: {
-    flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center', marginTop: theme.spacing.md,
-    backgroundColor: theme.color.brandTint, borderWidth: 1, borderColor: theme.color.borderGold,
-    borderRadius: theme.radius.md, padding: theme.spacing.md,
+  pasteChip: {
+    flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'center', alignSelf: 'center',
+    marginTop: theme.spacing.md, paddingVertical: 10, paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radius.pill, borderWidth: 1, borderColor: theme.color.borderGold,
+    backgroundColor: theme.color.brandTint, maxWidth: '100%',
   },
-  infoTxt: { color: theme.color.onSurfaceTertiary, fontSize: 12, fontFamily: theme.font.sans, flex: 1, lineHeight: 18 },
+  pasteTxt: { ...theme.type.bodySm, color: theme.color.brand, flexShrink: 1 },
   cta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingVertical: 18,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
@@ -305,7 +312,7 @@ const styles = makeStyles(() => ({
   ghost: {
     marginTop: theme.spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: theme.spacing.sm, paddingVertical: 15, borderRadius: theme.radius.pill,
-    borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: 'rgba(201,169,97,0.06)',
+    borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: theme.color.brandTint,
   },
   ghostTxt: { color: theme.color.brandDeep, fontSize: 13, fontFamily: theme.font.sansMedium, fontWeight: '600', letterSpacing: 0.4 },
   hint: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, textAlign: 'center', marginTop: theme.spacing.md },

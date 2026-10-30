@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Image, Platform, Share } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,7 +7,8 @@ import Feather from '@react-native-vector-icons/feather';
 
 import { theme, makeStyles } from '../src/theme';
 import { BrandHeader, SectionLabel } from '../src/ui';
-import { API_BASE } from '../src/api';
+import * as SecureStore from 'expo-secure-store';
+import { API_BASE, admin } from '../src/api';
 import { useT } from '../src/i18n';
 
 /**
@@ -27,6 +28,29 @@ export default function OpenOnPhone() {
   const router = useRouter();
   const { t } = useT();
   const [copied, setCopied] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState('');
+  const [invCopied, setInvCopied] = useState(false);
+
+  // The invitation link is admin material: it only shows once the private console is unlocked
+  useEffect(() => {
+    (async () => {
+      try {
+        if (Platform.OS === 'web') return;
+        const key = await SecureStore.getItemAsync('nur.admin_key');
+        if (!key) return;
+        const overview = await admin.overview(key);
+        setInviteUrl(overview.invite_url || '');
+      } catch {
+        // console locked or offline: the page still works without the link
+      }
+    })();
+  }, []);
+
+  const copyInvite = async () => {
+    await Clipboard.setStringAsync(inviteUrl);
+    setInvCopied(true);
+    setTimeout(() => setInvCopied(false), 2200);
+  };
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
@@ -73,6 +97,26 @@ export default function OpenOnPhone() {
             <Text style={styles.qrHint}>{t('open.qr.hint')}</Text>
           </View>
 
+          <SectionLabel label={t('open.invite.title')} />
+          {inviteUrl ? (
+            <Pressable style={styles.linkCard} onPress={copyInvite} testID="open-copy-invite">
+              <Text style={styles.linkLabel}>{t('open.invite.title')}</Text>
+              <Text style={styles.inviteUrl} numberOfLines={3} selectable>{inviteUrl}</Text>
+              <View style={styles.copyRow}>
+                <Feather name={invCopied ? 'check' : 'copy'} size={13} color={theme.color.brand} />
+                <Text style={styles.copyTxt}>{invCopied ? t('open.copied') : t('open.invite.copy')}</Text>
+              </View>
+              <Text style={styles.qrHint}>{t('open.invite.hint')}</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.fixCard}>
+              <Text style={styles.fixTxt}>{t('open.invite.locked')}</Text>
+              <Pressable onPress={() => router.push('/admin')} testID="open-unlock-admin">
+                <Text style={styles.copyTxt}>{t('open.invite.unlock')}</Text>
+              </Pressable>
+            </View>
+          )}
+
           <SectionLabel label={t('open.steps.title')} />
           <View style={styles.steps}>
             {[1, 2, 3].map((n) => (
@@ -113,6 +157,7 @@ const styles = makeStyles(() => ({
   },
   linkLabel: { ...theme.type.cardLabel, color: theme.color.onSurfaceSecondary, textTransform: 'uppercase' },
   linkUrl: { fontFamily: theme.font.displayBold, fontSize: 19, lineHeight: 25, color: theme.color.onSurface },
+  inviteUrl: { fontFamily: theme.font.sansMedium, fontSize: 13, lineHeight: 19, color: theme.color.onSurface },
   copyRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   copyTxt: { ...theme.type.micro, color: theme.color.brand },
   shareBtn: {

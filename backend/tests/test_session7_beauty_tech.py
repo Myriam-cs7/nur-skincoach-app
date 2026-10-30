@@ -10,6 +10,7 @@ import io
 import os
 import time
 import pytest
+from rate_exempt import exempt_headers
 import requests
 from PIL import Image
 
@@ -49,6 +50,7 @@ def _landscape_b64():
 def session():
     s = requests.Session()
     s.headers["Content-Type"] = "application/json"
+    s.headers.update(exempt_headers())
     return s
 
 
@@ -257,11 +259,13 @@ class TestNonRegression:
         if r.status_code == 200:
             assert "path" in r.json() or "audio" in r.json() or "url" in r.json()
 
-    def test_activation_rate_limit_eventually_429(self, session):
-        # fire ~12 fast calls — spec says 10/10min; expect at least one 429
+    def test_activation_rate_limit_eventually_429(self):
+        # fire ~12 fast calls — spec says 10/10min; expect at least one 429.
+        # No bypass header here: this test IS the limit measurement.
+        plain = requests.Session()
         statuses = []
         for i in range(12):
-            r = session.post(f"{BASE_URL}/api/activate",
+            r = plain.post(f"{BASE_URL}/api/activate",
                              json={"activation_code": "WRONG-%d" % i})
             statuses.append(r.status_code)
             if r.status_code == 429:

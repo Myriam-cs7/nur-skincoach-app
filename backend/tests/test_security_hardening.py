@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
+from rate_exempt import exempt_headers
 import requests
 from PIL import Image
 
@@ -46,6 +47,17 @@ assert ADMIN_TOKEN, "ADMIN_TOKEN not configured in backend/.env"
 # ----- helpers -----
 @pytest.fixture(scope="session")
 def api():
+    s = requests.Session()
+    s.headers.update({"Content-Type": "application/json"})
+    # Every test but TestRateLimits is exempted, so one suite run cannot exhaust
+    # the quotas of the next test (limits are keyed on the real client IP).
+    s.headers.update(exempt_headers())
+    return s
+
+
+@pytest.fixture(scope="session")
+def plain():
+    """No exemption: these tests are the ones measuring the limits."""
     s = requests.Session()
     s.headers.update({"Content-Type": "application/json"})
     return s
@@ -303,11 +315,12 @@ class TestNonRegression:
         r = api.post(f"{BASE_URL}/api/activate", json={"activation_code": code}, timeout=15)
         assert r.status_code == 403
 
-    def test_shopify_webhook_without_secret_returns_503(self, api):
+    def test_shopify_webhook_unsigned_payload_rejected(self, api):
         r = api.post(f"{BASE_URL}/api/shopify/webhook/orders-paid",
                      data=b'{"id":"abc"}', headers={"Content-Type": "application/json"},
                      timeout=10)
-        assert r.status_code == 503
+        # The signature secret is configured, so an unsigned payload is rejected
+        assert r.status_code in (401, 503)
 
     def test_tts_invalid_key_returns_400(self, api):
         r = api.get(f"{BASE_URL}/api/tts/not-hex.mp3", timeout=10)
@@ -336,36 +349,36 @@ class TestNonRegression:
 # ---------- Rate limits (do LAST — these buckets block the API for minutes) ----------
 class TestRateLimits:
     @pytest.mark.order("last")
-    def test_auth_request_code_burst_triggers_429(self, api):
+    def test_auth_request_code_burst_triggers_429(self, plain):
         """6 calls → at least one 429. Allow 503 email_unavailable for the first ones."""
         statuses = []
         for _ in range(6):
             email = f"delivered+rl_{uuid.uuid4().hex[:6]}@resend.dev"
-            r = api.post(f"{BASE_URL}/api/auth/request-code",
+            r = plain.post(f"{BASE_URL}/api/auth/request-code",
                          json={"email": email, "lang": "fr"}, timeout=15)
             statuses.append(r.status_code)
         assert 429 in statuses, f"No 429 in burst: {statuses}"
 
     @pytest.mark.order("last")
-    def test_activate_burst_triggers_429(self, api):
+    def test_activate_burst_triggers_429(self, plain):
         """11 calls on /activate → at least one 429 (activation bucket = 10/10min).
         ⚠️ Blocks activation for 10 minutes afterwards."""
         statuses = []
         for _ in range(11):
-            r = api.post(f"{BASE_URL}/api/activate",
+            r = plain.post(f"{BASE_URL}/api/activate",
                          json={"activation_code": "DOES-NOT-EXIST"}, timeout=10)
             statuses.append(r.status_code)
         assert 429 in statuses, f"No 429 in activate burst: {statuses}"
 
     @pytest.mark.order("last")
-    def test_admin_lockout_after_5_bad_tokens(self, api):
+    def test_admin_lockout_after_5_bad_tokens(self, plain):
         """5 bad X-Admin-Token → 401 each; 6th call even with the GOOD token → 429 admin_locked.
         ⚠️ Blocks admin for 15 minutes afterwards. Restart backend to reset."""
         for i in range(5):
-            r = api.get(f"{BASE_URL}/api/admin/overview",
+            r = plain.get(f"{BASE_URL}/api/admin/overview",
                         headers={"X-Admin-Token": f"bad-token-{i}"}, timeout=10)
             assert r.status_code == 401, f"attempt {i}: {r.status_code}"
-        r_locked = api.get(f"{BASE_URL}/api/admin/overview",
+        r_locked = plain.get(f"{BASE_URL}/api/admin/overview",
                            headers={"X-Admin-Token": ADMIN_TOKEN}, timeout=10)
         assert r_locked.status_code == 429
         assert r_locked.json()["detail"] == "admin_locked"

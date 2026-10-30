@@ -1,111 +1,135 @@
-# Accès à l'app depuis un téléphone — sans passer par l'appareil photo
+# Nūr Skincoach — micro dans le navigateur, entrée en un tap, couleurs LED vives
 
-Une page d'accès qui ouvre Nūr Skincoach sur n'importe quel téléphone en tapant un lien, plus la
-page `nurprotocol.com/app` que le QR de la carte gold ouvrira chez les clientes.
-Le QR d'aperçu, détourné par une autre application installée sur le téléphone, cesse d'être le
-chemin obligatoire pour tester l'app.
+Trois irritants constatés sur téléphone sont corrigés : le micro reste muet dans le navigateur,
+les sept points LED de l'accueil paraissent pastel, et l'activation demande trop d'étapes.
+S'y ajoute une clarification attendue : à quoi sert le Skincoach une fois le bilan terminé.
 
 ## Pour qui
 
-- La marque, qui doit pouvoir ouvrir l'app sur son propre téléphone en quelques secondes.
-- Les influenceuses, qui reçoivent un lien et doivent pouvoir essayer sans rien comprendre
-  à Expo Go ni à un QR code.
-- La cliente finale, qui scannera le QR de sa carte gold et doit arriver sur une page de marque,
-  jamais sur une erreur ni dans une application étrangère.
+- Les influenceuses, qui doivent entrer dans l'app sans comprendre ni code ni procédure.
+- La cliente qui vient d'acheter et reçoit son accès par e-mail.
+- La cliente équipée, qui dialogue avec le Skincoach entre deux séances.
 
-## Ce qui est corrigé, et pourquoi
+## Fonctionnalités et expérience
 
-Le QR de l'aperçu ne contient pas une adresse web : il contient une adresse technique réservée à
-l'application Expo Go. L'appareil photo ne peut donc pas l'ouvrir dans un navigateur et propose la
-seule application installée qui se déclare capable de traiter ce type de lien — sur ce téléphone,
-Doctolib. C'est aussi pour cela que les autres QR codes (menus, factures) fonctionnent
-normalement : ils contiennent, eux, une adresse web.
+### 1. Le micro fonctionne dans le navigateur
 
-Ce QR est généré par la plateforme d'aperçu et n'est pas modifiable. La correction consiste donc à
-ne plus en dépendre : un lien web ordinaire ouvre l'app complète dans le navigateur du téléphone,
-sans Expo Go et sans appareil photo.
+Aujourd'hui le bouton micro ne capte rien quand l'app est ouverte dans le navigateur du téléphone :
+l'enregistrement utilisé est celui d'une application installée, pas celui d'un navigateur.
 
-## Contenu et expérience
+- Enregistrement natif du navigateur : appui sur le micro, autorisation demandée par le navigateur,
+  parole transcrite puis envoyée comme un message écrit.
+- Pendant l'enregistrement : halo animé, durée qui défile, arrêt automatique après un silence,
+  possibilité d'annuler d'un geste.
+- Si le navigateur refuse ou ne sait pas enregistrer : une phrase claire indique quoi faire
+  (autoriser le micro dans les réglages du site, ou utiliser la dictée du clavier), sans jamais
+  bloquer la conversation écrite.
+- iPhone : l'autorisation est demandée à chaque nouvelle session de navigation. L'app le dit avant
+  le premier appui plutôt que de laisser croire à une panne.
 
-**Page « Ouvrir Nūr sur mon téléphone » (privée)**
-- L'adresse de l'app écrite en grand, lisible et recopiable d'un seul geste.
-- Un QR code de secours qui contient, lui, une vraie adresse web : scanné avec l'appareil photo,
-  il ouvre le navigateur et jamais une autre application.
-- Trois étapes courtes : ouvrir le lien, ajouter l'app à l'écran d'accueil, entrer le code d'essai.
-- Un encadré de dépannage : que faire si l'appareil photo propose encore une autre application
-  (scanner depuis Expo Go, ou simplement taper le lien), et comment retirer cette proposition dans
-  les réglages du téléphone.
-- Page réservée à la marque et aux influenceuses : aucun lien depuis l'app des clientes.
+### 2. Entrer dans l'app en un seul geste
 
-**Installation sur l'écran d'accueil**
-L'app ouverte dans le navigateur peut être ajoutée à l'écran d'accueil : icône Nūr, nom Nūr
-Skincoach, ouverture en plein écran sans barre de navigateur, fond noir au lancement. L'essai
-ressemble alors à une vraie application, ce qui compte pour les retours des influenceuses.
+L'enchaînement actuel — adresse e-mail, attente, code à recopier, puis une consigne qui parle d'un
+code « commençant par NUR » — est supprimé au profit d'un chemin unique.
 
-**Page `nurprotocol.com/app` prête à coller**
-La page que le QR de la carte gold ouvrira, livrée en un seul fichier à déposer sur le site :
-- en-tête de marque : logo, signature « YOUR SKIN, YOUR PROTOCOL » ;
-- un bouton principal « Ouvrir mon Skincoach » ;
-- deux emplacements App Store et Google Play, visibles mais inactifs tant que les applications ne
-  sont pas publiées, avec la mention « bientôt » ;
-- « Comment activer » : le code reçu par e-mail à l'achat, ou le code de la carte, et la consigne
-  de transmettre le code à la personne à qui le masque est offert ;
-- une ligne de confidentialité et le rappel que les photos ne sont jamais conservées ;
-- français et anglais selon la langue du téléphone.
+- **Lien d'activation dans l'e-mail** : l'e-mail reçu (demande d'accès ou achat) contient un gros
+  bouton « Ouvrir mon Skincoach ». Tapé depuis le téléphone, il ouvre l'app déjà activée : plus rien
+  à recopier. Le code reste affiché dessous, en secours.
+- **Un seul champ, un seul nom** : « Mon code d'accès reçu par e-mail ». Il accepte indifféremment
+  le code à six chiffres et les codes d'achat. Le mot « partenaire » et la mention « commence par
+  NUR » disparaissent de l'app, de même que l'étape de choix entre deux types de code.
+- **Collage facilité** : si un code est déjà dans le presse-papiers, l'app propose de le coller en un
+  tap. La validation se déclenche dès que le code est complet, sans bouton supplémentaire.
+- **Lien d'invitation pour les influenceuses** : la page d'accès privée produit un lien qui porte
+  déjà l'accès. La personne tape le lien et arrive directement dans le questionnaire, sans code ni
+  e-mail. Aucun bouton d'essai n'apparaît sur l'écran d'accueil des clientes.
+- **Renvoi en un tap** : si le lien a expiré, l'app propose de renvoyer un e-mail sans ressaisir
+  l'adresse.
 
-Le contenu du QR de la carte gold ne change pas : il reste `https://nurprotocol.com/app`, l'adresse
-définitive prévue pour ne jamais être réimprimée.
+### 3. Les sept couleurs LED, enfin vives
+
+Les pastilles et points de couleur sont aujourd'hui délavés, surtout sur fond clair.
+
+- Les sept teintes passent en saturation pleine, avec un halo lumineux et des points plus larges sur
+  l'écran d'accueil.
+- Mêmes couleurs franches partout où une lumière est nommée : rituel du jour, calendrier de la
+  semaine, bibliothèque des lumières, points de couleur des cartes.
+- L'interface garde son or champagne et ses fonds noir ou blanc : seules les lumières sont vives.
+
+### 4. Ce que le Skincoach apporte après le bilan
+
+Le questionnaire et la photo servent à établir le rituel LED. Le Skincoach n'est pas un second
+bilan : il affine, combine et accompagne. Ce rôle devient explicite dans l'app.
+
+- Une phrase d'accueil qui l'annonce : le bilan fixe les lumières, le Skincoach affine le soin autour
+  et répond aux questions du quotidien.
+- **Mes produits** : la cliente indique les cosmétiques qu'elle possède déjà (quelques lignes, en
+  clair). Le Skincoach s'en sert pour proposer une routine combinée — quelle lumière, puis lesquels
+  de ses produits, à quel moment, et lesquels éviter juste avant une séance.
+- Un raccourci « Affiner avec mon Skincoach » à la fin du bilan et depuis le rituel, pour que le
+  lien entre les deux soit évident.
+- Dans ses conseils, le Skincoach continue de ne citer aucune marque ; il peut en revanche parler
+  des produits que la cliente a elle-même nommés.
 
 ## Parcours
 
-1. La marque ou une influenceuse reçoit un seul lien, par message ou par e-mail.
-2. Le lien ouvre l'app directement dans le navigateur du téléphone : accueil, signature, logo,
-   bouton d'activation.
-3. Activation avec le code d'essai, puis questionnaire, bilan et rituel comme sur l'app finale.
-4. Option « ajouter à l'écran d'accueil » pour retrouver Nūr comme une application.
-5. Plus tard, la cliente scanne le QR de sa carte gold, arrive sur `nurprotocol.com/app`, et ouvre
-   l'app — ou l'installe depuis les stores une fois les applications publiées.
+**Influenceuse** : reçoit un lien → l'app s'ouvre déjà activée → questionnaire, photo facultative,
+bilan, rituel → peut parler au micro dans le navigateur.
+
+**Nouvelle cliente** : scanne le QR de sa carte ou arrive par le site → saisit son adresse e-mail →
+reçoit un e-mail → tape « Ouvrir mon Skincoach » → l'app est activée, sans recopier de code →
+questionnaire, bilan, rituel.
+
+**Cliente qui a acheté** : reçoit son accès dans l'e-mail de commande → même bouton, même résultat.
+Si le masque est un cadeau, elle transmet l'e-mail ou le code à la personne concernée.
+
+**Cliente équipée** : ouvre le Skincoach, dicte sa question, reçoit un soin combiné LED + ses
+propres produits, et peut écouter la réponse au haut-parleur.
 
 ## Esprit visuel
 
-Même écriture que l'app : noir profond ou blanc clinique selon le téléphone, or champagne en filets
-fins, typographie d'ingénierie, beaucoup de vide. Les deux pages sont pensées pour le pouce :
-le lien et le bouton principal occupent toute la largeur, les zones tactiles sont larges, rien
-n'exige de zoomer.
+Rien ne change dans l'écriture : noir profond ou blanc clinique selon le téléphone, or champagne en
+filets fins, typographie d'ingénierie, beaucoup de vide. La seule évolution est chromatique — les
+sept lumières deviennent franches et lumineuses, comme sur le masque. L'écran d'activation est
+ramené à un champ unique et un bouton pleine largeur, pensés pour le pouce.
 
 ## Étapes
 
 **Étape 1 — réalisée maintenant**
-Page d'accès privée avec lien recopiable, QR web de secours et dépannage ; installation de l'app
-sur l'écran d'accueil (icône, nom, plein écran) ; page `nurprotocol.com/app` complète et prête à
-coller, en français et en anglais.
+Micro fonctionnel dans le navigateur avec gestion claire des refus ; activation en un tap (lien dans
+les e-mails, champ unique « Mon code d'accès reçu par e-mail », collage proposé, lien d'invitation
+pour les influenceuses, renvoi sans ressaisie) ; couleurs LED vives partout où une lumière est
+nommée ; rôle du Skincoach explicite et saisie « Mes produits » prise en compte dans ses réponses.
 
-**Étape 2 — à la publication des builds**
-Mise en service des liens de marque sur les téléphones : le lien de la carte ouvre directement
-l'application lorsqu'elle est installée, et la page web sinon ; activation des boutons App Store et
-Google Play ; vérification du QR de la carte de bout en bout sur iOS et Android.
+**Étape 2 — ensuite**
+Analyse spectaculaire : tracé du visage animé pendant l'analyse, zones révélées une à une, fiche de
+scores par critère, puis courbe d'évolution semaine après semaine. Fiche « routine combinée » jour et
+nuit mêlant lumières et produits de la cliente.
 
 **Étape 3 — plus tard**
-Comptage des scans de carte (combien de cartes activées, par semaine) dans la console privée, puis
-retrait du code d'essai au profit de la seule activation par carte ou par achat avant la mise en
-ligne sur les stores.
+Écran de séance plein écran avec minuteur synchronisé et signal de fin ; comptage des cartes
+activées par semaine dans la console privée ; activation des boutons App Store et Google Play et
+retrait du code d'essai avant la mise en ligne.
 
 ## Hypothèses retenues
 
-- Le QR d'aperçu Expo Go est généré par la plateforme et ne peut pas être modifié : il est
-  contourné, pas corrigé.
-- La bannière « Ouvrir dans Doctolib » vient d'un réglage du téléphone, pas de l'app. Elle peut
-  être retirée dans Réglages → Applications → Doctolib → Ouvrir par défaut → Effacer, mais ce n'est
-  plus nécessaire une fois le lien utilisé à la place de l'appareil photo.
-- L'app ouverte dans le navigateur donne accès à tout le parcours. La caméra et le micro demandent
-  une autorisation du navigateur et restent moins fiables qu'en application installée ; les
-  notifications, elles, n'existeront qu'après génération des builds.
-- La page d'accès reste privée : elle n'apparaît nulle part dans l'app des clientes.
-- La page `nurprotocol.com/app` est livrée en fichier autonome, sans dépendance au serveur de
-  l'app, pour être collée telle quelle sur le site ou sur Shopify. Les liens des stores y sont
-  préparés et resteront inactifs jusqu'à la publication.
-- Les textes des deux pages sont en français et en anglais ; les autres langues de l'app affichent
-  l'anglais.
-- L'icône et le nom utilisés pour l'écran d'accueil sont ceux déjà en place dans l'app.
-- Le travail sur l'analyse spectaculaire et les courbes d'évolution reprend immédiatement après
-  l'étape 1, sans rien perdre de ce qui a été décidé.
+- La carte gold ne porte aucun code : elle porte uniquement le QR vers `nurprotocol.com/app`.
+  Tous les accès arrivent donc par e-mail, et les textes de l'app sont réécrits en conséquence.
+- Le lien d'activation des e-mails est valable trente minutes et une seule fois ; passé ce délai,
+  l'app propose un renvoi immédiat. Le code reste utilisable comme solution de secours.
+- Le lien d'invitation des influenceuses porte l'accès d'essai sans que le code soit affiché nulle
+  part dans l'app. Il reste réservé à la marque et sera retiré avant la publication sur les stores.
+- Le micro du navigateur dépend d'une autorisation accordée au site : sur iPhone elle est redemandée
+  à chaque session, et un refus réduit la fonction sans casser la conversation écrite. La voix du
+  coach ne change pas (lecture déclenchée au haut-parleur).
+- La saturation des couleurs ne s'applique qu'aux lumières LED et à leurs pastilles ; les boutons,
+  textes et bordures gardent l'or champagne.
+- « Mes produits » est une saisie libre de quelques lignes, conservée avec le profil et jamais
+  partagée. Aucune base de marques, aucun scan d'étiquette à cette étape ; la cliente peut la
+  modifier ou la vider depuis son profil, et la suppression des données l'efface aussi.
+- Le Skincoach reste une experte beauté : pas de diagnostic médical, pas de marque recommandée de sa
+  propre initiative, renvoi vers un professionnel de santé dès qu'un signe sort du soin.
+- Les e-mails et les écrans restent en français et en anglais selon la langue du téléphone, les
+  autres langues affichant l'anglais.
+- Le parcours bilan — questionnaire puis photo facultative — n'est pas fusionné avec le Skincoach :
+  il reste le point d'entrée qui fixe les lumières, le Skincoach prenant le relais ensuite.

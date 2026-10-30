@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { theme, makeStyles } from '../../src/theme';
 import { GoldDivider, BrandHeader } from '../../src/ui';
-import { LED_META, ledText, LedId } from '../../src/led';
+import { LED_META, ledText, LedId, ledInk, ledRim } from '../../src/led';
 import { api, getStoredUserId, DiagnosisRecord } from '../../src/api';
 import { useT, getLang } from '../../src/i18n';
 
@@ -20,6 +21,7 @@ function dayName(day: number, lang: string) {
 
 export default function Protocol() {
   const { t } = useT();
+  const router = useRouter();
   const lang = getLang();
   const [diag, setDiag] = useState<DiagnosisRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,24 +63,29 @@ export default function Protocol() {
           {protocol.sensitive_care ? (
             <Text style={styles.caution} testID="proto-caution">{t('device.caution')}</Text>
           ) : null}
+          <Pressable style={styles.refine} onPress={() => router.push('/(tabs)/coach')} testID="proto-refine">
+            <Feather name="message-circle" size={14} color={theme.color.brand} />
+            <Text style={styles.refineTxt}>{t('coach.refine')}</Text>
+          </Pressable>
 
           <View style={styles.timeline}>
             {protocol.weekly_schedule.map((d, idx) => {
               const id = d.led_color_id as LedId | null;
               const hex = id ? LED_META[id]?.hex : null;
+              const ink = id ? ledInk(id) : null;
               const info = id ? ledText(id, lang) : null;
               const isLast = idx === protocol.weekly_schedule.length - 1;
               return (
                 <View key={d.day} style={styles.row}>
                   <View style={styles.lineCol}>
-                    <View style={[styles.dot, hex ? { backgroundColor: hex } : styles.dotRest]} />
+                    <View style={[styles.dot, hex ? { backgroundColor: hex, borderColor: ledRim(id!) } : styles.dotRest]} />
                     {!isLast && <View style={styles.line} />}
                   </View>
                   <View style={styles.dayBlock}>
                     <Text style={styles.dayName}>{dayName(d.day, lang)}</Text>
                     {info && hex ? (
                       <>
-                        <Text style={[styles.colorName, { color: hex }]}>{t('proto.light', { name: info.name })}</Text>
+                        <Text style={[styles.colorName, { color: ink! }]}>{t('proto.light', { name: info.name })}</Text>
                         <Text style={styles.deviceTxt}>
                           {d.device_mode || '—'} · {t('device.level', { n: d.brightness ?? 1 })} · {d.session_minutes} {t('common.minutes')}
                         </Text>
@@ -121,10 +128,16 @@ const styles = makeStyles(() => ({
   title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 30, marginTop: theme.spacing.md },
   subtle: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, lineHeight: 20 },
   caution: { ...theme.type.micro, color: theme.color.brand, marginTop: theme.spacing.sm },
+  refine: {
+    marginTop: theme.spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: theme.spacing.sm, paddingVertical: 14, borderRadius: theme.radius.pill,
+    borderWidth: 1, borderColor: theme.color.borderGold, backgroundColor: theme.color.brandTint,
+  },
+  refineTxt: { ...theme.type.button, color: theme.color.brand },
   timeline: { marginTop: theme.spacing.xl },
   row: { flexDirection: 'row', gap: theme.spacing.lg },
   lineCol: { width: 16, alignItems: 'center' },
-  dot: { width: 16, height: 16, borderRadius: 999 },
+  dot: { width: 16, height: 16, borderRadius: 999, borderWidth: 1, borderColor: theme.color.border },
   dotRest: { backgroundColor: theme.color.surfaceTertiary, borderWidth: 1, borderColor: theme.color.borderStrong },
   line: { width: 1, flex: 1, backgroundColor: theme.color.borderStrong, marginTop: 4 },
   dayBlock: { flex: 1, paddingBottom: theme.spacing.xl, gap: 2 },

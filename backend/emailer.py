@@ -201,7 +201,44 @@ _OTP_COPY = {
 }
 
 
-def _otp_html(code: str, lang: str) -> str:
+_OPEN_CTA = {
+    "fr": "Ouvrir mon Skincoach",
+    "en": "Open my Skincoach",
+    "es": "Abrir mi Skincoach",
+    "it": "Apri il mio Skincoach",
+    "de": "Skincoach öffnen",
+    "ru": "Открыть Skincoach",
+    "ar": "افتحي Skincoach",
+}
+_OPEN_HINT = {
+    "fr": "Ce bouton ouvre l'application déjà activée, sans rien recopier. Lien valable 30 minutes.",
+    "en": "This button opens the app already activated — nothing to retype. The link lasts 30 minutes.",
+    "es": "Este botón abre la aplicación ya activada, sin copiar nada. El enlace dura 30 minutos.",
+    "it": "Questo pulsante apre l'app già attivata, senza ricopiare nulla. Il link dura 30 minuti.",
+    "de": "Diese Schaltfläche öffnet die App bereits aktiviert — nichts abzutippen. Der Link gilt 30 Minuten.",
+    "ru": "Эта кнопка открывает приложение уже активированным. Ссылка действует 30 минут.",
+    "ar": "هذا الزر يفتح التطبيق مفعّلاً مباشرة. الرابط صالح 30 دقيقة.",
+}
+
+
+def _open_button(link: str, lang: str) -> str:
+    """One-tap activation button. Returns an empty string when no link is available."""
+    if not link:
+        return ""
+    label = escape(_OPEN_CTA.get(lang, _OPEN_CTA["fr"]))
+    hint = escape(_OPEN_HINT.get(lang, _OPEN_HINT["fr"]))
+    href = escape(link, quote=True)
+    return (
+        '<tr><td align="center" style="padding:4px 0 10px">'
+        f'<a href="{href}" style="display:inline-block;background:#C9A961;color:#1A1208;'
+        'text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;'
+        f'padding:16px 30px;border-radius:999px">{label}</a></td></tr>'
+        '<tr><td align="center" style="padding-bottom:14px;font-family:Arial,Helvetica,sans-serif;'
+        f'font-size:11px;line-height:17px;color:#ADA392">{hint}</td></tr>'
+    )
+
+
+def _otp_html(code: str, lang: str, link: str = "") -> str:
     c = _OTP_COPY.get(lang, _OTP_COPY["fr"])
     brand = escape(EMAIL_FROM_NAME)
     safe_code = escape(code)
@@ -216,7 +253,9 @@ def _otp_html(code: str, lang: str) -> str:
         '<tr><td align="center" style="padding:12px 0"><span style="color:#C9A961">&#9670;</span></td></tr>'
         '<tr><td align="center" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;'
         f'line-height:21px;color:#6B5F4F">{escape(c["intro"])}</td></tr>'
-        '<tr><td align="center" style="padding:26px 0">'
+        '<tr><td style="padding-top:24px"></td></tr>'
+        + _open_button(link, lang) +
+        '<tr><td align="center" style="padding:10px 0 20px">'
         '<div style="display:inline-block;background:#FBF7F0;border:1px solid #C9A961;border-radius:14px;'
         'padding:18px 28px;font-family:Menlo,Consolas,monospace;font-size:34px;letter-spacing:10px;'
         f'color:#3A2F21">{safe_code}</div></td></tr>'
@@ -230,10 +269,10 @@ def _otp_html(code: str, lang: str) -> str:
     )
 
 
-async def send_otp_email(*, to: str, code: str, lang: str = "fr") -> str | None:
+async def send_otp_email(*, to: str, code: str, lang: str = "fr", link: str = "") -> str | None:
     c = _OTP_COPY.get(lang, _OTP_COPY["fr"])
     subject = c["subject"].format(code=code)
-    return await send_email(to=to, subject=subject, html=_otp_html(code, lang))
+    return await send_email(to=to, subject=subject, html=_otp_html(code, lang, link))
 
 
 # ---------- Access codes delivered right after a paid Shopify order ----------
@@ -304,7 +343,7 @@ _ORDER_COPY = {
 }
 
 
-def _order_codes_html(codes: list[str], order_name: str, lang: str) -> str:
+def _order_codes_html(codes: list[str], order_name: str, lang: str, link: str = "") -> str:
     c = _ORDER_COPY.get(lang, _ORDER_COPY["fr"])
     brand = escape(EMAIL_FROM_NAME)
     order = escape(order_name or "")
@@ -328,7 +367,9 @@ def _order_codes_html(codes: list[str], order_name: str, lang: str) -> str:
         '<tr><td align="center" style="padding:12px 0"><span style="color:#C9A961">&#9670;</span></td></tr>'
         '<tr><td align="center" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;'
         f'line-height:21px;color:#6B5F4F">{escape(intro)}</td></tr>'
-        f'<tr><td style="padding:18px 0">{code_blocks}</td></tr>'
+        '<tr><td style="padding-top:18px"></td></tr>'
+        + _open_button(link, lang) +
+        f'<tr><td style="padding:6px 0 18px">{code_blocks}</td></tr>'
         '<tr><td align="center" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;'
         f'line-height:20px;color:#6B5F4F">{escape(c["use"])}</td></tr>'
         '<tr><td align="center" style="padding-top:20px"><div style="background:#FBF7F0;'
@@ -340,7 +381,8 @@ def _order_codes_html(codes: list[str], order_name: str, lang: str) -> str:
     )
 
 
-async def send_order_codes_email(*, to: str, codes: list[str], order_name: str, lang: str = "fr") -> str | None:
+async def send_order_codes_email(*, to: str, codes: list[str], order_name: str, lang: str = "fr",
+                                 link: str = "") -> str | None:
     c = _ORDER_COPY.get(lang, _ORDER_COPY["fr"])
     subject = c["subject"].format(order=order_name or "")
-    return await send_email(to=to, subject=subject, html=_order_codes_html(codes, order_name, lang))
+    return await send_email(to=to, subject=subject, html=_order_codes_html(codes, order_name, lang, link))

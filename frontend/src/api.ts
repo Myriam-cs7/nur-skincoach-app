@@ -172,6 +172,7 @@ export type AdminOverview = {
   }[];
   partner_codes: { code: string; label?: string; kind?: string; multi_use?: boolean; active?: boolean; uses?: number }[];
   weekly_codes: { week_start: string; label: string; issued: number; activated: number }[];
+  invite_url?: string;
   order_codes: { code: string; order_name: string; email: string; first_name?: string | null; created_at: string; used: boolean }[];
   requests: { email: string; created_at: string; last_try?: string }[];
   allowed: { email: string; label?: string; created_at?: string }[];
@@ -221,6 +222,29 @@ export const api = {
     if (r.session_token) await saveToken(r.session_token);
     return r;
   },
+  /** One-tap link received by e-mail: nothing to retype. */
+  activateMagic: async (token: string) => {
+    const r = await request<AccessResponse>('/activate/magic', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+    if (r.session_token) await saveToken(r.session_token);
+    return r;
+  },
+  /** Invitation link for the brand and its creators. */
+  activateInvite: async (token: string) => {
+    const r = await request<AccessResponse>('/activate/invite', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+    if (r.session_token) await saveToken(r.session_token);
+    return r;
+  },
+  saveProducts: (id: string, products: string) =>
+    request<{ ok: boolean; products: string }>(`/users/${id}/products`, {
+      method: 'PUT',
+      body: JSON.stringify({ products }),
+    }),
   getUser: (id: string) => request<any>(`/users/${id}`),
   saveIntake: (id: string, intake: IntakePayload) =>
     request<{ ok: boolean }>(`/users/${id}/intake`, {

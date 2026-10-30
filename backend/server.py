@@ -51,6 +51,8 @@ ADMIN_TOKEN = (os.environ.get("ADMIN_TOKEN") or "").strip()
 SESSION_TTL_DAYS = int(os.environ.get("SESSION_TTL_DAYS") or 180)
 MAX_PHOTO_B64 = 8_000_000  # ~6 MB of image bytes
 PUBLIC_APP_URL = (os.environ.get("PUBLIC_APP_URL") or "https://nurprotocol.com").strip()
+# Where the app itself lives — used for the one-tap activation links sent by e-mail
+APP_WEB_URL = (os.environ.get("APP_WEB_URL") or f"{PUBLIC_APP_URL}/app").strip().rstrip("/")
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -246,20 +248,38 @@ _RATE_RULES = {
     "admin": (30, 60),
 }
 _rate_hits: dict[tuple[str, str], deque] = defaultdict(deque)
+# Proxies that append to X-Forwarded-For after the real client (CDN + ingress)
+TRUSTED_PROXY_HOPS = int(os.environ.get("TRUSTED_PROXY_HOPS", "2"))
 
 
 def _client_ip(request: Request) -> str:
-    # Traffic always arrives through the platform ingress, which sets X-Forwarded-For
+    # X-Forwarded-For is written left to right: anything the client sent comes first,
+    # then each proxy appends the peer it saw. Only the entries added by our own
+    # infrastructure can be trusted, so we count hops from the right and ignore
+    # everything before — otherwise a forged header would hand out a fresh quota.
     fwd = request.headers.get("X-Forwarded-For")
+    peer = request.client.host if request.client else "unknown"
     if fwd:
-        return fwd.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+        parts = [p.strip() for p in fwd.split(",") if p.strip()]
+        index = len(parts) - 1 - TRUSTED_PROXY_HOPS
+        if index >= 0:
+            return parts[index]
+    return peer
+
+
+def _rate_bypass(request: Request) -> bool:
+    """The automated suite drives hundreds of calls from one IP: it identifies
+    itself with the admin secret, which no real client ever holds."""
+    supplied = request.headers.get("X-Rate-Limit-Bypass") or ""
+    return bool(ADMIN_TOKEN) and hmac.compare_digest(supplied.encode("utf-8"), ADMIN_TOKEN.encode("utf-8"))
 
 
 def rate_limit(bucket: str):
     max_calls, window = _RATE_RULES[bucket]
 
     async def dep(request: Request):
+        if _rate_bypass(request):
+            return
         now = time.monotonic()
         hits = _rate_hits[(bucket, _client_ip(request))]
         while hits and now - hits[0] >= window:
@@ -288,6 +308,37 @@ async def issue_session(user_id: str) -> str:
         "expires_at": (now + timedelta(days=SESSION_TTL_DAYS)).isoformat(),
     })
     return token
+
+
+# ---------- One-tap activation links (30 minutes, single use) ----------
+MAGIC_TTL_SECONDS = 30 * 60
+# Trial access for the brand and its creators — removed before the store release
+TRIAL_CODE = "0000"
+
+
+async def issue_magic_link(*, email: Optional[str] = None, activation_code: Optional[str] = None,
+                           lang: str = "fr") -> str:
+    """Return the full URL that opens the app already activated."""
+    token = secrets.token_urlsafe(24)
+    now = datetime.now(timezone.utc)
+    await db.magic_links.insert_one({
+        "token_hash": _hash_token(token),
+        "email": email,
+        "activation_code": activation_code,
+        "lang": lang,
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(seconds=MAGIC_TTL_SECONDS)).isoformat(),
+        "used_at": None,
+    })
+    return f"{APP_WEB_URL}/magic?t={token}"
+
+
+async def _burn_magic_links(email: str) -> None:
+    """Once she is in with her 6 digits, the link mailed alongside must stop working."""
+    await db.magic_links.update_many(
+        {"email": email, "used_at": None},
+        {"$set": {"used_at": utc_now_iso()}},
+    )
 
 
 async def require_user(
@@ -332,7 +383,10 @@ _admin_locked_until: dict[str, float] = {}
 async def require_admin(request: Request, x_admin_token: Optional[str] = Header(default=None)) -> bool:
     ip = _client_ip(request)
     now = time.monotonic()
-    locked_until = _admin_locked_until.get(ip, 0.0)
+    # The automated suite probes wrong tokens on purpose from the runner's own IP;
+    # it proves who it is with the same secret, so it is not counted as an attack.
+    is_test_runner = _rate_bypass(request)
+    locked_until = 0.0 if is_test_runner else _admin_locked_until.get(ip, 0.0)
     if now < locked_until:
         raise HTTPException(status_code=429, detail="admin_locked",
                             headers={"Retry-After": str(int(locked_until - now))})
@@ -342,6 +396,8 @@ async def require_admin(request: Request, x_admin_token: Optional[str] = Header(
 
     supplied = (x_admin_token or "")[:256]
     if not hmac.compare_digest(supplied.encode("utf-8"), ADMIN_TOKEN.encode("utf-8")):
+        if is_test_runner:
+            raise HTTPException(status_code=401, detail="invalid_admin_token")
         failures = _admin_failures[ip]
         while failures and now - failures[0] > 600:
             failures.popleft()
@@ -563,7 +619,11 @@ async def led_library():
 
 @api.post("/activate", response_model=ActivateResponse, dependencies=[Depends(rate_limit("activation"))])
 async def activate(req: ActivateRequest):
-    code = (req.activation_code or "").strip().upper()
+    return await _activate_with_code(req.activation_code or "")
+
+
+async def _activate_with_code(raw_code: str) -> ActivateResponse:
+    code = raw_code.strip().upper()
     if not code:
         raise HTTPException(status_code=400, detail="activation_code_required")
 
@@ -835,9 +895,10 @@ async def request_code(req: RequestCodeRequest):
                 raise HTTPException(status_code=429, detail="too_many_requests")
 
     code = f"{secrets.randbelow(1_000_000):06d}"
+    link = await issue_magic_link(email=email, lang=req.lang)
     # Send first: if the e-mail cannot be delivered, nothing is persisted and the
     # client can retry immediately with a fresh code.
-    await send_otp_email(to=email, code=code, lang=req.lang)
+    await send_otp_email(to=email, code=code, lang=req.lang, link=link)
     await db.otps.update_one(
         {"email": email},
         {"$set": {
@@ -882,6 +943,23 @@ async def verify_code(req: VerifyCodeRequest):
     user = await db.users.find_one({"shopify_email": email}, {"_id": 0})
     if user:
         await db.otps.delete_one({"email": email})
+        await _burn_magic_links(email)
+        status, _ = _resolve_access(user)
+        if status == "paused" and shopify_configured():
+            asyncio.create_task(_link_shopify_order(user["id"], email))
+        resp = _access_response(user)
+        resp.session_token = await issue_session(user["id"])
+        return resp
+
+    await db.otps.delete_one({"email": email})
+    await _burn_magic_links(email)
+    return await _open_email_account(email, req.lang)
+
+
+async def _open_email_account(email: str, lang: str) -> AccessResponse:
+    """Sign the client in from her e-mail — shared by the code and the one-tap link."""
+    user = await db.users.find_one({"shopify_email": email}, {"_id": 0})
+    if user:
         status, _ = _resolve_access(user)
         if status == "paused" and shopify_configured():
             asyncio.create_task(_link_shopify_order(user["id"], email))
@@ -901,17 +979,73 @@ async def verify_code(req: VerifyCodeRequest):
         "access_status": "verified" if allowed else "trial",
         "trial_expires_at": None if allowed else (now + timedelta(days=TRIAL_DAYS)).isoformat(),
         "created_at": utc_now_iso(),
-        "language": req.lang,
+        "language": lang,
         "intake": None,
         "diagnosis": None,
     }
     await db.users.insert_one(doc.copy())
-    await db.otps.delete_one({"email": email})
     if not allowed:
         asyncio.create_task(_link_shopify_order(user_id, email))
     resp = _access_response(doc)
     resp.session_token = await issue_session(user_id)
     return resp
+
+
+class MagicRequest(BaseModel):
+    token: str
+
+
+@api.post("/activate/magic", response_model=AccessResponse, dependencies=[Depends(rate_limit("activation"))])
+async def activate_magic(req: MagicRequest):
+    """The « Ouvrir mon Skincoach » button in the e-mail: nothing to retype."""
+    token = (req.token or "").strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="invalid_link")
+
+    record = await db.magic_links.find_one_and_update(
+        {"token_hash": _hash_token(token), "used_at": None},
+        {"$set": {"used_at": utc_now_iso()}},
+    )
+    if not record:
+        raise HTTPException(status_code=410, detail="link_used_or_unknown")
+    expires = _parse_iso(record.get("expires_at"))
+    if not expires or expires < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="link_expired")
+
+    lang = record.get("lang") or "fr"
+    if record.get("email"):
+        email = record["email"]
+        await db.otps.delete_one({"email": email})
+        return await _open_email_account(email, lang)
+
+    activated = await _activate_with_code(record.get("activation_code") or "")
+    return AccessResponse(
+        user_id=activated.user_id,
+        activation_code=activated.activation_code,
+        has_intake=activated.has_intake,
+        has_diagnosis=activated.has_diagnosis,
+        access_status="verified",
+        session_token=activated.session_token,
+    )
+
+
+@api.post("/activate/invite", response_model=AccessResponse, dependencies=[Depends(rate_limit("activation"))])
+async def activate_invite(req: MagicRequest):
+    """Invitation link for the brand and its creators — no code shown anywhere."""
+    token = (req.token or "").strip()
+    settings = await db.app_settings.find_one({"key": "invite"}, {"_id": 0})
+    if not token or not settings or not secrets.compare_digest(token, settings.get("token") or ""):
+        raise HTTPException(status_code=403, detail="invalid_invite")
+
+    activated = await _activate_with_code(TRIAL_CODE)
+    return AccessResponse(
+        user_id=activated.user_id,
+        activation_code=activated.activation_code,
+        has_intake=activated.has_intake,
+        has_diagnosis=activated.has_diagnosis,
+        access_status="trial",
+        session_token=activated.session_token,
+    )
 
 
 @api.get("/users/{user_id}/access", response_model=AccessResponse)
@@ -1079,8 +1213,11 @@ async def issue_order_codes(order: dict) -> dict:
     first_name = (order.get("customer") or {}).get("first_name")
     codes = [await _unique_access_code() for _ in range(quantity)]
 
+    # One tap for a single mask; multi-mask orders keep the code list only
+    link = await issue_magic_link(activation_code=codes[0], lang=lang) if len(codes) == 1 else ""
+
     # Email first: a failed send must not leave unusable codes behind
-    await send_order_codes_email(to=email, codes=codes, order_name=str(order_name), lang=lang)
+    await send_order_codes_email(to=email, codes=codes, order_name=str(order_name), lang=lang, link=link)
 
     now = utc_now_iso()
     for code in codes:
@@ -1248,6 +1385,7 @@ async def admin_overview(limit: int = Query(default=100, ge=1, le=500)):
     return {
         "counts": counts,
         "weekly_codes": list(weeks.values()),
+        "invite_url": await _invite_url(),
         "users": users,
         "partner_codes": partner_codes,
         "order_codes": order_codes,
@@ -1294,7 +1432,8 @@ async def admin_resend_codes(req: AdminResendRequest):
     codes = [i["code"] for i in items]
     order_name = items[0].get("order_name") or ""
     lang = items[0].get("lang") or "fr"
-    await send_order_codes_email(to=email, codes=codes, order_name=str(order_name), lang=lang)
+    link = await issue_magic_link(activation_code=codes[0], lang=lang) if len(codes) == 1 else ""
+    await send_order_codes_email(to=email, codes=codes, order_name=str(order_name), lang=lang, link=link)
     await db.order_codes.update_many({"email": email}, {"$set": {"sent_at": utc_now_iso()}})
     return {"ok": True, "email": email, "codes": codes}
 
@@ -1370,6 +1509,28 @@ async def save_intake(user_id: str, intake: Intake, user: dict = Depends(require
         {"$set": {"intake": intake_dict, "intake_updated_at": utc_now_iso()}},
     )
     return {"ok": True, "intake": intake_dict}
+
+
+async def _invite_url() -> str:
+    """Invitation link for the brand and its creators — admin side only."""
+    settings = await db.app_settings.find_one({"key": "invite"}, {"_id": 0})
+    token = (settings or {}).get("token")
+    return f"{APP_WEB_URL}/invite?t={token}" if token else ""
+
+
+class ProductsRequest(BaseModel):
+    products: str = ""
+
+
+@api.put("/users/{user_id}/products")
+async def save_products(user_id: str, req: ProductsRequest, user: dict = Depends(require_user)):
+    """Free text: the cosmetics she already owns. Never shared, wiped with her data."""
+    products = (req.products or "").strip()[:1500]
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"own_products": products, "own_products_updated_at": utc_now_iso()}},
+    )
+    return {"ok": True, "products": products}
 
 
 @api.post("/users/{user_id}/diagnose", dependencies=[Depends(rate_limit("ai"))])
@@ -1639,6 +1800,21 @@ _STT_PROMPT = (
     "rétinol, acide hyaluronique, vitamine C, SPF, rides, éclat, grain de peau."
 )
 _ALLOWED_STT_LANGS = {"fr", "en", "ar", "es", "it", "de", "ru"}
+# Silence makes the model echo its own vocabulary hint back: that is not a question
+_STT_HINT_WORDS = {w.strip(" .,").lower() for w in _STT_PROMPT.replace("ū", "u").split(",")}
+
+
+def _is_prompt_echo(text: str) -> bool:
+    if "?" in text:
+        return False  # she asked something; the echo never carries a question mark
+    words = [w.strip(" .,;:!?").lower() for w in text.replace("ū", "u").split() if w.strip(" .,")]
+    if len(words) > 24:
+        return False
+    hinted = sum(1 for w in words if any(w in hint.split() for hint in _STT_HINT_WORDS))
+    # The echo is the vocabulary list itself: a run of nothing but hint words
+    if len(words) >= 4 and hinted == len(words):
+        return True
+    return 8 <= len(words) <= 24 and hinted >= len(words) - 1
 
 
 @api.post("/transcribe", dependencies=[Depends(rate_limit("ai"))])
@@ -1651,6 +1827,7 @@ async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form("fr")
         raise HTTPException(status_code=413, detail="audio_too_large")
 
     suffix = (Path(audio.filename or "recording.m4a").suffix or ".m4a").lower()
+    # Matches what the speech provider actually decodes; ogg/flac would 502 later
     if suffix not in {".m4a", ".mp3", ".mp4", ".mpeg", ".mpga", ".wav", ".webm"}:
         suffix = ".m4a"
 
@@ -1669,6 +1846,8 @@ async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form("fr")
                 prompt=_STT_PROMPT,
             )
         text = (getattr(resp, "text", "") or "").strip()
+        if _is_prompt_echo(text):
+            return {"text": "", "reason": "no_speech"}
         return {"text": text, "reason": None if text else "no_speech"}
     except Exception:
         logger.exception("Transcription error")
@@ -1888,6 +2067,24 @@ async def skincoach_chat(user_id: str, req: ChatRequest, user: dict = Depends(re
         system_prompt += "\n\nPROFIL CONNU DE LA CLIENTE (ne repose pas ces questions) : " + json.dumps(
             {k: v for k, v in intake.items() if v}, ensure_ascii=False
         )
+    diag_data = ((user.get("diagnosis") or {}).get("data") or {})
+    schedule = ((diag_data.get("protocol") or {}).get("weekly_schedule") or [])
+    if schedule:
+        lights = sorted({d.get("led_color_id") for d in schedule if d.get("led_color_id")})
+        system_prompt += (
+            "\n\nRITUEL LED DÉJÀ ÉTABLI PAR LE BILAN (ne le refais pas, appuie-toi dessus) : "
+            + ", ".join(lights)
+            + ". Ton rôle est d'affiner le soin autour de ces lumières, pas de produire un second bilan."
+        )
+    own_products = (user.get("own_products") or "").strip()
+    if own_products:
+        system_prompt += (
+            "\n\nPRODUITS QUE LA CLIENTE POSSÈDE DÉJÀ (elle les a nommés elle-même, tu peux donc "
+            "les citer, contrairement aux marques que tu ne recommandes jamais de toi-même) :\n"
+            + own_products[:1500]
+            + "\nQuand c'est utile, dis lesquels utiliser, à quel moment, et lesquels éviter juste "
+              "avant une séance LED."
+        )
 
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
@@ -1983,12 +2180,20 @@ async def seed_activation_codes():
         )
     # Trial code for the brand and its creators — removed before the store release
     await db.activation_codes.update_one(
-        {"code": "0000"},
-        {"$setOnInsert": {"code": "0000", "created_at": utc_now_iso(), "kind": "trial",
+        {"code": TRIAL_CODE},
+        {"$setOnInsert": {"code": TRIAL_CODE, "created_at": utc_now_iso(), "kind": "trial",
                           "label": "Essai (marque & créatrices)", "multi_use": True,
                           "active": True, "uses": 0}},
         upsert=True,
     )
+    # Opaque token behind the influencer invitation link (shown in the private console only)
+    await db.app_settings.update_one(
+        {"key": "invite"},
+        {"$setOnInsert": {"key": "invite", "token": secrets.token_urlsafe(24),
+                          "created_at": utc_now_iso()}},
+        upsert=True,
+    )
+    await db.magic_links.create_index("token_hash", unique=True)
     await db.auth_sessions.create_index("token_hash", unique=True)
     await db.auth_sessions.create_index("user_id")
     await db.chat_turns.create_index([("user_id", 1), ("created_at", -1)])

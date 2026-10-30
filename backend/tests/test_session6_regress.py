@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
+from rate_exempt import exempt_headers
 import requests
 
 
@@ -48,6 +49,7 @@ assert SHOPIFY_WEBHOOK_SECRET, "SHOPIFY_WEBHOOK_SECRET missing (session 6)"
 def api():
     s = requests.Session()
     s.headers.update({"Content-Type": "application/json"})
+    s.headers.update(exempt_headers())
     return s
 
 

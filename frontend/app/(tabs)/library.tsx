@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@react-native-vector-icons/feather';
 import { theme, makeStyles } from '../../src/theme';
 import { GoldDivider, BrandHeader } from '../../src/ui';
-import { LED_ORDER, LED_META, LED_PROTOCOL, ledText } from '../../src/led';
+import { LED_ORDER, LED_META, LED_PROTOCOL, ledText, ledInk, ledRim } from '../../src/led';
 import { useT } from '../../src/i18n';
 
 /** One setting line: label on the left, the value to dial on the right. */
@@ -32,16 +32,17 @@ export default function Library() {
           {LED_ORDER.map((id) => {
             const info = ledText(id, lang);
             const hex = LED_META[id].hex;
+            const ink = ledInk(id);
             return (
               <View key={id} style={styles.card} testID={`led-card-${id}`}>
                 <View style={styles.cardHeader}>
-                  <View style={[styles.colorChip, { backgroundColor: hex }]} />
+                  <View style={[styles.colorChip, { backgroundColor: hex, borderColor: ledRim(id) }]} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.colorName, { color: hex }]}>{info.name}</Text>
+                    <Text style={[styles.colorName, { color: ink }]}>{info.name}</Text>
                     <Text style={styles.wavelength}>{info.wavelength}</Text>
                   </View>
                   <View style={[styles.taglinePill, { borderColor: `${hex}55` }]}>
-                    <Text style={[styles.taglineTxt, { color: hex }]}>{info.tagline}</Text>
+                    <Text style={[styles.taglineTxt, { color: ink }]}>{info.tagline}</Text>
                   </View>
                 </View>
 
@@ -54,7 +55,7 @@ export default function Library() {
                 <View style={styles.chipsRow}>
                   {info.best_for.map((b) => (
                     <View key={b} style={[styles.chip, { borderColor: `${hex}44`, backgroundColor: `${hex}1A` }]}>
-                      <Text style={[styles.chipTxt, { color: hex }]}>{b}</Text>
+                      <Text style={[styles.chipTxt, { color: ink }]}>{b}</Text>
                     </View>
                   ))}
                 </View>
@@ -100,7 +101,7 @@ const styles = makeStyles(() => ({
     gap: theme.spacing.sm,
   },
   cardHeader: { flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' },
-  colorChip: { width: 34, height: 34, borderRadius: 999 },
+  colorChip: { width: 34, height: 34, borderRadius: 999, borderWidth: 1 },
   colorName: { fontFamily: theme.font.displayBold, fontSize: 19 },
   wavelength: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, letterSpacing: 0.8 },
   taglinePill: { borderWidth: 1, borderRadius: theme.radius.pill, paddingHorizontal: 10, paddingVertical: 5 },

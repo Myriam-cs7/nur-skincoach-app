@@ -453,3 +453,59 @@ ressources en 200, page du site conforme, aucune régression sur les 5 onglets.
   par critère et suivi) + illustrations du livret redessinées.
 - Étape 3 : écran de séance plein écran (minuteur synchronisé, signal de fin, enregistrement
   automatique) puis retrait du code `0000` avant publication sur les stores.
+
+# Session juin 2026 — Entrée en un geste, micro navigateur, LED vives, « Mes produits »
+
+Quatre chantiers demandés par la cliente, tous livrés et vérifiés (itérations 12 → 16).
+
+## 1. Micro dans le navigateur
+L'enregistreur natif (`expo-audio`) ne fonctionne pas depuis un navigateur mobile → nouveau
+module `src/voiceWeb.ts` basé sur `MediaRecorder` + analyse du niveau sonore :
+- permission demandée seulement après un geste délibéré, avec explication avant la fenêtre du
+  navigateur ; sur iPhone, l'autorisation est redemandée à chaque session (mentionné dans le texte) ;
+- halo animé, **durée écoulée en m:ss** dans la barre d'état, arrêt automatique sur silence,
+  annulation possible ;
+- micro déjà refusé → feuille « Micro bloqué » + bouton « Écrire ma question » qui place le
+  curseur dans le champ (un bouton « Réglages » ne sert à rien dans un navigateur) ;
+- le fichier est envoyé en `.webm` (ou `.mp4` sur Safari) : le fournisseur ne décode ni ogg ni flac,
+  tout autre suffixe est renommé `.m4a` côté serveur.
+
+## 2. Activation en un geste
+- **Lien magique** envoyé dans l'e-mail (bouton « Ouvrir mon Skincoach ») : valable 30 minutes,
+  **à usage unique**, consommé par `/magic?t=…`. Entrer les 6 chiffres annule le lien resté dans
+  la boîte mail (`_burn_magic_links`).
+- **Lien d'invitation influenceuse** : `/invite?t=…`, jeton exposé dans la console admin
+  (`invite_url`), à retirer avant la publication sur les stores.
+- **Un seul champ de code** : 6 chiffres de l'e-mail ou code d'achat, collage en un geste.
+  La validation automatique ne concerne **que** les 6 chiffres ; un code tapé partiellement
+  n'est jamais envoyé (le bouton ou la puce de collage s'en chargent).
+- 429 → « Trop de demandes. Réessayez dans quelques minutes. »
+
+## 3. Les sept lumières, vives
+`LED_META[id].hex` saturé, point à pleine opacité et **halo seul qui respire** sur l'accueil ;
+`ledRim()` donne un contour lisible au blanc, au jaune et au cyan (invisibles sur fond clair) et
+reprend la teinte pour les autres. Appliqué à l'accueil, au protocole et à la bibliothèque.
+
+## 4. « Mes produits »
+Champ libre dans le profil : la cliente saisit ses cosmétiques, le Skincoach s'en sert comme
+contexte de routine (jamais de marque proposée de sa propre initiative). Donnée privée, protégée
+par la session (IDOR vérifié), effacée avec « Supprimer mes données ».
+
+## Sécurité — limite de débit (régression corrigée)
+`X-Forwarded-For` est écrit de gauche à droite : tout ce que le client envoie arrive en premier.
+L'ancien code prenait la **première** valeur → un en-tête forgé offrait un quota neuf à chaque
+tentative. Désormais les `TRUSTED_PROXY_HOPS` (2 : CDN + ingress) sont comptés depuis la droite.
+La suite de tests, qui part d'une seule IP, s'identifie avec `X-Rate-Limit-Bypass: <ADMIN_TOKEN>`
+(exempte aussi du verrou admin) ; les tests qui mesurent les limites n'envoient pas cet en-tête.
+
+## Dictée — faux positifs
+En l'absence de parole, le moteur renvoyait son propre vocabulaire d'amorce. `_is_prompt_echo()`
+l'écarte : jamais si la phrase contient « ? », sinon 4 mots ou plus tous issus de l'amorce, ou
+8 à 24 mots presque tous issus de l'amorce.
+
+## Tests sessions 12-16
+Backend : **149 passés, 4 ignorés, 0 échec** (`pytest tests/ -q -p no:randomly` après redémarrage).
+Les suites anciennes ont été remises à jour (jeton admin en en-tête, session `Bearer` sur les
+routes protégées, webhook Shopify désormais configuré). Navigateur : activation (code partiel,
+bouton, collage, 6 chiffres), 429, liens magique/invitation, « Mes produits », micro web,
+LED en clair et en sombre — tout vert à l'itération 16.

@@ -1,0 +1,64 @@
+{
+  "summary": "Iteration 15: browser checks (375x667, Chromium) of all 6 frontend items, plus the full backend regression after a restart. Backend: pytest tests/ -q -p no:randomly gives 148 passed, 5 skipped, 0 failed. Frontend: activation (partial code sends no request, button validation, paste chip submits, 6-digit OTP auto-validates), the French 429 message, Mes produits persistence and the red error line, the web mic permission sheet / cancel / denied fallback, and magic/invite one-tap entry all PASS. Three items are partial or failing: (1) no elapsed-time counter is shown while recording (not implemented in coach.tsx); (2) the Protocol dots do not use ledRim(), so a white or cyan day dot has an almost-invisible rim in light mode; (3) the welcome LED dots pulse between 35% and 80% opacity, so they are never fully vivid in dark mode. Also: the UI is in English in an English-locale browser, because detectLang() follows the device locale, which contradicts 'French-only'. No deprecated Expo packages were found (expo-audio is used; no expo-av).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "tests/test_iteration14_echo_ogg.py::test_ogg_upload_transcribes / test_flac_upload_transcribes", "issue": "SKIPPED because the 'soundfile' module is not installed, so the ogg/flac fallback was not exercised end to end."},
+      {"endpoint": "test_demo_charts_user_progress", "issue": "SKIPPED: NUR-DEMO-2026 no longer maps to the demo-charts-user profile (the test is out of date)."},
+      {"endpoint": "admin simulate-order / shopify webhook", "issue": "2 tests SKIPPED: the Resend quota is spent (email_unavailable), so the result is inconclusive."},
+      {"endpoint": "server.py:2202", "issue": "FastAPI @app.on_event is deprecated (DeprecationWarning). Migrate to lifespan."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Coach web mic recording", "issue": "No elapsed time is shown while recording. During listening the only cues are the status label 'JE VOUS ÉCOUTE…', the stop square on the mic button and the 32px CoachAvatar in the header. The body text has no timer (mm:ss or 'Ns'), and coach.tsx has no recording-seconds state. Requirement: 'recording shows the animated halo and elapsed time'.", "testID": "coach-mic / coach-status", "priority": "MEDIUM"},
+      {"component": "Protocol day dots", "issue": "protocol.tsx:81 sets only backgroundColor. The rim stays theme.color.border (light mode: rgb(229,226,220)), so ledRim() is not applied. A white day becomes a #FFFFFF dot with a near-white rim on the near-white surface, which is almost invisible. Cyan and yellow are also weaker than in Library. Measured on demo-charts-user: the yellow dot rim is rgb(229,226,220). That user has no white or cyan days, so those were judged from the code.", "testID": "protocol dots (no testID)", "priority": "MEDIUM"},
+      {"component": "Welcome LED ring", "issue": "index.tsx:42-43: haloStyle animates the WHOLE dot's opacity between 0.35 and 0.80, rim included. In dark mode the 11px dots never reach full colour and look dull or brownish in screenshots. In light mode they look pastel. Animate only the glow (a shadow or a halo layer behind the dot) and keep the dot at opacity 1.", "testID": "welcome-kicker area (dots have no testID)", "priority": "LOW"},
+      {"component": "Coach mic sheet when the permission is already denied", "issue": "If navigator.permissions reports 'denied', the 'web' sheet still says 'Votre navigateur va demander l’accès au micro' and shows 'Activer le micro'. The user only sees the blocked copy after tapping, and it is a coach-hint that auto-clears after 4s (coach.tsx:102). It is not a dead end, but it is misleading and short-lived. Show the blocked/settings copy directly in the sheet when webMicState()==='denied'.", "testID": "coach-mic-allow / coach-hint", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Language / French-only", "issue": "i18n.ts:940-950 detectLang() returns 'en' (or es/it/de/ru/ar) from the device locale. With an en-US browser and no stored nur.lang, /activate and /onboarding render in English ('My access code', 'Open my Skincoach', 'What's your name?'). This contradicts the 'French-only app' spec. Force 'fr', or confirm this is intended.", "affected_testIDs": ["code-input", "code-validate", "welcome-title"]}
+    ],
+    "design_issues": [
+      {"screen": "/activate (code step)", "issues": ["The code-input placeholder 'Code reçu par e-mail' is cut off ('Code reçu par e-') by letterSpacing 6 at fontSize 24. Use a smaller letterSpacing or font size for the placeholder.", "gate.too_many reads 'Réessayez dans une heure', but the activation limit window is 10 min (the key is shared with request-code, which is 5/hour). Use a more neutral wording."]},
+      {"screen": "Tab bar", "issues": ["The first tab label is truncated to 'AUJOURD'H…' at 375px width."]},
+      {"screen": "Library / Protocol (FR)", "issues": ["Device mode names are in English inside the French UI ('Wrinkle Reduction', 'Oil Control', 'Skin Beautification'). This is fine if they mirror the mask's labels; otherwise translate them.", "The brand.signature FR value is English ('YOUR SKIN, YOUR PROTOCOL'). Probably intentional brand copy."]}
+    ],
+    "react_native_issues": []
+  },
+  "verified_passing": [
+    "(a) Typing 'NUR-DEMO-20' and waiting 5s: 0 /api requests and no code-error. Completing it to 'NUR-DEMO-2026' without pressing also sends no request.",
+    "(b) code-validate sends POST /api/activate (200), routes to /onboarding and stores nur.user_id, nur.session_token and nur.activation_code.",
+    "(c) The paste chip 'Coller NUR-CREATOR' appears from the clipboard. One tap sends POST /api/activate and opens /onboarding.",
+    "(d) OTP to delivered@resend.dev: 5 digits send no request; the 6th digit triggers auth/verify-code, which routes to /onboarding.",
+    "429: after 8 wrong codes from the browser (10/10 min including the 2 earlier activations), the 9th attempt returns 429 and shows the French 'Trop de demandes. Réessayez dans une heure.', not the wrong-code copy.",
+    "Library colour chips (light mode): yellow rim rgb(143,107,0), cyan rim rgb(11,127,163), white rim rgb(92,92,92). The white chip is clearly visible.",
+    "Mes produits: save shows 'Enregistré', the text persists after reload, and a forced 500 makes products-error-line red rgb(176,74,74) with the French products.error copy. A retry restores the grey 'private' line.",
+    "Web mic: the contextual sheet 'Autoriser le micro' appears BEFORE getUserMedia (0 calls), cancel closes it, allow starts recording ('JE VOUS ÉCOUTE…'), and stopping sends POST /api/transcribe (200). A denied permission shows the coach.mic.web.denied fallback, and text input stays usable.",
+    "One-tap: /magic?t=<fresh> calls activate/magic (200, one call only, no StrictMode double-consume) and opens /onboarding. Reused token: 410, the 'Lien expiré' title and magic-failed, and magic-retry leads to /activate. /magic with no token shows the failed state. /invite?t=<admin overview invite_url token> calls activate/invite (200) and opens /onboarding."
+  ],
+  "test_report_links": ["/app/test_reports/pytest/pytest_results_iter15.xml", "/app/backend/tests/"],
+  "action_items": [
+    "Add an elapsed-time counter (e.g. 0:03) next to the mic or status while turn==='listening' on web and native, and confirm a visible animated halo around the mic button.",
+    "protocol.tsx:81: add borderColor: ledRim(id) to the day dot when hex is set, as Library and Welcome already do.",
+    "index.tsx haloStyle: do not fade the dot itself. Keep the dot at opacity 1 and pulse only a glow layer, so all seven LEDs look vivid in dark mode.",
+    "Decide on the language: the spec says French-only, but detectLang() follows the device locale (English browsers get English). Force 'fr' if French-only is intended.",
+    "Coach: when webMicState()==='denied', open the sheet in a blocked state with the settings/dictation copy, instead of 'your browser will ask' plus a 4s hint.",
+    "Minor: fix the truncated code-input placeholder; make the gate.too_many wording match the 10-min activation window; fix the truncated 'Aujourd'hui' tab label.",
+    "Backend tests: install soundfile (or generate ogg/flac differently) so the ogg/flac tests run; update test_demo_charts_user_progress."
+  ],
+  "critical_code_review_comments": [
+    "activate.tsx: auto-submit is correctly limited to 6 pure digits with an e-mail present. submittedRef prevents duplicate submits, and the autoRef/timer cleanup on unmount is in place.",
+    "activate.tsx:124: the error mapping checks m.includes('403') before the generic fallback. This is fine for now, but it is fragile string matching on 'API 403: ...'. Prefer parsing the status and detail.",
+    "voiceWeb.ts:35: 'audio/ogg;codecs=opus' is still a mimeType candidate, while voice.ts:130 labels anything that is not mp4 as webm. Chrome and Safari never pick ogg; Firefox picks webm first. This is low risk, but dropping ogg from the candidates would make the labelling exact.",
+    "coach.tsx is 779 lines, more than 700. Consider extracting the mic/camera sheets and the web recording hook.",
+    "server.py is 2204 lines. Consider splitting it into routers (auth, admin, coach, voice)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (148/148 executed, 5 skipped)", "frontend": "~82% (23/28 checks fully pass; elapsed timer missing, Protocol rim missing, welcome dots not vivid in dark mode, language not forced to FR, misleading denied sheet)"},
+  "seed_data_creation": "One trial user created via POST /api/activate {'activation_code':'0000'} with the bypass header (Mes produits text 'TEST_ Sérum vitamine C…'). Browser activations created profiles for NUR-DEMO-2026, NUR-CREATOR, the delivered@resend.dev OTP, 1 magic token (seed_magic_token.py, test_seed TEST_t1) and 1 invite activation.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Restart the backend before browser activation tests (in-memory per-IP limits, shared with pytest). In the browser, set localStorage nur.lang='fr', or the en-US Chromium shows English. For the mic, stub navigator.mediaDevices.getUserMedia with an AudioContext MediaStreamDestination and navigator.permissions.query via add_init_script. headless has no real mic. coach-hint auto-clears after 4s. Get the OTP with python /app/backend/tests/get_otp.py <email>. Logged-in pages: inject nur.user_id, nur.session_token and nur.activation_code (demo-charts-user token is in test_credentials.md).",
+  "rca_of_issue": "English UI: i18n.initLang() uses the stored nur.lang or detectLang() (expo-localization), which maps 'en' to English. Protocol rim: protocol.tsx was not updated when ledRim() was added (only index.tsx and library.tsx use it). Dull welcome dots: the reanimated haloStyle opacity (0.35 + 0.45*pulse) is applied to the dot view, not to a separate glow layer."
+}

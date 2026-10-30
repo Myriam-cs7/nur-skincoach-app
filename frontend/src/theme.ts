@@ -15,14 +15,36 @@ import type { ImageStyle, TextStyle, ViewStyle } from 'react-native';
 
 export type Scheme = 'dark' | 'light';
 
+// The 7 real LED colours — full saturation, the only vivid colours in the app
 const LED = {
-  ledRed: '#FF4A4A',
-  ledBlue: '#3399FF',
-  ledGreen: '#34C759',
-  ledYellow: '#FFCC00',
-  ledCyan: '#32ADE6',
-  ledViolet: '#BF5AF2',
-  ledWhite: '#FFF6E0',
+  ledRed: '#FF1F2E',
+  ledBlue: '#1766FF',
+  ledGreen: '#00D84A',
+  ledYellow: '#FFD400',
+  ledCyan: '#00D9FF',
+  ledViolet: '#B521FF',
+  ledWhite: '#FFFFFF',
+};
+
+// Same lights, written as text: deepened on a white background so they stay readable
+const LED_TEXT_DARK = {
+  ledTextRed: LED.ledRed,
+  ledTextBlue: '#4D92FF',
+  ledTextGreen: LED.ledGreen,
+  ledTextYellow: LED.ledYellow,
+  ledTextCyan: LED.ledCyan,
+  ledTextViolet: '#C65CFF',
+  ledTextWhite: '#FFFFFF',
+};
+
+const LED_TEXT_LIGHT = {
+  ledTextRed: '#D6001C',
+  ledTextBlue: '#0F4FD1',
+  ledTextGreen: '#0A8A33',
+  ledTextYellow: '#8F6B00',
+  ledTextCyan: '#0B7FA3',
+  ledTextViolet: '#7A13B8',
+  ledTextWhite: '#5C5C5C',
 };
 
 const DARK = {
@@ -48,6 +70,7 @@ const DARK = {
   divider: '#161616',
   scrim: 'rgba(0,0,0,0.88)',
   ...LED,
+  ...LED_TEXT_DARK,
 };
 
 const LIGHT: typeof DARK = {
@@ -73,6 +96,7 @@ const LIGHT: typeof DARK = {
   divider: '#EEECE7',
   scrim: 'rgba(255,255,255,0.92)',
   ...LED,
+  ...LED_TEXT_LIGHT,
 };
 
 export type Palette = typeof DARK;
