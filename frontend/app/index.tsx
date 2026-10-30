@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Pressable, Text, useWindowDimensions } from 'react-native';
+import { View, Pressable, Text, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,13 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 
-import { theme } from '../src/theme';
-import { GoldDivider } from '../src/ui';
+import { theme, makeStyles, getScheme } from '../src/theme';
 import { api, getStoredUserId } from '../src/api';
 import { useT } from '../src/i18n';
 
-const LOGO = require('../assets/images/nur-logo.png');
-
+const LOGO_DARK = require('../assets/images/nur-logo.png');
+const LOGO_LIGHT = require('../assets/images/nur-logo-light.png');
 
 export default function Welcome() {
   const router = useRouter();
@@ -21,7 +20,7 @@ export default function Welcome() {
   const pulse = useSharedValue(0);
   const { width: winWidth } = useWindowDimensions();
   const stageWidth = Math.min(winWidth, 480) - theme.spacing.xl * 2;
-  const logoW = stageWidth * 0.92;
+  const logoW = stageWidth * 0.86;
   const logoH = logoW * (529 / 935);
 
   useEffect(() => {
@@ -43,26 +42,16 @@ export default function Welcome() {
     opacity: 0.35 + pulse.value * 0.45,
   }));
 
-  const onActivate = () => {
-    router.push('/activate');
-  };
-
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={theme.gradient.page}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Subtle gold vignette */}
-      <View style={styles.vignette} pointerEvents="none" />
+      <LinearGradient colors={theme.gradient.page} locations={[0, 0.55, 1]} style={styles.fill} />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <View style={styles.topRow}>
-          <Text style={styles.kicker} testID="welcome-kicker">{t('welcome.kicker')}</Text>
-        </View>
+        <Text style={styles.signature} numberOfLines={1} testID="welcome-kicker">
+          {t('brand.signature')}
+        </Text>
 
-        {/* LED color ring */}
+        {/* The only vivid colours in the app: the 7 LED lights */}
         <View style={styles.ledRing}>
           {[theme.color.ledRed, theme.color.ledYellow, theme.color.ledGreen, theme.color.ledCyan, theme.color.ledBlue, theme.color.ledViolet, theme.color.ledWhite].map((c, i) => (
             <Animated.View key={i} style={[styles.ledDot, { backgroundColor: c, shadowColor: c }, haloStyle]} />
@@ -70,91 +59,62 @@ export default function Welcome() {
         </View>
 
         <View style={styles.centerBlock}>
-          <View style={{ width: logoW, height: logoH, alignItems: 'center', justifyContent: 'center' }}>
-            <Image source={LOGO} style={{ width: logoW, height: logoH }} contentFit="contain" transition={400} />
-          </View>
+          <Image source={getScheme() === 'light' ? LOGO_LIGHT : LOGO_DARK} style={{ width: logoW, height: logoH }} contentFit="contain" transition={400} />
           <Text style={styles.title} testID="welcome-title">{t('welcome.title')}</Text>
-          <GoldDivider marginV={theme.spacing.md} />
-          <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
         </View>
 
         <View style={styles.bottom}>
           <Pressable
-            onPress={onActivate}
+            onPress={() => router.push('/activate')}
             style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
             testID="activate-button"
           >
-            <Feather name="maximize" size={16} color={theme.color.onBrand} />
-            <Text style={styles.ctaText}>{t('welcome.cta')}</Text>
-          </Pressable>
-          <Pressable onPress={() => router.push('/discover')} testID="discover-button" style={styles.secondaryCta}>
-            <Feather name="zap" size={14} color={theme.color.brand} />
-            <Text style={styles.secondaryCtaText}>{t('discover.cta_welcome')}</Text>
-          </Pressable>
-          <Pressable onPress={() => router.push('/scan-qr')} testID="manual-code-button">
-            <Text style={styles.linkText}>{t('gate.scan_card')}</Text>
+            <Text style={styles.ctaText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {t('welcome.cta')}
+            </Text>
           </Pressable>
           <View style={styles.privacyRow}>
             <Feather name="lock" size={10} color={theme.color.brand} />
-            <Text style={styles.privacyText}>{t('welcome.privacy')}</Text>
+            <Text style={styles.privacyText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+              {t('welcome.privacy')}
+            </Text>
           </View>
-          <Text style={styles.footnote}>{t('welcome.footnote')}</Text>
         </View>
       </SafeAreaView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
-  vignette: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(201,169,97,0.05)' },
+  fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   safe: { flex: 1, paddingHorizontal: theme.spacing.xl },
-  topRow: { alignItems: 'center', paddingTop: theme.spacing.sm },
-  kicker: { color: theme.color.brand, letterSpacing: 4, fontSize: 10, fontWeight: '600', fontFamily: theme.font.sans },
-  ledRing: { flexDirection: 'row', justifyContent: 'space-around', marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.huge },
-  ledDot: { width: 6, height: 6, borderRadius: 999, shadowOpacity: 1, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
-  centerBlock: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  signature: {
+    ...theme.type.label,
+    color: theme.color.brand,
+    textAlign: 'center',
+    paddingTop: theme.spacing.md,
+  },
+  ledRing: { flexDirection: 'row', justifyContent: 'space-between', marginTop: theme.spacing.xxl, paddingHorizontal: theme.spacing.xxl },
+  ledDot: { width: 5, height: 5, borderRadius: 999, shadowOpacity: 1, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, borderWidth: 1, borderColor: theme.color.border },
+  centerBlock: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xl },
   title: {
+    ...theme.type.display,
     color: theme.color.onSurface,
-    fontFamily: theme.font.serif,
-    fontSize: 36,
-    marginTop: theme.spacing.xl,
-    letterSpacing: 0.5,
     textAlign: 'center',
   },
-  subtitle: {
-    color: theme.color.onSurfaceSecondary,
-    fontFamily: theme.font.sans,
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: theme.spacing.sm,
-    lineHeight: 22,
-    letterSpacing: 0.3,
-  },
-  bottom: { gap: theme.spacing.md, alignItems: 'center', paddingBottom: theme.spacing.md },
+  bottom: { gap: theme.spacing.lg, alignItems: 'center', paddingBottom: theme.spacing.xl },
   cta: {
     backgroundColor: theme.color.brand,
     paddingVertical: 18,
     paddingHorizontal: theme.spacing.xl,
     borderRadius: theme.radius.pill,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
     alignSelf: 'stretch',
     justifyContent: 'center',
     ...theme.shadow.cta,
   },
-  ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sans, letterSpacing: 1 },
-  secondaryCta: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingVertical: 12, paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1, borderColor: theme.color.borderGold,
-    backgroundColor: theme.color.brandTint,
-  },
-  secondaryCtaText: { color: theme.color.brandDeep, fontSize: 12, fontFamily: theme.font.sansMedium, fontWeight: '600', letterSpacing: 0.4 },
-  linkText: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textDecorationLine: 'underline', letterSpacing: 0.5 },
-  privacyRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: theme.spacing.sm, paddingHorizontal: theme.spacing.xl },
-  privacyText: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, opacity: 0.7, flex: 1, textAlign: 'center', letterSpacing: 0.3 },
-  footnote: { color: theme.color.brand, opacity: 0.5, fontSize: 9, fontFamily: theme.font.sansMedium, letterSpacing: 2.5, textAlign: 'center', fontWeight: '600' },
-});
+  ctaText: { ...theme.type.button, color: theme.color.onBrand },
+  privacyRow: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  privacyText: { ...theme.type.micro, color: theme.color.onSurfaceSecondary },
+}));

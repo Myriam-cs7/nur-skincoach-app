@@ -1,18 +1,14 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { theme } from './theme';
+import { theme, makeStyles, getScheme } from './theme';
 
-const LOGO = require('../assets/images/nur-logo-header.png');
+const LOGO_DARK = require('../assets/images/nur-logo-header.png');
+const LOGO_LIGHT = require('../assets/images/nur-logo-header-light.png');
 
-export function GoldDivider({ withSymbol = true, marginV = 0 }: { withSymbol?: boolean; marginV?: number }) {
-  return (
-    <View style={[styles.dividerWrap, { marginVertical: marginV }]}>
-      <View style={styles.dividerLine} />
-      {withSymbol ? <Text style={styles.dividerSymbol}>◆</Text> : null}
-      <View style={styles.dividerLine} />
-    </View>
-  );
+/** A single champagne hairline. No ornament, no symbol. */
+export function GoldDivider({ marginV = 0 }: { marginV?: number }) {
+  return <View style={[styles.rule, { marginVertical: marginV }]} />;
 }
 
 type BrandHeaderProps = {
@@ -26,10 +22,10 @@ type BrandHeaderProps = {
 const LOGO_RATIO = 915 / 352;
 
 /**
- * The single header used across the app: the real Nūr Protocol logo, centred,
- * with an optional screen title underneath. No stretched gold eyebrow text.
+ * The single header used across the app: the Nūr Protocol logo, centred, with
+ * the screen title underneath and an optional signature line.
  */
-export function BrandHeader({ title, subtitle, onBack, right, logoWidth = 124 }: BrandHeaderProps) {
+export function BrandHeader({ title, subtitle, onBack, right, logoWidth = 116 }: BrandHeaderProps) {
   return (
     <View style={styles.headerWrap}>
       <View style={styles.headerRow}>
@@ -41,7 +37,7 @@ export function BrandHeader({ title, subtitle, onBack, right, logoWidth = 124 }:
           ) : null}
         </View>
         <Image
-          source={LOGO}
+          source={getScheme() === 'light' ? LOGO_LIGHT : LOGO_DARK}
           style={{ width: logoWidth, height: logoWidth / LOGO_RATIO }}
           resizeMode="contain"
           accessibilityLabel="Nūr Protocol"
@@ -54,7 +50,7 @@ export function BrandHeader({ title, subtitle, onBack, right, logoWidth = 124 }:
         </Text>
       ) : null}
       {subtitle ? (
-        <Text style={styles.headerSubtitle} numberOfLines={2}>
+        <Text style={styles.headerSubtitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
           {subtitle}
         </Text>
       ) : null}
@@ -79,10 +75,8 @@ export function SectionLabel({ label }: { label: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  dividerWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: theme.color.borderGold, maxWidth: 80 },
-  dividerSymbol: { color: theme.color.brand, fontSize: 8, fontFamily: theme.font.sans, opacity: 0.7 },
+const styles = makeStyles(() => ({
+  rule: { height: 1, alignSelf: 'stretch', backgroundColor: theme.color.borderGold },
   headerWrap: { alignItems: 'center', paddingTop: theme.spacing.sm, gap: theme.spacing.xs },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch' },
   headerSide: { width: 56, alignItems: 'flex-start' },
@@ -92,12 +86,13 @@ const styles = StyleSheet.create({
     ...theme.type.h1,
     color: theme.color.onSurface,
     textAlign: 'center',
-    marginTop: theme.spacing.sm,
+    marginTop: theme.spacing.md,
   },
   headerSubtitle: {
-    ...theme.type.bodySm,
-    color: theme.color.onSurfaceSecondary,
+    ...theme.type.label,
+    color: theme.color.brand,
     textAlign: 'center',
+    textTransform: 'uppercase',
   },
   caption: {
     ...theme.type.label,
@@ -107,7 +102,9 @@ const styles = StyleSheet.create({
   },
   section: {
     ...theme.type.label,
-    color: theme.color.brand,
+    color: theme.color.onSurfaceSecondary,
     textTransform: 'uppercase',
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
   },
-});
+}));

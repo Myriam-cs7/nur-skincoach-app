@@ -1,14 +1,15 @@
 import { useFonts } from 'expo-font';
 
 /**
- * Nūr Protocol brand typography — Cormorant Garamond (display) + DM Sans (UI),
- * matching nurprotocol.com. Loaded from local TTFs (no @expo-google-fonts).
+ * Nūr Protocol brand typography — beauty tech.
+ * Manrope (titles, figures, buttons) + Inter (body & UI). No serif anywhere.
  */
 export const useBrandFonts = (): readonly [boolean, Error | null] =>
   useFonts({
-    'Cormorant-Regular': require('../../assets/fonts/CormorantGaramond-Regular.ttf'),
-    'Cormorant-Medium': require('../../assets/fonts/CormorantGaramond-Medium.ttf'),
-    'Cormorant-SemiBold': require('../../assets/fonts/CormorantGaramond-SemiBold.ttf'),
-    'DMSans-Regular': require('../../assets/fonts/DMSans-Regular.ttf'),
-    'DMSans-Medium': require('../../assets/fonts/DMSans-Medium.ttf'),
+    'Manrope-Medium': require('../../assets/fonts/Manrope-Medium.ttf'),
+    'Manrope-SemiBold': require('../../assets/fonts/Manrope-SemiBold.ttf'),
+    'Manrope-Bold': require('../../assets/fonts/Manrope-Bold.ttf'),
+    'Inter-Regular': require('../../assets/fonts/Inter-Regular.ttf'),
+    'Inter-Medium': require('../../assets/fonts/Inter-Medium.ttf'),
+    'Inter-SemiBold': require('../../assets/fonts/Inter-SemiBold.ttf'),
   });

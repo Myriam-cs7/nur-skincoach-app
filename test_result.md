@@ -225,6 +225,40 @@ frontend:
     working: "NA"
     file: "/app/frontend/app/(tabs)/protocol.tsx"
 
+## Session 7 — identité beauty tech, rituel réel, accès d'essai (étape 1 du plan validé)
+
+### Ce qui a changé
+1. **Typographie** : Manrope + Inter (plus aucun serif). `theme.type` refondu.
+2. **Thème clair/sombre** : `makeStyles()` dans `src/theme.ts` construit les deux palettes ;
+   `setScheme()` appelé depuis `app/_layout.tsx` via `useColorScheme()` (noir par défaut).
+   Logos en version claire pour le fond blanc.
+3. **Accueil épuré** : signature « YOUR SKIN, YOUR PROTOCOL », logo, titre, un seul bouton,
+   ligne de confidentialité. `/scan-qr` supprimé, prescription gratuite retirée de l'app.
+4. **Rituel réel** : `normalize_protocol()` (backend) ajoute `device_mode`, `brightness` et
+   arrondit `session_minutes` aux valeurs du minuteur ; affiché en « ordonnance » sur
+   l'accueil et dans l'onglet Rituel, avec mot de prudence si `sensitive_care`.
+5. **Bibliothèque** : réglages + séances/semaine + niveau de certitude par lumière.
+6. **Skincoach** : nouveau prompt (experte, jamais médecin, « Your concern » en ouverture,
+   7 champs, refus `[REJECT]` des photos non conformes sans trace, actifs uniquement).
+7. **Nouveaux écrans** `/mask` et `/patch-test` (+ rappel non bloquant sur l'accueil).
+8. **Code d'essai `0000`** (multi-usage) et « recommencer mon bilan » dans le profil.
+9. Photo **caméra uniquement** partout (galerie retirée de `/scan`).
+
+### Vérifications déjà faites par l'agent principal
+- `GET /api/users/demo-charts-user/protocol` → `device_mode`, `brightness`, minutes ∈ {5,10,15,20}.
+- `POST /api/activate {"activation_code":"0000"}` → 200 + session_token.
+- Chat FR : premier message → « Qu'est-ce qui vous préoccupe aujourd'hui… » (Your concern).
+- Photo non conforme (image de paysage) → « Je ne peux analyser qu'une photo de visage… »,
+  `rejected: true`, `ask_photo: true`, aucun tour enregistré.
+- Captures : accueil (clair), tableau de bord (sombre + clair), coach (clair), `/mask`, `/library`.
+
+### Reste à vérifier par le testing agent
+Parcours complet d'essai avec `0000`, les deux ambiances sur les 5 onglets, les nouveaux écrans,
+les réglages du boîtier, la suppression des entrées retirées (galerie, scan QR, prescription),
+et les non-régressions (suppression de compte, console admin, voix).
+
+---
+
 ## Session 6 — Refonte UI/UX (charte Nūr Protocol), suppression des données, ventes hebdo, webhook Shopify
 
 user_problem_statement: >

@@ -99,6 +99,10 @@ export type ProtocolDay = {
   led_color_id: string | null;
   session_minutes: number | null;
   intensity?: 'faible' | 'moyenne' | 'forte' | null;
+  /** The mode silk-screened on the remote, e.g. "Wrinkle Reduction" */
+  device_mode?: string | null;
+  /** Brightness level dialled on the remote: 1, 2 or 3 */
+  brightness?: number | null;
   notes?: string | null;
 };
 export type DiagnosisData = {
@@ -111,6 +115,8 @@ export type DiagnosisData = {
     weekly_schedule: ProtocolDay[];
     total_weeks: number;
     expected_results: string;
+    /** Sensitive skin / couperose: show the prudence note before a session */
+    sensitive_care?: boolean;
   };
 };
 export type DiagnosisRecord = {
@@ -238,7 +244,7 @@ export const api = {
     lang: string,
     photoB64?: string,
   ) =>
-    request<{ reply: string; blocked: boolean; ask_photo: boolean }>(`/users/${id}/chat`, {
+    request<{ reply: string; blocked: boolean; ask_photo: boolean; rejected?: boolean }>(`/users/${id}/chat`, {
       method: 'POST',
       body: JSON.stringify({ message, lang, photo_base64: photoB64 || null, mime_type: 'image/jpeg' }),
     }),

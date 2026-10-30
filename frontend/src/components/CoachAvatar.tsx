@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
-import { theme } from '../theme';
+import { Animated, Easing, Image, View } from 'react-native';
+import { theme, makeStyles } from '../theme';
 
 export type CoachState = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking';
 
@@ -52,7 +52,7 @@ export default function CoachAvatar({ state, size = 96 }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   wrap: { alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', borderWidth: 1, borderColor: theme.color.brand, backgroundColor: theme.color.brandTint },
   frame: {
@@ -65,4 +65,4 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 0 },
   },
-});
+}));

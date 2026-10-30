@@ -6,7 +6,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
@@ -16,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import { theme } from '../src/theme';
+import { theme, makeStyles } from '../src/theme';
 import { SectionLabel, GoldDivider, BrandHeader } from '../src/ui';
 import { admin, type AdminOverview } from '../src/api';
 
@@ -445,7 +444,7 @@ function Kpi({ label, value }: { label: string; value: number | string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   hiddenHit: { height: 0, opacity: 0 },
   weekRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, paddingTop: theme.spacing.sm },
   weekCol: { flex: 1, minWidth: 0, alignItems: 'center', gap: 4 },
@@ -463,7 +462,7 @@ const styles = StyleSheet.create({
     width: 72, height: 72, borderRadius: 999, backgroundColor: theme.color.brandTint,
     borderWidth: 1, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center',
   },
-  lockTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, marginTop: theme.spacing.md },
+  lockTitle: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 30, marginTop: theme.spacing.md },
   lockSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   pinInput: {
     marginTop: theme.spacing.lg, width: '100%', backgroundColor: theme.color.surfaceSecondary,
@@ -486,7 +485,7 @@ const styles = StyleSheet.create({
     borderColor: theme.color.borderGold, borderRadius: theme.radius.md, paddingVertical: theme.spacing.md,
     alignItems: 'center', gap: 2,
   },
-  kpiValue: { color: theme.color.brand, fontSize: 20, fontFamily: theme.font.serif },
+  kpiValue: { color: theme.color.brand, fontSize: 20, fontFamily: theme.font.display },
   kpiLabel: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, letterSpacing: 0.8, textTransform: 'uppercase' },
   shopifyRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginTop: theme.spacing.md },
   shopifyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, flex: 1 },
@@ -516,4 +515,4 @@ const styles = StyleSheet.create({
   listLine: { color: theme.color.onSurfaceTertiary, fontSize: 12, fontFamily: theme.font.sans, paddingVertical: 3 },
   dangerBtn: { marginTop: theme.spacing.xl, alignItems: 'center' },
   dangerTxt: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, textDecorationLine: 'underline' },
-});
+}));

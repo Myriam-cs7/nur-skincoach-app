@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import { theme, LED_COLORS } from '../src/theme';
+import { theme, LED_COLORS, makeStyles } from '../src/theme';
 import { api, getStoredUserId, DiagnosisRecord } from '../src/api';
 
 const SCORE_LABELS: Record<string, string> = {
@@ -150,13 +150,13 @@ function ScoreCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   center: { alignItems: 'center', justifyContent: 'center' },
   headerRow: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.sm, alignItems: 'center' },
   kicker: { color: theme.color.brand, letterSpacing: 3, fontSize: 11, fontFamily: theme.font.sansMedium, fontWeight: '600' },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxxl },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 32, marginBottom: theme.spacing.sm },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 32, marginBottom: theme.spacing.sm },
   summary: { color: theme.color.onSurfaceTertiary, fontSize: 14, fontFamily: theme.font.sans, lineHeight: 22 },
   section: { color: theme.color.onSurface, fontSize: 12, fontFamily: theme.font.sansMedium, letterSpacing: 2, fontWeight: '700', marginTop: theme.spacing.xl, marginBottom: theme.spacing.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.md, justifyContent: 'space-between' },
   scoreCard: { width: '48%', backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.lg, padding: theme.spacing.lg, borderWidth: 1, borderColor: theme.color.border, gap: theme.spacing.sm },
   scoreLabel: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, letterSpacing: 1 },
-  scoreValue: { fontSize: 28, fontFamily: theme.font.serif },
+  scoreValue: { fontSize: 28, fontFamily: theme.font.display },
   scoreBar: { height: 4, backgroundColor: theme.color.divider, borderRadius: 4, overflow: 'hidden' },
   scoreFill: { height: '100%', borderRadius: 4 },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: theme.color.surfaceSecondary, padding: theme.spacing.lg, borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.color.border },
@@ -181,4 +181,4 @@ const styles = StyleSheet.create({
   cta: { backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: theme.spacing.sm },
   ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 15, fontFamily: theme.font.sansMedium, letterSpacing: 0.3 },
   errorTxt: { color: theme.color.error },
-});
+}));

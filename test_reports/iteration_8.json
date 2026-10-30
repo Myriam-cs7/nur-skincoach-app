@@ -1,0 +1,83 @@
+{
+  "summary": "Session 7 — identité beauty tech + rituel réel + code d'essai 0000 : testé bout en bout (backend 15/15 PASS, frontend web preview DARK & LIGHT). Toutes les attentes du cahier des charges sont vérifiées : code 0000 multi-usage avec profil neuf à chaque appel ; NUR-CREATOR multi-usage, NUR-DEMO-2026 usage unique partagé, code bidon → 403 ; /api/users/{id}/protocol et /diagnosis exposent device_mode/brightness/session_minutes conformes au boîtier + mapping couleur→mode exact (red/violet→Wrinkle Reduction, cyan→Cleansing, blue→Oil Control, yellow/green/white→Skin Beautification) + sensitive_care=true & brightness=1 & minutes≤10 pour peau sensible/rougeurs ; coach ouvre bien sur la préoccupation en FR, refuse une photo non-visage avec rejected:true + ask_photo:true + refus neutre d'une phrase qui ne décrit pas l'image et sans décrire le paysage, provocation hors sujet ramenée au soin de la peau ; led-library = 7 couleurs, admin/overview exige X-Admin-Token et contient weekly_codes, DELETE /api/users/{id} exige Authorization, TTS OK, rate limiter 429 confirmé. UI : accueil réduit (signature + 7 points + logo + 1 CTA activate-button + ligne confidentialité, zéro élément retiré), /scan-qr renvoie bien 'Unmatched Route', /home affiche l'ordonnance 3 lignes 'MODE / BRIGHTNESS / TIMER' (today-device-settings), les 3 stats (STREAK/SESSIONS/WEEK), patch-reminder avec patch-open & patch-dismiss (dismiss masque la carte), open-mask fonctionnel. /mask : 4 modes sérigraphiés + mask-patch-test + header-back. /patch-test : '10', patch-done, patch-later ; après patch-done la carte /home disparaît. Onglet rituel : 'Mode · Brightness N · N min' pour chaque jour + 'Pause' pour jours de repos, plus d'ancienne mention 'Intensité'. Onglet lumières : 7 cartes led-settings-{id} avec niveaux de certitude 'Solidement établi' + 'Piste exploratoire'. Profil : open-mask/open-patch-test/redo-assessment/redo-scan/privacy-toggle/delete-data tous présents, 7 chips lang (fr,en,es,it,de,ru,ar), modale delete-data-confirm/-cancel fonctionnelle. /scan : plus de gallery-button. Les deux ambiances se chargent sans erreur JS et chaque écran clé expose son probe testID en light comme en dark ; variante nur-logo-light.png servie en light.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_session7_beauty_tech.py",
+    "/app/test_reports/pytest/pytest_session7.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Non bloquant : avertissement RN Web 'The action GO_BACK was not handled by any navigator' en cliquant patch-later/patch-done quand /patch-test est ouvert en entrée directe (router.back() sans historique). Peut être durci avec `router.canGoBack() ? router.back() : router.replace('/home')`.",
+    "Non bloquant (déjà présent) : warnings 'shadow* deprecated', 'props.pointerEvents deprecated', 'Image.style.resizeMode deprecated' — hygiène RN Web, pas d'impact fonctionnel."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_session7_beauty_tech.py (nouveau)",
+    "/app/test_reports/pytest/pytest_session7.xml (nouveau)"
+  ],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% (toutes les attentes du cahier des charges validées)"},
+  "seed_data_creation": "Quelques profils jetables créés via POST /api/activate 0000/NUR-CREATOR pendant le run pytest, tous supprimés en teardown (DELETE /api/users/{id}). Le compte demo-charts-user n'a PAS été touché.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Session 7 verte. Le fichier /app/backend/tests/test_session7_beauty_tech.py couvre activation(0000/CREATOR/DEMO/invalide), device settings & mapping couleur→mode, peau sensible, coach FR (first question, non-face reject non persisté, provocation hors sujet), led-library, admin/overview, DELETE user protégé, TTS, rate-limit activation. À réutiliser en régression. Côté frontend, la route /scan-qr est bien supprimée et /scan n'a plus gallery-button. demo-charts-user est en EN (labels STREAK/SESSIONS/WEEK) — pour vérifier les équivalents FR, utiliser un nouveau profil 0000 puis sélectionner lang-fr dans le Profil.",
+  "rca_of_issue": "N/A — aucun bug trouvé.",
+  "detailed_results": {
+    "backend_pytest": {
+      "total": 15,
+      "passed": 15,
+      "failed": 0,
+      "classes": [
+        "TestActivation (4/4)",
+        "TestDeviceSettings (3/3)",
+        "TestSkincoach (3/3)",
+        "TestNonRegression (5/5)"
+      ]
+    },
+    "frontend_welcome": {
+      "activate_button_present": true,
+      "removed_elements_absent": ["Scanner ma carte", "RÉSERVÉ AUX DÉTENTEURS", "discover-button", "Your private beauty space"],
+      "scan_qr_route_removed": true,
+      "light_logo_variant_served": "nur-logo-light.png"
+    },
+    "frontend_home_dark": {
+      "today_device_settings_text": "MODE | Wrinkle Reduction | BRIGHTNESS | 3 / 3 | TIMER | 15 min",
+      "signature_present": true,
+      "stat_labels_en": ["STREAK", "SESSIONS", "WEEK"],
+      "patch_reminder_present": true,
+      "patch_dismiss_hides_reminder": true,
+      "open_mask_present": true
+    },
+    "frontend_mask": {
+      "four_modes_present": true,
+      "mask_patch_test_cta": true,
+      "header_back": true
+    },
+    "frontend_patch_test": {
+      "has_10": true,
+      "patch_done_hides_home_reminder_after_return": true
+    },
+    "frontend_protocol_tab": {
+      "sample": "Monday | Red light | Wrinkle Reduction · Brightness 2 · 15 min | ... Wednesday | Pause | No Session Today | ...",
+      "pause_present": true,
+      "old_intensity_label_absent": true
+    },
+    "frontend_library_tab": {
+      "led_settings_cards": 7,
+      "certainty_labels_present": {"solidement_etabli": true, "piste_exploratoire": true}
+    },
+    "frontend_profile_tab": {
+      "entries_present": ["open-mask", "open-patch-test", "redo-assessment", "redo-scan", "privacy-toggle", "delete-data"],
+      "languages": ["fr", "en", "es", "it", "de", "ru", "ar"],
+      "delete_modal_confirm_cancel_present": true,
+      "cancel_closes_modal": true
+    },
+    "frontend_scan": {"gallery_button_absent": true, "skip_button_present": true},
+    "light_mode_sweep": "Toutes les routes clé (/home /mask /profile /library /protocol /coach) chargent en light ; probe testID présent sur chacune ; aucun pageerror JS.",
+    "i18n_rougeurs_couperose": "Chaîne FR 'Rougeurs · couperose' bien présente dans /app/frontend/src/i18n.ts:876 (et équivalents dans les 7 langues)."
+  }
+}

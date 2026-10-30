@@ -1,11 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { theme } from '../../src/theme';
+import { theme, makeStyles } from '../../src/theme';
 import { GoldDivider, BrandHeader } from '../../src/ui';
-import { LED_ORDER, LED_META, ledText } from '../../src/led';
+import { LED_ORDER, LED_META, LED_PROTOCOL, ledText } from '../../src/led';
 import { useT } from '../../src/i18n';
+
+/** One setting line: label on the left, the value to dial on the right. */
+function Setting({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.settingRow}>
+      <Text style={styles.settingLabel} numberOfLines={1}>{label}</Text>
+      <Text style={styles.settingValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
+    </View>
+  );
+}
 
 export default function Library() {
   const { t, lang } = useT();
@@ -24,7 +34,6 @@ export default function Library() {
             const hex = LED_META[id].hex;
             return (
               <View key={id} style={styles.card} testID={`led-card-${id}`}>
-                <View style={[styles.cardGlow, { backgroundColor: hex }]} />
                 <View style={styles.cardHeader}>
                   <View style={[styles.colorChip, { backgroundColor: hex }]} />
                   <View style={{ flex: 1 }}>
@@ -50,9 +59,17 @@ export default function Library() {
                   ))}
                 </View>
 
+                <Text style={styles.miniLabel}>{t('library.settings')}</Text>
+                <View style={styles.settingsBox} testID={`led-settings-${id}`}>
+                  <Setting label={t('device.mode')} value={LED_PROTOCOL[id].mode} />
+                  <Setting label={t('device.brightness')} value={`${LED_PROTOCOL[id].brightness} / 3`} />
+                  <Setting label={t('device.timer')} value={`${LED_PROTOCOL[id].minutes} ${t('common.minutes')}`} />
+                  <Setting label={t('device.perWeek')} value={`${LED_PROTOCOL[id].perWeek}×`} />
+                </View>
+
                 <View style={styles.footerRow}>
-                  <Feather name="clock" size={12} color={theme.color.onSurfaceSecondary} />
-                  <Text style={styles.footerTxt}>{t('library.session', { n: LED_META[id].minutes })}</Text>
+                  <Feather name="info" size={12} color={theme.color.onSurfaceSecondary} />
+                  <Text style={styles.footerTxt}>{t(`evidence.${LED_PROTOCOL[id].evidence}`)}</Text>
                 </View>
               </View>
             );
@@ -65,12 +82,12 @@ export default function Library() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   // kept for accessibility/tests, visually replaced by BrandHeader
   hiddenTitle: { height: 0, opacity: 0, fontSize: 1, fontFamily: theme.font.sans },
   root: { flex: 1, backgroundColor: theme.color.surface },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, marginTop: theme.spacing.md },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 30, marginTop: theme.spacing.md },
   subtle: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, lineHeight: 20 },
   card: {
     marginTop: theme.spacing.lg,
@@ -82,10 +99,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     gap: theme.spacing.sm,
   },
-  cardGlow: { position: 'absolute', width: 140, height: 140, borderRadius: 999, right: -56, top: -56, opacity: 0.18, shadowOpacity: 0.8, shadowRadius: 50, shadowOffset: { width: 0, height: 0 } },
   cardHeader: { flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' },
   colorChip: { width: 34, height: 34, borderRadius: 999 },
-  colorName: { fontFamily: theme.font.serif, fontSize: 21 },
+  colorName: { fontFamily: theme.font.displayBold, fontSize: 19 },
   wavelength: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, letterSpacing: 0.8 },
   taglinePill: { borderWidth: 1, borderRadius: theme.radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
   taglineTxt: { fontSize: 10, fontFamily: theme.font.sansMedium, fontWeight: '700', letterSpacing: 0.4 },
@@ -100,4 +116,11 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.sm, borderTopWidth: 1, borderTopColor: theme.color.divider,
   },
   footerTxt: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans },
-});
+  settingsBox: { marginTop: theme.spacing.xs, borderTopWidth: 1, borderTopColor: theme.color.border },
+  settingRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.color.border, gap: theme.spacing.md,
+  },
+  settingLabel: { ...theme.type.cardLabel, color: theme.color.onSurfaceSecondary, textTransform: 'uppercase' },
+  settingValue: { ...theme.type.h2, color: theme.color.onSurface, flexShrink: 1, textAlign: 'right' },
+}));

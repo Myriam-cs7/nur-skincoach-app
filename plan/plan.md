@@ -1,128 +1,210 @@
-# NŪR Skincoach — consultation vocale, analyse de peau en photo et mise en scène clinique
+# Nūr Skincoach — Identité beauty tech, rituel fidèle au masque, accès d'essai
 
-Le coach devient une véritable consultation : NŪR mène l'échange, écoute la voix, répond à voix haute si on le souhaite, demande une photo du visage en toute fin d'entretien, puis délivre un bilan zone par zone et le protocole de lumières — la routine cosmétique venant en complément, proposée ou sur demande.
-Un avatar officiel, des sons discrets, des pointillés animés et une séquence d'analyse font de l'attente un moment crédible et haut de gamme.
+L'application d'accompagnement du masque LED Nūr Protocol : activation, bilan de peau, rituel LED
+personnalisé et consultation avec le Skincoach. Cette étape donne à l'app une écriture de marque
+beauty tech, nettoie son entrée et aligne le rituel sur le vrai boîtier.
 
 ## Pour qui
 
-- **La cliente (ou le client) qui vient d'activer son masque** : veut savoir ce que sa peau réclame et quoi faire, ce soir, demain, et dans six semaines. Elle n'a pas envie de remplir un formulaire : elle veut parler à quelqu'un.
-- **Celle qui ne sait pas associer ses produits** : a de la vitamine C, de la niacinamide, peut-être un rétinol, et ne sait ni dans quel ordre ni à quelle fréquence. Elle veut une routine, pas une liste.
-- **Celle qui a les mains occupées ou n'aime pas écrire** : parle à son téléphone, écoute la réponse.
-- **Les hommes aussi** : le parcours, le vocabulaire et les routines ne supposent jamais une cliente femme.
+- La cliente qui vient de recevoir son masque et scanne le QR code de la carte gold.
+- La cliente équipée qui rouvre l'app pour sa séance du jour.
+- La marque, qui doit pouvoir essayer l'app en conditions réelles et y retrouver sa charte.
 
-## Fonctionnalités et expérience
+## Contenu et expérience
 
-### 1. NŪR a un visage et une voix
+**Nouvelle écriture visuelle, dans l'esprit beauty tech**
+- Plus aucun serif : une police sans empattement géométrique pour les titres et les chiffres, une
+  seconde très lisible pour les textes et l'interface. Lettres légèrement espacées, chiffres larges,
+  hiérarchie nette — l'esprit « appareil de soin » plutôt que « magazine ».
+- Palette resserrée : noir, blanc, gris, or champagne en touches fines. Les 7 couleurs LED restent
+  les seules couleurs vives de l'app.
+- Deux ambiances : l'app suit le réglage du téléphone. Le noir reste l'ambiance par défaut et la
+  signature de la marque ; une version claire, blanche et clinique, s'active pour les clientes dont
+  le téléphone est en mode clair.
+- Mise en page plus aérée : marges constantes, blocs alignés, une seule information par niveau de
+  lecture, aucun ornement décoratif.
 
-L'avatar officiel fourni (professionnelle en blouse noire) devient le visage de NŪR : en-tête du chat, vignette à côté de chacune de ses réponses, et illustration de l'écran d'accueil du coach. Un seul visage, partout, pour créer une relation.
+**« AT-HOME CLINIC » disparaît, « YOUR SKIN, YOUR PROTOCOL » le remplace**
+Retiré partout (haut de l'accueil, sous-titre du tableau de bord, pied de page) et remplacé à deux
+endroits seulement : surtitre de l'accueil et sous-titre du tableau de bord, sous le prénom. La
+phrase reste en anglais dans les sept langues, comme une signature de marque.
 
-Côté voix, deux usages indépendants, tous deux au choix de l'utilisateur :
-- **Parler plutôt qu'écrire** : un bouton micro dans la barre de saisie. On appuie, on parle, on arrête. Le message est transcrit, affiché et modifiable avant l'envoi, pour que rien ne partage à la place de l'utilisateur.
-- **Écouter plutôt que lire** : un bouton haut-parleur sur chaque réponse de NŪR, et un réglage « lecture automatique » si l'utilisateur veut que toutes les réponses soient dites à voix haute.
+**Écran d'accueil réduit à l'essentiel**
+- Suppression du texte « Your private beauty space. AI assessment and bespoke LED ritual ».
+- Suppression du bouton « Scanner ma carte Nūr » et de l'écran de scan : le QR code de la carte amène
+  déjà sur cet écran.
+- Suppression du bouton de prescription gratuite et de la ligne de copyright.
+- Une seule action reste : « Activate my Skincoach & Nūr Protocol ». La mention de confidentialité
+  (cadenas) est conservée, sur une seule ligne.
 
-### 2. Une experte en soin de la peau, jamais un médecin
+**Rituel fidèle au boîtier réel**
+Les 7 couleurs restent la grammaire de l'app, et chaque séance indique le réglage exact à faire sur
+la télécommande : le mode parmi les quatre réels (Skin Beautification, Cleansing, Wrinkle Reduction,
+Oil Control), le niveau de luminosité (1 à 3) et la durée parmi les valeurs du minuteur (5, 10, 15 ou
+20 minutes). La cliente lit « Rouge · Wrinkle Reduction · Luminosité 2 · 15 min » et reproduit à
+l'identique.
 
-NŪR a le niveau d'une esthéticienne-cosméticienne très expérimentée. Elle peut, et doit, aller loin dès que l'utilisateur le demande — ou dès qu'elle le propose et qu'il accepte :
-- routines complètes matin et soir, avec l'ordre d'application, les quantités et la fréquence ;
-- associations d'actifs : vitamine C, niacinamide, PDRN, rétinol, acide hyaluronique, peptides, AHA/BHA, céramides, filtres solaires ;
-- ce qui ne se mélange pas, ce qui s'alterne un soir sur deux, ce qui demande une montée en charge progressive ;
-- recommandations par ingrédient **et par marque grand public, avec une préférence assumée pour les marques coréennes** (K-beauty), accessibles et bien formulées ;
-- articulation entre la séance LED et la routine : quoi appliquer avant, quoi appliquer après, quoi éviter le jour d'une séance.
+**Préoccupations de peau nommées et traitées**
+Le questionnaire retient huit préoccupations (acné, rides, taches, rougeurs, pores dilatés, teint
+terne, sensibilité, cicatrices). Deux d'entre elles sont clarifiées et mieux prises en charge :
+- **Rougeurs · couperose** : le libellé est explicite dans toutes les langues, le protocole privilégie
+  les lumières apaisantes, la luminosité la plus douce et des séances courtes, avec un mot de
+  prudence rappelé avant la séance.
+- **Rides et relâchement** : protocole en lumières régénérantes sur le mode Wrinkle Reduction, avec
+  les durées les plus longues du minuteur, car c'est le motif d'achat le plus fréquent.
+Chaque préoccupation cochée se traduit par une ligne lisible dans le rituel : la couleur, le mode du
+boîtier, la luminosité et la durée. Rien n'est laissé implicite.
 
-Et une frontière nette, jamais franchie : aucun diagnostic de maladie, aucun médicament (trétinoïne, antibiotiques, isotrétinoïne, corticoïdes), aucune posologie, aucun acte médical. Face à un signe qui sort du champ cosmétique — grain de beauté qui change, acné inflammatoire douloureuse, rosacée en poussée, plaie, réaction allergique, doute pendant une grossesse — NŪR le dit simplement, oriente vers un professionnel de santé, et continue à accompagner ce qui relève du soin.
+**Le Skincoach : expert, jamais médecin**
+- Le Skincoach répond avec la compétence d'un expert des soins de la peau : il explique les
+  mécanismes, les actifs et les durées, et il assume une position claire plutôt que des généralités.
+- Il ne pose jamais de diagnostic et ne donne jamais d'avis médical ; il renvoie vers un
+  professionnel de santé dès qu'un signe sort du champ cosmétique, et le rappelle sans dramatiser.
+- Il ne recommande que des types de produits et des actifs, jamais de marques.
+- Il ne doit rien inventer : sur les lumières, il s'en tient aux indications retenues ci-dessous, et
+  dit honnêtement quand une preuve est limitée plutôt que de promettre un résultat.
+- Première question de toute consultation : **« Your concern »** — ce qui préoccupe la cliente
+  aujourd'hui. Toute la suite, séances comprises, découle de cette réponse et du bilan.
 
-### 3. L'analyse de peau, demandée en dernier
+**Les sept champs de traitement, assumés**
+Les lumières couvrent volontairement un large spectre de résultats, et chaque champ a sa place dans
+l'app, son protocole et le vocabulaire du Skincoach :
+éclat et glow · teint et grain de peau · rides et ridules · relâchement et fermeté · rougeurs et
+couperose · hydratation et confort · renouvellement cellulaire et réparation.
+Pour chaque champ, l'app indique la lumière, le mode du boîtier, la luminosité, la durée et le
+nombre de séances par semaine — avec un niveau de certitude honnête : solidement établi pour le
+rouge (collagène, fermeté, rides, réparation) et le bleu (imperfections), soutenu pour l'apaisement
+des rougeurs, plus exploratoire pour le vert sur les taches, sans jamais présenter une piste comme
+une garantie.
 
-NŪR mène la consultation comme une vraie praticienne : elle commence par comprendre. Type de peau, préoccupations, routine actuelle, rythme de vie, climat, sommeil. Elle ne repose pas les questions déjà répondues pendant l'activation — elle s'appuie sur le profil existant et ne demande que ce qui manque.
+**Cadre de la consultation : photos et provocations**
+L'app sera entre les mains du public ; certaines personnes enverront n'importe quoi.
+- La photo se prend **uniquement avec l'appareil photo**, jamais depuis la galerie : impossible
+  d'envoyer une image trouvée ailleurs.
+- Avant toute analyse, l'app vérifie qu'il s'agit bien d'un visage humain. Si ce n'est pas le cas
+  (animal, objet, autre partie du corps), elle refuse poliment, en une phrase neutre, et redemande
+  une photo de visage. Elle ne décrit pas ce qu'elle a vu et ne plaisante pas.
+- Toute image à caractère sexuel ou manifestement provocatrice est refusée sèchement et sans
+  commentaire, la conversation revenant immédiatement au soin de la peau. Aucune escalade, aucun
+  jugement, aucune description.
+- Dans la conversation, les provocations, insultes et sujets hors soin reçoivent une réponse courte
+  et professionnelle qui ramène au sujet. Le Skincoach ne se laisse pas détourner de son rôle.
+- En revanche, la vigilance reste entière sur les vraies photos : un signe inhabituel est relevé
+  clairement, avec la recommandation de consulter un professionnel de santé.
+- À chaque demande de photo, un rappel visible : la photo n'est ni enregistrée, ni conservée, ni
+  partagée — elle est analysée puis immédiatement oubliée. C'est une règle de l'app, pas une option.
 
-Quand elle a tous les éléments, et seulement là, elle demande la photo : « Il me manque un dernier élément pour finaliser votre protocole. » L'utilisateur prend un selfie ou choisit une photo depuis sa galerie, directement dans le chat.
+**Nouvel écran « Mon masque »**
+Tout le livret papier, consultable à tout moment : le branchement en 2 étapes (câble adaptateur dans
+le port USB de la télécommande, puis masque visage et bandeau cou sur l'adaptateur — les deux ports
+sont interchangeables), les 6 étapes d'une séance, le rôle de chaque bouton, la charge, l'entretien
+du silicone, le rythme conseillé (3 à 5 séances par semaine pendant 4 semaines) et les précautions
+(grossesse, allaitement, photosensibilité, affections oculaires ou cutanées héréditaires).
 
-Suit une **séquence d'analyse** qui donne à voir le travail : la photo s'affiche dans une vignette, un faisceau balaye le visage, des repères apparaissent zone par zone, et des étapes s'enchaînent — cartographie des zones, texture et grain, hydratation, uniformité du teint, signes de fatigue. Un son marque la fin de l'analyse.
+**Test de sensibilité avant la première séance**
+Test guidé de 10 minutes sur l'avant-bras, avec ce qu'il faut observer et la conduite à tenir.
+Reportable, rappelé tant qu'il n'est pas fait, sans jamais bloquer l'accès au reste de l'app.
 
-La photo est réellement analysée par le modèle de vision : le relevé qui s'affiche ensuite décrit ce qu'il y a sur l'image, pas un texte générique. Le protocole, lui, s'appuie sur toute la consultation — la photo l'affine et le confirme. Conséquence voulue : si l'utilisateur refuse la photo ou l'envoie floue, NŪR délivre quand même un protocole complet, sans jamais faire sentir qu'il manque quelque chose.
+**Version d'essai pour les influenceuses et la marque**
+L'app n'est pas encore ouverte aux clientes : il s'agit d'une version de mise au point.
+- Un code confidentiel très simple, **0000**, ouvre l'app immédiatement, sans e-mail ni attente.
+  Chaque personne qui l'utilise démarre avec son propre profil sur son téléphone.
+- Les codes d'accès réels (carte, achat) continuent de fonctionner en parallèle, pour tester le vrai
+  parcours quand c'est utile.
+- Depuis le profil, « recommencer mon bilan » permet de refaire le questionnaire, la photo et le
+  diagnostic autant de fois que voulu : c'est ce qui permet aux influenceuses de rejouer le parcours
+  et de signaler ce qui cloche.
+- Le verrouillage sérieux revient avant la publication sur les stores : le code 0000 est alors retiré
+  et seule l'activation par carte ou par achat subsiste.
 
-Le relevé final tient en une carte lisible : un indice global, quatre à six indicateurs chiffrés, les zones prioritaires, puis le protocole LED (couleur, durée, intensité, fréquence).
-
-La routine cosmétique n'est pas imposée. Elle est **proposée**, une fois, à la fin du relevé : « Souhaitez-vous que je vous prépare la routine cosmétique qui accompagne ce protocole ? » Si l'utilisateur accepte, ou s'il la demande plus tard dans la conversation, NŪR la délivre au complet — matin, soir, ordre d'application, fréquences, associations d'actifs. S'il décline, le protocole LED reste complet et autonome, et la proposition reste disponible dans la conversation sans être relancée.
-
-### 4. L'attente devient agréable
-
-- **Pointillés sautillants** : trois points dorés qui rebondissent dans une bulle, à côté de l'avatar, dès que NŪR réfléchit. Jamais d'écran figé.
-- **Sons** : un son léger à l'envoi d'un message, un son doux à l'arrivée d'une réponse, un son plus ample à la fin de l'analyse de peau. Discrets, jamais stridents, coupables en un geste dans les réglages de l'app et soumis au mode silencieux du téléphone.
-- **Vibrations** légères aux mêmes moments, pour ceux qui gardent le son éteint.
-
-### 5. Rappels de séance
-
-L'utilisateur est invité à activer ses rappels au moment le plus naturel : juste après avoir reçu son protocole. Il choisit son heure, reçoit une notification quotidienne qui nomme la couleur et la durée du jour, et peut tout couper depuis l'app ou depuis les réglages de son téléphone. Ces rappels existent déjà dans l'application ; ils sont rebranchés sur ce nouveau moment.
-
-### 6. La carte gold et la page de téléchargement
-
-Le QR code est correct : scanné, il mène bien à `nurprotocol.com/app`, qui affiche aujourd'hui la page « opening soon » de Shopify parce que la page n'existe pas encore. Le contenu exact de cette page (détection iPhone/Android, boutons App Store et Google Play, ton de la marque) est livré prêt à coller. Rien à changer sur le QR ni sur les cartes : l'impression peut partir.
+**Skin Analysis : ce qui existe et ce qui vient**
+Aujourd'hui, la photo du visage est analysée par l'IA et donne un bilan écrit, avec une animation de
+scan pendant l'analyse ; la photo n'est jamais conservée. L'expérience spectaculaire — tracé du
+visage qui se dessine, zones révélées une à une, puis une fiche de scores par critère (hydratation,
+grain de peau, éclat, fermeté, rougeurs, taches) et leur évolution dans le temps — fait l'objet de
+l'étape suivante, pour être traitée avec le soin qu'elle mérite plutôt que bâclée.
 
 ## Parcours
 
-1. La cliente ouvre le coach. NŪR se présente, visage et prénom, et annonce la consultation en une phrase.
-2. Elle répond par écrit ou au micro. NŪR enchaîne, une question à la fois, en rebondissant sur les réponses — jamais de questionnaire à la chaîne.
-3. Quand NŪR a tout, elle demande la photo. Un bouton « + » ouvre le choix appareil photo / galerie, avec l'explication de l'usage avant la demande d'autorisation.
-4. La photo apparaît dans le chat, l'analyse se déroule à l'écran, un son la conclut.
-5. NŪR délivre le relevé zone par zone, puis le protocole LED. Elle propose ensuite, en une phrase, de préparer la routine cosmétique qui l'accompagne — et ne la détaille que si l'utilisateur accepte. Elle propose aussi d'activer les rappels.
-6. La conversation continue : « Prépare-moi la routine du soir », « Je peux utiliser ma vitamine C le même soir ? », « Quelle crème coréenne pour ma barrière cutanée ? », « Je suis enceinte, qu'est-ce que je retire ? ». NŪR répond dans son périmètre, à voix haute si l'utilisateur le souhaite.
-7. Le bilan et le rituel restent consultables dans leurs écrans dédiés, comme archive : l'historique des bilans alimente les courbes de progression existantes. La routine cosmétique, quand elle a été demandée, y est rattachée.
+1. La cliente scanne le QR de la carte gold → l'accueil s'ouvre : signature « YOUR SKIN, YOUR
+   PROTOCOL », logo, titre, un seul bouton.
+2. Activation : son e-mail et le code reçu par e-mail, ou le code d'accès reçu à l'achat.
+3. Questionnaire de peau, photo facultative avec consentement, bilan, rituel.
+4. Proposition du test de sensibilité avant la première séance.
+5. Tableau de bord : prénom, signature, séance du jour avec couleur, mode du boîtier, luminosité et
+   durée, puis suivi des séances.
+6. « Mon masque » accessible à tout moment pour le branchement, le mode d'emploi et les précautions.
 
-## Ambiance
+## Esprit visuel
 
-- Fond noir profond, or chaud, sérif élégant : l'identité actuelle est conservée, le nouveau logo est déjà en place.
-- L'avatar apporte la seule touche humaine de l'interface — photo nette, cadre doré fin, jamais de rond criard.
-- La séquence d'analyse est la pièce maîtresse : faisceau de balayage, repères qui s'allument un par un, chiffres qui montent jusqu'à leur valeur. Précis, silencieux, haut de gamme — un appareil de cabinet, pas un jeu.
-- Le chat garde des bulles sobres : réponses de NŪR sur carte sombre bordée d'or, messages de l'utilisateur en or mat. Les routines s'affichent en blocs structurés (matin / soir, étape par étape), pas en paragraphes.
-- Le micro est un bouton franc, visible, avec un retour visuel pendant l'enregistrement (onde ou pulsation) et un minuteur. On voit toujours si ça enregistre.
+Noir profond ou blanc clinique selon le téléphone, or champagne en filets discrets, typographie
+d'ingénierie très lisible, chiffres mis en avant. Beaucoup de vide, des blocs strictement alignés,
+des réglages présentés comme une ordonnance : trois lignes courtes lisibles d'un coup d'œil. La seule
+couleur vive vient des 7 lumières LED.
 
-## Phases
+## Étapes
 
-### Phase 1 — construite maintenant
+**Étape 1 — réalisée maintenant**
+Nouvelle typographie et nouvelle palette appliquées à toute l'app, ambiance claire ou sombre selon le
+téléphone, nettoyage complet de l'accueil, remplacement de « AT-HOME CLINIC » par « YOUR SKIN, YOUR
+PROTOCOL », suppression de l'écran de scan, posture et cadrage du Skincoach (expertise, « Your
+concern » en ouverture, sept champs de traitement, refus net des photos non conformes et des
+provocations, aucune affirmation médicale), affichage du mode du
+boîtier, de la luminosité et de la durée sur chaque séance, écran « Mon masque » complet (branchement
+inclus), test de sensibilité avant la première séance, code d'essai 0000 et reprise du bilan.
 
-- Avatar officiel intégré : en-tête du coach, vignette de chaque réponse, écran d'accueil du coach.
-- Périmètre de NŪR réécrit : experte soin et bien-être, routines et associations d'actifs complètes, marques grand public avec préférence coréenne, frontière médicale explicite et orientation vers un professionnel quand c'est nécessaire.
-- Consultation conversationnelle : NŪR mène l'entretien, réutilise le profil déjà renseigné, ne demande que ce qui manque.
-- Photo dans le chat, demandée en dernier : appareil photo ou galerie, autorisations expliquées avant la demande système.
-- Séquence d'analyse animée + son de fin, puis relevé zone par zone et protocole LED complet.
-- Routine cosmétique proposée, jamais imposée : délivrée sur acceptation ou sur demande, à tout moment de la conversation.
-- Enregistrement vocal : on parle, le message est transcrit, affiché, modifiable, puis envoyé.
-- Réponses lues à voix haute : bouton par message et réglage de lecture automatique.
-- Pointillés sautillants pendant la réflexion, sons à l'envoi / à la réception / en fin d'analyse, vibrations, interrupteur dans l'app.
-- Rappels de séance proposés juste après la remise du protocole.
-- Bilan et rituel conservés comme archive, alimentés par les consultations du chat.
-- Contenu de la page `nurprotocol.com/app` livré prêt à coller.
+**Étape 2 — ensuite**
+Skin Analysis spectaculaire : tracé du visage animé, zones révélées une à une, fiche de scores par
+critère et suivi de l'évolution, plus les illustrations du livret redessinées à la charte.
 
-### Phase 2 — ensuite
-
-- Voix plus naturelle en français si l'accent de la voix actuelle ne convainc pas (changement de fournisseur de voix, nécessite une clé dédiée).
-- Suivi photo : comparaison avant / après mois par mois, à côté des courbes de progression.
-- Console d'administration : activations, accès en période de découverte, codes partenaires, export.
-- Pré-activation à l'achat : le code d'accès est déjà dans l'e-mail de confirmation de commande.
-- Ouverture directe de l'app depuis le QR quand elle est déjà installée.
-
-### Phase 3 — plus tard
-
-- Fiches produits reliées à la boutique, recommandations cliquables.
-- Programmes thématiques limités dans le temps (préparation mariage, post-été, post-partum).
-- Suivi de l'usure des LED et rappel de renouvellement.
-- Parrainage et suivi des conversions.
+**Étape 3 — plus tard**
+Écran de séance plein écran : minuteur synchronisé avec la durée du boîtier, couleur du jour, signal
+de fin et enregistrement automatique de la séance. Puis, avant la publication sur les stores, retrait
+du code 0000 et retour à l'activation par carte ou par achat uniquement.
 
 ## Hypothèses retenues
 
-- **Voix de NŪR** : voix féminine chaude, pilotée par des instructions de ton (posée, précise, bienveillante). Les voix disponibles sans clé supplémentaire sont optimisées pour l'anglais : en français, l'intelligibilité est bonne mais l'accent n'est pas parfaitement natif. Si le rendu ne convient pas, le passage à une voix nativement française est en phase 2 et demandera une clé dédiée.
-- **Lecture automatique désactivée par défaut** : NŪR ne parle que si l'utilisateur appuie sur le haut-parleur ou active le réglage. Une app qui parle sans y être invitée se fait couper le son une fois pour toutes.
-- **Transcription validée avant envoi** : le texte dicté s'affiche dans la barre de saisie, l'utilisateur peut le corriger. Rien n'est envoyé automatiquement après la dictée.
-- **Enregistrement arrêté par l'utilisateur** : pas de coupure automatique au silence pour les messages dictés, qui peuvent contenir des pauses de réflexion. Un minuteur et une durée maximale protègent contre l'oubli.
-- **Sons** : trois sons courts, créés sur mesure pour la marque (pas de banque de sons tierce), dans l'esprit d'un appareil de cabinet. Respectent le mode silencieux du téléphone et un interrupteur dans l'app.
-- **La photo est réellement analysée** par le modèle de vision, et la mise en scène rend ce travail visible. Aucun relevé n'est inventé : c'est ce qui rend l'expérience crédible et ce qui protège la marque. Le protocole reste délivrable sans photo, sans que l'utilisateur ressente un manque.
-- **Une seule photo par consultation**, stockée en vignette avec le bilan pour alimenter l'historique et, plus tard, les comparaisons avant/après.
-- **Marques recommandées** : ingrédients d'abord, puis marques grand public avec préférence coréenne, citées à titre d'exemples accessibles et sans partenariat. Aucun produit Nūr n'est recommandé puisque la gamme n'existe pas encore ; le jour où elle sort, elle devient le premier choix cité.
-- **La routine cosmétique est une option, pas une étape obligatoire** : NŪR la propose une fois à la fin du relevé et la délivre si l'utilisateur accepte ou la réclame. Le protocole LED se tient seul, sans elle. La proposition n'est jamais relancée : celui qui décline n'est pas sollicité une deuxième fois.
-- **La proposition mentionne ce qu'elle contient** (matin, soir, actifs, fréquences) pour que le refus soit un choix informé et non un réflexe.
-- **Les routines s'affichent en blocs structurés** (matin / soir, étape par étape) et sont rattachées au bilan, donc consultables plus tard sans refaire la demande.
-- **Rappels proposés une seule fois** après la remise du protocole, puis accessibles dans le profil. Pas de relance répétée.
-- **Les écrans bilan et rituel sont conservés** tels quels comme archive consultable ; la consultation du chat devient la source qui les alimente.
-- **Le contenu du QR ne change pas** : `https://nurprotocol.com/app`. La page doit être publiée sur le domaine avant la première livraison client — c'est la seule action hors application nécessaire pour que la carte gold fonctionne.
-- **Les fonctions micro, haut-parleur, appareil photo et notifications ne sont testables que sur un vrai téléphone**, après déploiement et génération d'un build. L'aperçu navigateur et Expo Go ne les couvrent pas.
+- Polices retenues, dans l'esprit Medicube et libres de droits : une géométrique neutre (type Archivo
+  ou Manrope) pour les titres, les chiffres et les boutons, et une police d'interface très lisible
+  (type Inter) pour les textes. Le logo reste une image, inchangé.
+- En version claire, l'or champagne est légèrement assombri pour rester lisible sur blanc ; le noir
+  et le blanc restent les deux couleurs dominantes dans les deux ambiances.
+- Le noir reste l'ambiance par défaut : une cliente dont le téléphone est en mode sombre, ou sans
+  préférence, voit l'app noire.
+- Correspondance couleur → mode du boîtier, à corriger si elle ne convient pas : rouge et violet →
+  Wrinkle Reduction ; jaune, vert et blanc → Skin Beautification ; cyan → Cleansing ; bleu →
+  Oil Control.
+- Couperose : traitée comme une peau sensible — lumière jaune et cyan, luminosité 1, séances de 5 à
+  10 minutes, et recommandation d'avis médical en cas de rosacée diagnostiquée ou de poussée.
+- Rides : lumières rouge et violet, mode Wrinkle Reduction, 15 à 20 minutes, luminosité 2 puis 3
+  après deux semaines d'habituation.
+- Indications retenues pour les sept lumières, fondées sur les données disponibles : rouge →
+  collagène, fermeté, rides, réparation et renouvellement cellulaire ; violet → combinaison
+  régénérante ; bleu → imperfections et excès de sébum ; cyan et jaune → apaisement des rougeurs et
+  éclat du teint ; vert → taches et homogénéité, présenté comme une piste et non une promesse ;
+  blanc → séance complète de fermeté. Aucune autre indication n'est affirmée.
+- Le Skincoach parle de « confort », « apparence », « aspect » et jamais de « traitement » d'une
+  maladie ; aucune pathologie n'est nommée comme étant prise en charge par l'app.
+- Luminosité conseillée : niveau 1 pour une peau sensible ou les deux premières semaines, niveau 2 en
+  rythme de croisière, niveau 3 pour les peaux habituées.
+- Les durées affichées sont toujours réglables sur le minuteur (5, 10, 15 ou 20 minutes).
+- Les noms des quatre modes restent en anglais, exactement comme sérigraphiés sur la télécommande.
+- « YOUR SKIN, YOUR PROTOCOL » s'écrit en capitales et n'est pas traduite.
+- Le bouton principal garde le libellé « Activate my Skincoach & Nūr Protocol », avec son équivalent
+  français pour les clientes francophones.
+- Le parcours de prescription gratuite n'est plus proposé dans l'app ; la page reste atteignable par
+  son lien direct pour les campagnes du site et des réseaux.
+- Les précautions sont présentées comme des conseils d'usage du fabricant, jamais comme un avis
+  médical.
+- Les illustrations du livret ne sont pas reprises telles quelles à l'étape 1 : les textes sont
+  intégrés, les dessins sont redessinés à l'étape 2.
+- Le code 0000 est un code d'essai assumé : toute personne qui connaît le lien de l'app peut entrer.
+  C'est acceptable tant que l'app n'est pas publiée et qu'il n'y a pas de clientes, et c'est retiré
+  avant la mise en ligne sur les stores.
+- Les protections déjà en place restent actives en arrière-plan sans rien demander à l'utilisatrice :
+  chaque profil reste cloisonné, les photos ne sont pas conservées et les appels à l'IA restent
+  plafonnés pour éviter les dérapages de facture. Seule la porte d'entrée est simplifiée.
+- La console privée garde sa propre clé, mémorisée sur le téléphone : elle n'est plus à ressaisir,
+  mais elle n'est pas remplacée par 0000 puisqu'elle donnera accès aux e-mails des clientes.
+- Le refus d'une photo non conforme ne consomme pas de séance et ne laisse aucune trace dans
+  l'historique de la cliente.

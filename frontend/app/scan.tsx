@@ -4,10 +4,9 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { theme } from '../src/theme';
+import { theme, makeStyles } from '../src/theme';
 import { useT } from '../src/i18n';
 import PhotoConsentSheet from '../src/components/PhotoConsentSheet';
 
@@ -21,21 +20,17 @@ export default function Scan() {
   const [busy, setBusy] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const [consent, setConsent] = useState(false);
-  const pendingRef = useRef<'camera' | 'gallery' | null>(null);
 
   const goAnalyze = (b64?: string) => {
     if (b64) router.replace({ pathname: '/analyzing', params: { b64 } });
     else router.replace('/analyzing');
   };
 
-  const askConsent = (source: 'camera' | 'gallery') => {
-    pendingRef.current = source;
-    setConsentOpen(true);
-  };
+  const askConsent = () => setConsentOpen(true);
 
   const onCapture = async (consented = false) => {
     if (!cameraRef.current || busy) return;
-    if (!consent && !consented) return askConsent('camera');
+    if (!consent && !consented) return askConsent();
     setBusy(true);
     try {
       const pic = await cameraRef.current.takePictureAsync({ base64: false, quality: 0.7, skipProcessing: true });
@@ -47,37 +42,17 @@ export default function Scan() {
     } catch (e) { console.warn(e); setBusy(false); }
   };
 
-  const onPickGallery = async (consented = false) => {
-    if (busy) return;
-    if (!consent && !consented) return askConsent('gallery');
-    setBusy(true);
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) { setBusy(false); return; }
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
-      if (result.canceled) { setBusy(false); return; }
-      const manipulated = await ImageManipulator.manipulateAsync(
-        result.assets[0].uri, [{ resize: { width: 768 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-      );
-      goAnalyze(manipulated.base64!);
-    } catch (e) { console.warn(e); setBusy(false); }
-  };
-
   const onSkip = () => goAnalyze();
 
   const acceptConsent = () => {
     setConsent(true);
     setConsentOpen(false);
-    const source = pendingRef.current;
-    pendingRef.current = null;
     // consent state is not yet committed in this render — call with the guard bypassed
-    setTimeout(() => (source === 'gallery' ? void onPickGallery(true) : void onCapture(true)), 0);
+    setTimeout(() => void onCapture(true), 0);
   };
 
   const declineConsent = () => {
     setConsentOpen(false);
-    pendingRef.current = null;
     goAnalyze();
   };
 
@@ -112,9 +87,6 @@ export default function Scan() {
             <Pressable style={styles.cta} onPress={async () => { await requestPermission(); }} testID="grant-camera">
               <Feather name="camera" size={16} color={theme.color.onBrand} />
               <Text style={styles.ctaText}>{t('scan.perm.allow')}</Text>
-            </Pressable>
-            <Pressable onPress={() => onPickGallery()} testID="gallery-button">
-              <Text style={styles.linkText}>{t('scan.gallery')}</Text>
             </Pressable>
             <Pressable onPress={onSkip} style={styles.skipBtn} testID="skip-button">
               <Text style={styles.skipText}>{t('scan.skip')}</Text>
@@ -176,10 +148,6 @@ export default function Scan() {
           </Pressable>
 
           <View style={styles.bottomActions}>
-            <Pressable onPress={() => onPickGallery()} disabled={busy} testID="gallery-button">
-              <Text style={styles.linkText}>{t('scan.gallery')}</Text>
-            </Pressable>
-            <Text style={styles.sep}>·</Text>
             <Pressable onPress={onSkip} disabled={busy} testID="skip-button">
               <Text style={styles.linkText}>{t('scan.skip')}</Text>
             </Pressable>
@@ -193,7 +161,7 @@ export default function Scan() {
 
 const GUIDE = width * 0.7;
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   safe: { flex: 1, justifyContent: 'space-between' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm },
@@ -207,7 +175,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     shadowColor: theme.color.brand, shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: 4 },
   },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, marginTop: theme.spacing.lg, letterSpacing: -0.3, textAlign: 'center' },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 30, marginTop: theme.spacing.lg, letterSpacing: -0.3, textAlign: 'center' },
   subtitle: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20, paddingHorizontal: theme.spacing.sm },
   privacyBox: {
     flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
@@ -241,4 +209,4 @@ const styles = StyleSheet.create({
   shutterCore: { width: 60, height: 60, borderRadius: 999, backgroundColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
   skipBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
   skipText: { color: theme.color.brand, fontSize: 13, fontFamily: theme.font.sansMedium, fontWeight: '600' },
-});
+}));

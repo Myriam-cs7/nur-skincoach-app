@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { theme } from '../src/theme';
+import { theme, makeStyles } from '../src/theme';
 import { Wordmark } from '../src/ui';
 import { api, getStoredUserId, IntakePayload } from '../src/api';
 import { useT, CONCERN_LABELS, getLang } from '../src/i18n';
@@ -207,14 +207,14 @@ export default function Onboarding() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm },
   progressBar: { height: 1, backgroundColor: theme.color.divider, marginHorizontal: theme.spacing.xl, marginTop: theme.spacing.md, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: theme.color.brand },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.xxl, paddingBottom: theme.spacing.xxxl },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 32, lineHeight: 40, marginBottom: theme.spacing.sm, letterSpacing: -0.5 },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 32, lineHeight: 40, marginBottom: theme.spacing.sm, letterSpacing: -0.5 },
   subtitle: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, marginBottom: theme.spacing.xl, lineHeight: 20, letterSpacing: 0.2 },
   input: {
     backgroundColor: theme.color.surfaceSecondary,
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.color.borderGold,
     marginTop: theme.spacing.lg,
-    fontFamily: theme.font.serif,
+    fontFamily: theme.font.display,
   },
   options: { gap: theme.spacing.md, marginTop: theme.spacing.lg },
   option: {
@@ -258,4 +258,4 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
   },
   ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
-});
+}));

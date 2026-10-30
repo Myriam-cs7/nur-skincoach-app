@@ -5,8 +5,7 @@ export type LedId = 'red' | 'blue' | 'green' | 'yellow' | 'cyan' | 'violet' | 'w
 
 export const LED_ORDER: LedId[] = ['red', 'blue', 'green', 'yellow', 'cyan', 'violet', 'white'];
 
-export const LED_META: Record<LedId, { hex: string; minutes: number }> = {
-  red: { hex: theme.color.ledRed, minutes: 15 },
+export const LED_META: Record<LedId, { hex: string; minutes: number }> = {  red: { hex: theme.color.ledRed, minutes: 15 },
   blue: { hex: theme.color.ledBlue, minutes: 12 },
   green: { hex: theme.color.ledGreen, minutes: 15 },
   yellow: { hex: theme.color.ledYellow, minutes: 12 },
@@ -16,6 +15,24 @@ export const LED_META: Record<LedId, { hex: string; minutes: number }> = {
 };
 
 export type LedText = { name: string; wavelength: string; tagline: string; action: string; best_for: string[] };
+
+/**
+ * What to dial on the real remote for each light, plus how honest we are about
+ * the evidence behind it. Nothing here is presented as a guarantee.
+ */
+export type Evidence = 'solid' | 'supported' | 'exploratory';
+
+export const LED_PROTOCOL: Record<LedId, {
+  mode: string; brightness: number; minutes: number; perWeek: number; evidence: Evidence;
+}> = {
+  red: { mode: 'Wrinkle Reduction', brightness: 2, minutes: 20, perWeek: 4, evidence: 'solid' },
+  blue: { mode: 'Oil Control', brightness: 2, minutes: 10, perWeek: 3, evidence: 'solid' },
+  green: { mode: 'Skin Beautification', brightness: 2, minutes: 10, perWeek: 2, evidence: 'exploratory' },
+  yellow: { mode: 'Skin Beautification', brightness: 1, minutes: 10, perWeek: 3, evidence: 'supported' },
+  cyan: { mode: 'Cleansing', brightness: 1, minutes: 10, perWeek: 3, evidence: 'supported' },
+  violet: { mode: 'Wrinkle Reduction', brightness: 2, minutes: 15, perWeek: 3, evidence: 'supported' },
+  white: { mode: 'Skin Beautification', brightness: 2, minutes: 15, perWeek: 2, evidence: 'supported' },
+};
 
 const FR: Record<LedId, LedText> = {
   red: { name: 'Rouge', wavelength: '633 nm', tagline: 'Anti-âge', action: 'Collagène & élastine', best_for: ['Rides', 'Fermeté', 'Éclat'] },

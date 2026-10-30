@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { theme, LED_COLORS, LED_NAMES_BY_LANG } from '../../src/theme';
+import { theme, LED_COLORS, LED_NAMES_BY_LANG, makeStyles } from '../../src/theme';
 import { GoldDivider, BrandHeader } from '../../src/ui';
 import { api, getStoredUserId, DiagnosisRecord, ProgressData, AccessResponse } from '../../src/api';
 import { useT, getLang } from '../../src/i18n';
 import ProgressCharts from '../../src/components/ProgressCharts';
+import { getPatchState, patchReminderVisible, setPatchState } from '../../src/patchTest';
 import {
   loadPref, savePref, requestPerm, getPermState, scheduleDailyReminder,
   cancelReminders, openSettings, remindersSupported, ReminderPref, DEFAULT_PREF,
@@ -28,6 +28,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [pref, setPref] = useState<ReminderPref>(DEFAULT_PREF);
   const [permBlocked, setPermBlocked] = useState(false);
+  const [showPatch, setShowPatch] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -62,6 +63,9 @@ export default function Home() {
       setPermBlocked((await getPermState()) === 'blocked' && p.enabled);
     })();
   }, []);
+  useFocusEffect(useCallback(() => {
+    (async () => setShowPatch(patchReminderVisible(await getPatchState())))();
+  }, []));
 
   const todayIdx = new Date().getDay();
   const todayDay = todayIdx === 0 ? 7 : todayIdx;
@@ -69,6 +73,7 @@ export default function Home() {
   const todayColorId = todayPlan?.led_color_id || null;
   const todayLedName = todayColorId ? (LED_NAMES_BY_LANG[lang]?.[todayColorId] || LED_COLORS[todayColorId]?.name) : null;
   const todayHex = todayColorId ? LED_COLORS[todayColorId]?.hex : null;
+  const sensitiveCare = !!diag?.data?.protocol?.sensitive_care;
 
   const completedToday = sessions.some((s) => new Date(s.date || s.created_at).toDateString() === new Date().toDateString());
   const streak = computeStreak(sessions);
@@ -158,22 +163,19 @@ export default function Home() {
           <View style={styles.heroWrap}>
             {todayColorId && todayHex ? (
               <>
-                <LinearGradient colors={[`${todayHex}55`, 'transparent']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
-                <View style={[styles.heroOrb, { backgroundColor: todayHex, shadowColor: todayHex }]} />
+                <View style={[styles.heroAccent, { backgroundColor: todayHex }]} />
                 <Text style={styles.heroKicker}>{t('home.today.kicker')}</Text>
-                <Text style={styles.heroTitle}>{todayLedName}</Text>
-                <View style={styles.heroMetaRow}>
-                  <View style={styles.heroPill}>
-                    <Feather name="clock" size={11} color={theme.color.brand} />
-                    <Text style={styles.heroPillTxt}>{todayPlan?.session_minutes} {t('common.minutes')}</Text>
-                  </View>
-                  {todayPlan?.intensity ? (
-                    <View style={styles.heroPill}>
-                      <Feather name="activity" size={11} color={theme.color.brand} />
-                      <Text style={styles.heroPillTxt}>{t('common.intensity')} {todayPlan.intensity}</Text>
-                    </View>
-                  ) : null}
+                <View style={styles.heroTitleRow}>
+                  <View style={[styles.heroDot, { backgroundColor: todayHex, shadowColor: todayHex }]} />
+                  <Text style={styles.heroTitle}>{todayLedName}</Text>
                 </View>
+                {/* The exact settings to dial on the remote */}
+                <View style={styles.settingsBox} testID="today-device-settings">
+                  <SettingRow label={t('device.mode')} value={todayPlan?.device_mode || '—'} />
+                  <SettingRow label={t('device.brightness')} value={`${todayPlan?.brightness ?? 1} / 3`} />
+                  <SettingRow label={t('device.timer')} value={`${todayPlan?.session_minutes ?? 15} ${t('common.minutes')}`} />
+                </View>
+                {sensitiveCare ? <Text style={styles.caution}>{t('device.caution')}</Text> : null}
                 <Text style={styles.heroSub}>{todayPlan?.notes}</Text>
                 {completedToday ? (
                   <View style={styles.doneRow}>
@@ -201,6 +203,38 @@ export default function Home() {
             <Stat label={t('home.stat.sessions')} value={`${sessions.length}`} icon="check" />
             <Stat label={t('home.stat.week')} value={`${weekCount(sessions)}/${weeklyTarget(diag)}`} icon="calendar" />
           </View>
+
+          {showPatch ? (
+            <View style={styles.patchCard} testID="patch-reminder">
+              <View style={styles.card2Row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>{t('home.patch.title')}</Text>
+                  <Text style={styles.cardSub}>{t('home.patch.sub')}</Text>
+                </View>
+                <Feather name="shield" size={18} color={theme.color.brand} />
+              </View>
+              <View style={styles.patchRow}>
+                <Pressable style={styles.patchCta} onPress={() => router.push('/patch-test')} testID="patch-open">
+                  <Text style={styles.patchCtaTxt}>{t('home.patch.cta')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={async () => { await setPatchState('later'); setShowPatch(false); }}
+                  testID="patch-dismiss"
+                >
+                  <Text style={styles.patchLater}>{t('home.patch.later')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+
+          <Pressable style={styles.maskCard} onPress={() => router.push('/mask')} testID="open-mask">
+            <Feather name="book-open" size={16} color={theme.color.brand} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>{t('home.mask.title')}</Text>
+              <Text style={styles.cardSub}>{t('home.mask.sub')}</Text>
+            </View>
+            <Feather name="chevron-right" size={16} color={theme.color.onSurfaceSecondary} />
+          </Pressable>
 
           <View style={styles.reminderCard}>
             <View style={styles.card2Row}>
@@ -282,6 +316,16 @@ function Stat({ label, value, icon }: { label: string; value: string; icon: any 
   );
 }
 
+/** One line of the "prescription": label on the left, setting on the right. */
+function SettingRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.settingRow}>
+      <Text style={styles.settingLabel} numberOfLines={1}>{label}</Text>
+      <Text style={styles.settingValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
+    </View>
+  );
+}
+
 function computeStreak(sessions: any[]): number {
   if (!sessions.length) return 0;
   const days = new Set(sessions.map((s) => new Date(s.date || s.created_at).toDateString()));
@@ -303,13 +347,13 @@ function weeklyTarget(diag: DiagnosisRecord | null): number {
   return diag.data.protocol.weekly_schedule.filter((d) => d.led_color_id).length;
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   // kept for accessibility/tests, visually replaced by BrandHeader
   hiddenTitle: { height: 0, opacity: 0, fontSize: 1, fontFamily: theme.font.sans },
   root: { flex: 1, backgroundColor: theme.color.surface },
   center: { alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 34, marginTop: theme.spacing.md, letterSpacing: -0.5 },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 34, marginTop: theme.spacing.md, letterSpacing: -0.5 },
   dateTxt: { ...theme.type.bodySm, color: theme.color.onSurfaceSecondary, marginTop: 2, textTransform: 'capitalize', textAlign: 'center' },
   heroWrap: {
     padding: theme.spacing.xl, borderRadius: theme.radius.lg,
@@ -318,13 +362,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden', gap: theme.spacing.sm, minHeight: 210, justifyContent: 'center',
     ...theme.shadow.card,
   },
-  heroOrb: { position: 'absolute', width: 160, height: 160, borderRadius: 999, right: -50, top: -40, opacity: 0.55, shadowOpacity: 0.9, shadowRadius: 70, shadowOffset: { width: 0, height: 0 } },
+  heroAccent: { position: 'absolute', top: 0, left: 0, right: 0, height: 2 },
+  heroTitleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  heroDot: { width: 10, height: 10, borderRadius: 999, shadowOpacity: 0.9, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
   heroKicker: { color: theme.color.brand, letterSpacing: 2.5, fontSize: 10, fontFamily: theme.font.sansMedium, fontWeight: '700' },
-  heroTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 30, letterSpacing: -0.3 },
+  heroTitle: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 30, letterSpacing: -0.3 },
   heroSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, lineHeight: 18 },
-  heroMetaRow: { flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.sm, marginBottom: theme.spacing.xs },
-  heroPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.radius.pill, backgroundColor: theme.color.brandTint, borderWidth: 1, borderColor: theme.color.brand },
-  heroPillTxt: { color: theme.color.brand, fontSize: 11, fontFamily: theme.font.sansMedium, fontWeight: '600', textTransform: 'capitalize' },
   heroCta: {
     marginTop: theme.spacing.md, flexDirection: 'row', alignSelf: 'flex-start',
     backgroundColor: theme.color.brand, paddingHorizontal: theme.spacing.lg, paddingVertical: 10,
@@ -334,6 +377,32 @@ const styles = StyleSheet.create({
   heroCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 0.5 },
   doneRow: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: theme.spacing.md },
   doneTxt: { color: theme.color.success, fontSize: 13, fontFamily: theme.font.sansMedium, fontWeight: '600' },
+  settingsBox: { marginTop: theme.spacing.md, borderTopWidth: 1, borderTopColor: theme.color.border },
+  settingRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: theme.color.border, gap: theme.spacing.md,
+  },
+  settingLabel: { ...theme.type.cardLabel, color: theme.color.onSurfaceSecondary, textTransform: 'uppercase' },
+  settingValue: { ...theme.type.h2, color: theme.color.onSurface, flexShrink: 1, textAlign: 'right' },
+  caution: { ...theme.type.micro, color: theme.color.brand, marginTop: theme.spacing.sm },
+  patchCard: {
+    marginTop: theme.spacing.lg, backgroundColor: theme.color.surfaceSecondary,
+    borderRadius: theme.radius.md, padding: theme.spacing.lg,
+    borderWidth: 1, borderColor: theme.color.borderGold, gap: theme.spacing.md,
+  },
+  patchRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
+  patchCta: {
+    backgroundColor: theme.color.brand, borderRadius: theme.radius.pill,
+    paddingVertical: 11, paddingHorizontal: theme.spacing.xl,
+  },
+  patchCtaTxt: { ...theme.type.button, color: theme.color.onBrand },
+  patchLater: { ...theme.type.bodySm, color: theme.color.onSurfaceSecondary, textDecorationLine: 'underline' },
+  maskCard: {
+    flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md,
+    marginTop: theme.spacing.lg, backgroundColor: theme.color.surfaceSecondary,
+    borderRadius: theme.radius.md, padding: theme.spacing.lg,
+    borderWidth: 1, borderColor: theme.color.border,
+  },
   statsRow: { flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.lg },
   stat: { flex: 1, minWidth: 0, backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.md, paddingVertical: theme.spacing.lg, paddingHorizontal: theme.spacing.md, borderWidth: 1, borderColor: theme.color.borderGold, gap: 6, ...theme.shadow.soft },
   statValue: { ...theme.type.stat, color: theme.color.onSurface },
@@ -389,7 +458,7 @@ const styles = StyleSheet.create({
     width: 58, height: 58, borderRadius: 999, backgroundColor: theme.color.brandTint,
     borderWidth: 1, borderColor: theme.color.borderGold, alignItems: 'center', justifyContent: 'center',
   },
-  pausedTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 24, textAlign: 'center' },
+  pausedTitle: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 24, textAlign: 'center' },
   pausedSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   pausedCta: {
     flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, backgroundColor: theme.color.brand,
@@ -398,4 +467,4 @@ const styles = StyleSheet.create({
   },
   pausedCtaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 0.5 },
   pausedMail: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans },
-});
+}));

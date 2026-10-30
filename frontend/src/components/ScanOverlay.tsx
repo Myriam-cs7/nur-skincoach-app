@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { theme } from '../theme';
+import { theme, makeStyles } from '../theme';
 
 type Props = { height: number; label: string };
 
@@ -31,9 +31,9 @@ export default function ScanOverlay({ height, label }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   wrap: { backgroundColor: 'rgba(6,6,10,0.35)', borderRadius: theme.radius.md, overflow: 'hidden', justifyContent: 'flex-end' },
   line: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: theme.color.brandLight, shadowColor: theme.color.brand, shadowOpacity: 0.9, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
   labelBox: { backgroundColor: 'rgba(6,6,10,0.75)', paddingVertical: 6, paddingHorizontal: theme.spacing.md },
   label: { color: theme.color.brandLight, fontSize: 11, fontFamily: theme.font.sans, letterSpacing: 1.5, textAlign: 'center' },
-});
+}));

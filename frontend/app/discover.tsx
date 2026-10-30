@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
-import { theme } from '../src/theme';
+import { theme, makeStyles } from '../src/theme';
 import { Wordmark, GoldDivider, SectionLabel } from '../src/ui';
 import { api } from '../src/api';
 import { useT, getLang } from '../src/i18n';
@@ -307,7 +307,7 @@ function PrescriptionStep({ p, shop, t }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm },
   kicker: { color: theme.color.brand, fontSize: 10, fontFamily: theme.font.sansMedium, letterSpacing: 3, fontWeight: '700' },
@@ -319,8 +319,8 @@ const styles = StyleSheet.create({
     shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
     marginTop: theme.spacing.xl, marginBottom: theme.spacing.md,
   },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 28, letterSpacing: -0.3, textAlign: 'center' },
-  titleLg: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 32, letterSpacing: -0.5, textAlign: 'center', marginTop: theme.spacing.sm },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 28, letterSpacing: -0.3, textAlign: 'center' },
+  titleLg: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 32, letterSpacing: -0.5, textAlign: 'center', marginTop: theme.spacing.sm },
   body: { color: theme.color.onSurfaceTertiary, fontSize: 14, fontFamily: theme.font.sans, lineHeight: 22, textAlign: 'center', letterSpacing: 0.2 },
   bulletList: { gap: theme.spacing.sm, marginTop: theme.spacing.lg, marginBottom: theme.spacing.xl, paddingHorizontal: theme.spacing.sm },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md, paddingVertical: 6 },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   progressNum: { color: theme.color.brand, fontSize: 10, fontFamily: theme.font.sansMedium, letterSpacing: 2, fontWeight: '700' },
   progressBar: { height: 1, backgroundColor: theme.color.divider, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: theme.color.brand },
-  qTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 22, lineHeight: 30, marginTop: theme.spacing.md, marginBottom: theme.spacing.xl, letterSpacing: -0.2 },
+  qTitle: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 22, lineHeight: 30, marginTop: theme.spacing.md, marginBottom: theme.spacing.xl, letterSpacing: -0.2 },
   optList: { gap: theme.spacing.md },
   opt: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.border, padding: theme.spacing.lg, borderRadius: theme.radius.md },
   optSelected: { borderColor: theme.color.brand, backgroundColor: theme.color.brandTint },
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.md,
     paddingHorizontal: theme.spacing.lg, paddingVertical: 18, color: theme.color.onSurface,
     fontSize: 16, borderWidth: 1, borderColor: theme.color.borderGold,
-    fontFamily: theme.font.serif, marginTop: theme.spacing.lg,
+    fontFamily: theme.font.display, marginTop: theme.spacing.lg,
   },
   consentBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.sm,
@@ -380,4 +380,4 @@ const styles = StyleSheet.create({
   shopCtaTitle: { color: theme.color.onBrand, fontWeight: '700', fontSize: 15, fontFamily: theme.font.sansMedium, letterSpacing: 0.5 },
   shopCtaSub: { color: theme.color.onBrand, opacity: 0.7, fontSize: 11, marginTop: 4, letterSpacing: 1, fontFamily: theme.font.mono },
   footnote: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, textAlign: 'center', marginTop: theme.spacing.md, opacity: 0.6, lineHeight: 16 },
-});
+}));

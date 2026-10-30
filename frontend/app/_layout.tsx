@@ -2,12 +2,13 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
+import { useColorScheme } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { useBrandFonts } from "../src/hooks/use-brand-fonts";
 import { initLang } from "../src/i18n";
-import { theme } from "../src/theme";
+import { setScheme, theme } from "../src/theme";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -15,6 +16,9 @@ export default function RootLayout() {
   const [loaded, error] = useIconFonts();
   const [brandLoaded, brandError] = useBrandFonts();
   const [langReady, setLangReady] = useState(false);
+  // Black is the brand default: anything other than an explicit "light" phone stays dark
+  const scheme = useColorScheme() === "light" ? "light" : "dark";
+  setScheme(scheme);
 
   useEffect(() => { initLang().then(() => setLangReady(true)); }, []);
 
@@ -27,8 +31,8 @@ export default function RootLayout() {
   if ((!loaded && !error) || (!brandLoaded && !brandError) || !langReady) return null;
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
+    <SafeAreaProvider key={scheme}>
+      <StatusBar style={scheme === "light" ? "dark" : "light"} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.color.surface } }} />
     </SafeAreaProvider>
   );

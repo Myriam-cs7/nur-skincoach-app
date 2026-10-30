@@ -144,7 +144,7 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
 _OTP_COPY = {
     "fr": {
         "subject": "Votre code d'activation Nūr : {code}",
-        "hello": "Bienvenue dans votre At-Home Clinic",
+        "hello": "Bienvenue dans votre rituel Nūr",
         "intro": "Voici votre code d'activation personnel. Saisissez-le dans l'application pour ouvrir votre Skincoach.",
         "valid": "Ce code est valable 10 minutes.",
         "ignore": "Vous n'avez pas demandé ce code ? Ignorez simplement ce message, aucun accès n'est créé.",
@@ -152,7 +152,7 @@ _OTP_COPY = {
     },
     "en": {
         "subject": "Your Nūr activation code: {code}",
-        "hello": "Welcome to your At-Home Clinic",
+        "hello": "Welcome to your Nūr ritual",
         "intro": "Here is your personal activation code. Enter it in the app to open your Skincoach.",
         "valid": "This code is valid for 10 minutes.",
         "ignore": "Didn't request this code? Simply ignore this message — no access is created.",
@@ -160,7 +160,7 @@ _OTP_COPY = {
     },
     "es": {
         "subject": "Tu código de activación Nūr: {code}",
-        "hello": "Bienvenida a tu At-Home Clinic",
+        "hello": "Bienvenida a tu ritual Nūr",
         "intro": "Este es tu código de activación personal. Introdúcelo en la aplicación para abrir tu Skincoach.",
         "valid": "Este código es válido durante 10 minutos.",
         "ignore": "¿No lo has solicitado? Ignora este mensaje, no se crea ningún acceso.",
@@ -168,7 +168,7 @@ _OTP_COPY = {
     },
     "it": {
         "subject": "Il tuo codice di attivazione Nūr: {code}",
-        "hello": "Benvenuta nella tua At-Home Clinic",
+        "hello": "Benvenuta nel tuo rituale Nūr",
         "intro": "Ecco il tuo codice di attivazione personale. Inseriscilo nell'app per aprire il tuo Skincoach.",
         "valid": "Questo codice è valido per 10 minuti.",
         "ignore": "Non hai richiesto questo codice? Ignora questo messaggio, nessun accesso viene creato.",
@@ -176,7 +176,7 @@ _OTP_COPY = {
     },
     "de": {
         "subject": "Ihr Nūr Aktivierungscode: {code}",
-        "hello": "Willkommen in Ihrer At-Home Clinic",
+        "hello": "Willkommen zu Ihrem Nūr Ritual",
         "intro": "Hier ist Ihr persönlicher Aktivierungscode. Geben Sie ihn in der App ein, um Ihren Skincoach zu öffnen.",
         "valid": "Dieser Code ist 10 Minuten gültig.",
         "ignore": "Sie haben diesen Code nicht angefordert? Ignorieren Sie diese Nachricht, es wird kein Zugang erstellt.",
@@ -184,7 +184,7 @@ _OTP_COPY = {
     },
     "ru": {
         "subject": "Ваш код активации Nūr: {code}",
-        "hello": "Добро пожаловать в вашу At-Home Clinic",
+        "hello": "Ваш ритуал Nūr",
         "intro": "Это ваш персональный код активации. Введите его в приложении, чтобы открыть Skincoach.",
         "valid": "Код действует 10 минут.",
         "ignore": "Не запрашивали код? Просто проигнорируйте это письмо — доступ не создаётся.",
@@ -192,7 +192,7 @@ _OTP_COPY = {
     },
     "ar": {
         "subject": "رمز تنشيط نُور: {code}",
-        "hello": "مرحباً بكِ في عيادتك المنزلية",
+        "hello": "مرحباً بكِ في روتين نُور",
         "intro": "هذا رمز التنشيط الخاص بكِ. أدخليه في التطبيق لفتح Skincoach.",
         "valid": "الرمز صالح لمدة 10 دقائق.",
         "ignore": "لم تطلبي هذا الرمز؟ تجاهلي هذه الرسالة، لن يتم إنشاء أي حساب.",

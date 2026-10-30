@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
-import { theme } from '../src/theme';
+import { theme, makeStyles } from '../src/theme';
 import { api, getStoredUserId } from '../src/api';
 import { useT, getLang } from '../src/i18n';
 import { Wordmark } from '../src/ui';
@@ -85,14 +85,14 @@ export default function Analyzing() {
 
 const ORB = width * 0.75;
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   safe: { flex: 1, justifyContent: 'space-between', padding: theme.spacing.xl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   orbWrap: { width: ORB, height: ORB, position: 'absolute' },
   orb: { position: 'absolute', width: 22, height: 22, borderRadius: 999, opacity: 0.85, shadowOpacity: 0.9, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, shadowColor: '#fff' },
   centerInner: { alignItems: 'center', gap: 12 },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 32, letterSpacing: -0.3 },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 32, letterSpacing: -0.3 },
   steps: { gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   stepDot: { width: 5, height: 5, borderRadius: 999, backgroundColor: theme.color.border },
@@ -100,4 +100,4 @@ const styles = StyleSheet.create({
   stepTxt: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, letterSpacing: 0.2 },
   stepTxtActive: { color: theme.color.onSurface },
   error: { color: theme.color.error, textAlign: 'center' },
-});
+}));

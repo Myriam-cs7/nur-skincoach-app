@@ -1,7 +1,7 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { theme } from '../theme';
+import { theme, makeStyles } from '../theme';
 import { useT } from '../i18n';
 
 type Props = {
@@ -48,7 +48,7 @@ function Bullet({ text }: { text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   backdrop: { flex: 1, backgroundColor: 'rgba(6,6,10,0.82)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: theme.color.surfaceSecondary,
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     width: 52, height: 52, borderRadius: 999, backgroundColor: theme.color.brandTint,
     borderWidth: 1, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center',
   },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 22, textAlign: 'center' },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 22, textAlign: 'center' },
   body: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, lineHeight: 20, textAlign: 'center' },
   bullets: { gap: theme.spacing.sm, alignSelf: 'stretch', paddingVertical: theme.spacing.xs },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.sm },
@@ -77,4 +77,4 @@ const styles = StyleSheet.create({
   },
   ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 13, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
   decline: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textDecorationLine: 'underline' },
-});
+}));

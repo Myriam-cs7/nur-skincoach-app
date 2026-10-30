@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { theme } from '../theme';
+import { Animated, Easing, View } from 'react-native';
+import { theme, makeStyles } from '../theme';
 
 export default function TypingDots() {
   const dots = useRef([new Animated.Value(0.3), new Animated.Value(0.3), new Animated.Value(0.3)]).current;
@@ -29,7 +29,7 @@ export default function TypingDots() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 },
   dot: { width: 7, height: 7, borderRadius: 999, backgroundColor: theme.color.brand },
-});
+}));

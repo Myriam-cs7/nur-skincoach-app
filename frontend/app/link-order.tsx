@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import { theme } from '../src/theme';
+import { theme, makeStyles } from '../src/theme';
 import { GoldDivider, BrandHeader } from '../src/ui';
 import { api, getStoredUserId } from '../src/api';
 import { useT } from '../src/i18n';
@@ -107,7 +107,7 @@ export default function LinkOrder() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   scroll: { padding: theme.spacing.xl, flexGrow: 1, justifyContent: 'center' },
   back: { position: 'absolute', top: 0, left: theme.spacing.xl },
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: theme.spacing.lg,
     shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
   },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 28, textAlign: 'center', marginTop: theme.spacing.md },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 28, textAlign: 'center', marginTop: theme.spacing.md },
   sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   input: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
@@ -134,4 +134,4 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xl, ...theme.shadow.cta,
   },
   ctaTxt: { color: theme.color.onBrand, fontWeight: '700', fontSize: 14, fontFamily: theme.font.sansMedium, letterSpacing: 1 },
-});
+}));

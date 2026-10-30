@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { theme } from '../../src/theme';
+import { theme, makeStyles } from '../../src/theme';
 import { SectionLabel, GoldDivider, BrandHeader } from '../../src/ui';
 import { api, getStoredUserId, clearStoredUser } from '../../src/api';
 import { useT, setLang, getLang, Lang } from '../../src/i18n';
@@ -93,6 +93,24 @@ export default function Profile() {
           <Row label="Hydration" value={intake.water_intake} />
 
           <SectionLabel label={t('profile.actions')} />
+          <Pressable style={styles.actionRow} onPress={() => router.push('/mask')} testID="open-mask">
+            <Feather name="book-open" size={16} color={theme.color.brand} />
+            <Text style={styles.actionTxt}>{t('profile.mask')}</Text>
+            <Feather name="chevron-right" size={16} color={theme.color.onSurfaceSecondary} />
+          </Pressable>
+          <Pressable style={styles.actionRow} onPress={() => router.push('/patch-test')} testID="open-patch-test">
+            <Feather name="shield" size={16} color={theme.color.brand} />
+            <Text style={styles.actionTxt}>{t('profile.patch')}</Text>
+            <Feather name="chevron-right" size={16} color={theme.color.onSurfaceSecondary} />
+          </Pressable>
+          <Pressable style={styles.actionRow} onPress={() => router.push('/onboarding')} testID="redo-assessment">
+            <Feather name="refresh-cw" size={16} color={theme.color.brand} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.actionTxt}>{t('profile.redo_full')}</Text>
+              <Text style={styles.actionHint}>{t('profile.redo_full.hint')}</Text>
+            </View>
+            <Feather name="chevron-right" size={16} color={theme.color.onSurfaceSecondary} />
+          </Pressable>
           <Pressable style={styles.actionRow} onPress={onRedoScan} testID="redo-scan">
             <Feather name="camera" size={16} color={theme.color.brand} />
             <Text style={styles.actionTxt}>{t('profile.redo')}</Text>
@@ -160,13 +178,13 @@ function Row({ label, value }: { label: string; value?: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   // kept for accessibility/tests, visually replaced by BrandHeader
   hiddenTitle: { height: 0, opacity: 0, fontSize: 1, fontFamily: theme.font.sans },
   root: { flex: 1, backgroundColor: theme.color.surface },
   center: { alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 32, marginTop: theme.spacing.lg, letterSpacing: -0.5 },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 32, marginTop: theme.spacing.lg, letterSpacing: -0.5 },
   code: { color: theme.color.onSurfaceSecondary, fontSize: 11, marginTop: 4, letterSpacing: 2, fontFamily: theme.font.mono },
   langRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.md, marginBottom: theme.spacing.xl },
   langChip: { paddingHorizontal: theme.spacing.lg, paddingVertical: 10, borderRadius: theme.radius.pill, borderWidth: 1, borderColor: theme.color.border, backgroundColor: theme.color.surfaceSecondary },
@@ -199,4 +217,4 @@ const styles = StyleSheet.create({
   confirmCancel: { ...theme.type.body, color: theme.color.onSurfaceSecondary, textDecorationLine: 'underline' },
   privacyBody: { backgroundColor: theme.color.surfaceSecondary, padding: theme.spacing.lg, borderRadius: theme.radius.md, marginVertical: theme.spacing.md, borderWidth: 1, borderColor: theme.color.borderGold },
   privacyTxt: { color: theme.color.onSurfaceTertiary, fontSize: 12, fontFamily: theme.font.sans, lineHeight: 20 },
-});
+}));

@@ -27,7 +27,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
-import { theme } from '../../src/theme';
+import { theme, makeStyles } from '../../src/theme';
 import { GoldDivider, BrandHeader } from '../../src/ui';
 import { api, getStoredUserId } from '../../src/api';
 import { useT, getLang } from '../../src/i18n';
@@ -124,6 +124,16 @@ export default function Coach() {
       const userId = await getStoredUserId();
       if (!userId) throw new Error('no_user');
       const r = await api.chat(userId, body || t('coach.photo.msg'), getLang(), photo?.b64);
+      if (r.rejected) {
+        // Photo refused: it leaves no trace in her conversation
+        setMessages((prev) => [
+          ...prev.filter((m) => m.id !== userMsg.id),
+          { id: uid(), role: 'assistant', content: r.reply },
+        ]);
+        setAskPhoto(true);
+        playUiSound('receive');
+        return;
+      }
       setMessages((prev) => [
         ...prev.map((m) => (m.id === userMsg.id ? { ...m, analyzing: false } : m)),
         { id: uid(), role: 'assistant', content: r.reply, blocked: r.blocked },
@@ -375,10 +385,6 @@ export default function Coach() {
             <View style={styles.empty}>
               <View style={styles.portraitCard}>
                 <Image source={PORTRAIT} style={styles.portrait} resizeMode="cover" />
-                <View style={styles.portraitCaption}>
-                  <Text style={styles.portraitName}>Nūr Skincoach</Text>
-                  <Text style={styles.portraitRole}>{t('coach.kicker')}</Text>
-                </View>
               </View>
               <Text style={styles.intro}>{t('coach.intro')}</Text>
               <Pressable style={styles.startBtn} onPress={() => sendMessage(t('coach.startMsg'))} testID="coach-start">
@@ -441,6 +447,7 @@ export default function Coach() {
                 <Text style={styles.photoCardTitle}>{t('coach.photo.title')}</Text>
               </View>
               <Text style={styles.photoCardTip}>{t('coach.photo.tip')}</Text>
+              <Text style={styles.photoCardPrivacy}>{t('coach.photo.privacy')}</Text>
               <Pressable style={styles.photoCta} onPress={openCamera} testID="coach-open-camera">
                 <Text style={styles.photoCtaTxt}>{t('coach.photo.ask')}</Text>
               </Pressable>
@@ -600,11 +607,11 @@ export default function Coach() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   header: { alignItems: 'center', paddingTop: theme.spacing.sm, paddingHorizontal: theme.spacing.xl },
   avatarRow: { marginTop: theme.spacing.sm },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 24, marginTop: theme.spacing.xs, letterSpacing: -0.3 },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 24, marginTop: theme.spacing.xs, letterSpacing: -0.3 },
   status: { color: theme.color.brand, fontSize: 12, fontFamily: theme.font.sans, letterSpacing: 1.6, marginTop: theme.spacing.sm, textTransform: 'uppercase' },
   messages: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl, gap: theme.spacing.md, flexGrow: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.lg, paddingTop: theme.spacing.md },
@@ -614,9 +621,6 @@ const styles = StyleSheet.create({
     ...theme.shadow.card,
   },
   portrait: { width: '100%', height: 260 },
-  portraitCaption: { paddingVertical: theme.spacing.md, alignItems: 'center', gap: 2, backgroundColor: theme.color.surfaceElevated },
-  portraitName: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 19 },
-  portraitRole: { color: theme.color.brand, fontSize: 9, fontFamily: theme.font.sans, letterSpacing: 2 },
   intro: { color: theme.color.onSurfaceTertiary, fontSize: 14, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 22, paddingHorizontal: theme.spacing.md },
   startBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm,
@@ -651,6 +655,7 @@ const styles = StyleSheet.create({
   photoCardHead: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   photoCardTitle: { color: theme.color.onSurface, fontSize: 13, fontFamily: theme.font.sans, letterSpacing: 1, textTransform: 'uppercase' },
   photoCardTip: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 18 },
+  photoCardPrivacy: { ...theme.type.micro, color: theme.color.brand, textAlign: 'center' },
   photoCta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill,
     paddingHorizontal: theme.spacing.xl, paddingVertical: 13, marginTop: theme.spacing.xs, ...theme.shadow.cta,
@@ -685,7 +690,7 @@ const styles = StyleSheet.create({
     width: 56, height: 56, borderRadius: 999, backgroundColor: theme.color.brandTint,
     borderWidth: 1, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center',
   },
-  sheetTitle: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 22, textAlign: 'center' },
+  sheetTitle: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 22, textAlign: 'center' },
   sheetSub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   sheetCta: {
     backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingHorizontal: theme.spacing.xl,
@@ -709,4 +714,4 @@ const styles = StyleSheet.create({
   camPerm: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.md, paddingHorizontal: theme.spacing.xl },
   shutterRing: { width: 76, height: 76, borderRadius: 999, borderWidth: 2, borderColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
   shutterCore: { width: 60, height: 60, borderRadius: 999, backgroundColor: theme.color.brand, alignItems: 'center', justifyContent: 'center' },
-});
+}));

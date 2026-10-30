@@ -7,7 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import { theme } from '../src/theme';
+import { theme, makeStyles } from '../src/theme';
 import { GoldDivider, BrandHeader } from '../src/ui';
 import { api, setStoredUser, AccessResponse } from '../src/api';
 import { useT, getLang } from '../src/i18n';
@@ -171,10 +171,6 @@ export default function Activate() {
                 onPress={() => sendCode()}
                 testID="gate-verify"
               />
-              <Pressable style={styles.ghost} onPress={() => router.push('/scan-qr')} testID="gate-scan-card">
-                <Feather name="maximize" size={14} color={theme.color.brandDeep} />
-                <Text style={styles.ghostTxt}>{t('gate.scan_card')}</Text>
-              </Pressable>
               <Pressable onPress={() => { setStep('partner'); setErr(null); }} style={styles.linkWrap} testID="gate-switch-mode">
                 <Text style={styles.link}>{t('gate.have_code')}</Text>
               </Pressable>
@@ -182,9 +178,6 @@ export default function Activate() {
                 <Feather name="lock" size={10} color={theme.color.brand} />
                 <Text style={styles.whyTxt}>{t('gate.why')}</Text>
               </View>
-              <Pressable onPress={() => router.replace('/discover')} style={styles.linkWrap} testID="no-code-link">
-                <Text style={styles.link}>{t('gate.no_order')}</Text>
-              </Pressable>
             </>
           ) : null}
 
@@ -280,7 +273,7 @@ function Cta({ label, busy, disabled, onPress, testID }: {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   scroll: { padding: theme.spacing.xl, flexGrow: 1, justifyContent: 'center' },
   back: { position: 'absolute', top: 0, left: theme.spacing.xl },
@@ -290,7 +283,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: theme.spacing.lg,
     shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
   },
-  title: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 29, textAlign: 'center', marginTop: theme.spacing.md, letterSpacing: -0.5 },
+  title: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 29, textAlign: 'center', marginTop: theme.spacing.md, letterSpacing: -0.5 },
   sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   input: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
@@ -324,4 +317,4 @@ const styles = StyleSheet.create({
   link: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', textDecorationLine: 'underline' },
   whyRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.md },
   whyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, opacity: 0.85, flex: 1, lineHeight: 15 },
-});
+}));

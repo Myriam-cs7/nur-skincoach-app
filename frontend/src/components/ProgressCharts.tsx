@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Dimensions } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
 import { Feather } from '@expo/vector-icons';
-import { theme, LED_COLORS, LED_NAMES_BY_LANG } from '../theme';
+import { theme, LED_COLORS, LED_NAMES_BY_LANG, makeStyles } from '../theme';
 import { SectionLabel } from '../ui';
 import { ProgressData } from '../api';
 import { t, getLang } from '../i18n';
@@ -161,13 +161,13 @@ function Empty({ text }: { text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(() => ({
   kpiRow: { flexDirection: 'row', gap: theme.spacing.md, marginTop: theme.spacing.md },
   kpi: {
     flex: 1, backgroundColor: theme.color.surfaceSecondary, borderRadius: theme.radius.md,
     padding: theme.spacing.lg, borderWidth: 1, borderColor: theme.color.borderGold, gap: 4,
   },
-  kpiValue: { color: theme.color.onSurface, fontFamily: theme.font.serif, fontSize: 28 },
+  kpiValue: { color: theme.color.onSurface, fontFamily: theme.font.display, fontSize: 28 },
   kpiLabel: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, letterSpacing: 1.4, textTransform: 'uppercase' },
   card: {
     marginTop: theme.spacing.md, backgroundColor: theme.color.surfaceSecondary,
@@ -187,4 +187,4 @@ const styles = StyleSheet.create({
   track: { flex: 1, height: 6, borderRadius: 999, backgroundColor: theme.color.surfaceTertiary, overflow: 'hidden' },
   fill: { height: 6, borderRadius: 999 },
   colorVal: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, width: 36, textAlign: 'right' },
-});
+}));

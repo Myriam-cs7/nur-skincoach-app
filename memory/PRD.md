@@ -359,3 +359,51 @@ or champagne `#C9A961` — fond noir conservé comme demandé.
 bout, suppression protégée par session, non-régressions). Frontend : les 3 bugs signalés sont
 corrigés et vérifiés sur 6 écrans, plus retest final 7/7 (libellé « Série », modale de
 suppression, suppression réelle d'un compte jetable, 5 onglets sans erreur).
+
+---
+
+# Session juin 2026 (étape 1 beauty tech) — identité, rituel réel, accès d'essai
+
+Plan validé par la cliente : donner à l'app une écriture **beauty tech** (esprit Medicube), aligner
+le rituel sur le vrai boîtier, cadrer le Skincoach, et ouvrir une version d'essai pour la marque
+et les influenceuses.
+
+## Écriture visuelle
+- **Plus aucun serif** : Manrope (titres, chiffres, boutons) + Inter (textes) chargés par
+  `src/hooks/use-brand-fonts.ts`. Cormorant et DM Sans supprimés.
+- **Deux ambiances** : `src/theme.ts` expose `makeStyles()` (remplace `StyleSheet.create`) qui
+  construit les deux palettes et sert celle de l'appareil ; `setScheme()` est appelé par le layout
+  racine depuis `useColorScheme()`. Le noir reste la valeur par défaut.
+- Palette resserrée : noir `#000000` / blanc `#FFFFFF`, gris, or champagne (`#C9A961` en sombre,
+  `#8A6D2B` en clair pour rester lisible). Les 7 LED sont les seules couleurs vives.
+- Logo : variantes claires générées (`nur-logo-light.png`, `nur-logo-header-light.png`).
+- Ornements retirés : plus de ◆ dans `GoldDivider`, plus d'orbes lumineuses (accueil, bibliothèque).
+
+## Contenu
+- « AT-HOME CLINIC » retiré partout (app + e-mails + prompts) ; **« YOUR SKIN, YOUR PROTOCOL »**
+  apparaît à deux endroits seulement : surtitre de l'accueil et sous-titre du tableau de bord.
+- Accueil réduit : signature, 7 points LED, logo, titre, **un seul bouton** et la ligne de
+  confidentialité. Supprimés : sous-titre marketing, bouton « Scanner ma carte », prescription
+  gratuite, copyright. L'écran `/scan-qr` a été supprimé.
+- **Rituel fidèle au boîtier** : chaque jour affiche MODE (un des 4 modes sérigraphiés),
+  LUMINOSITÉ (1-3) et MINUTEUR (5/10/15/20) — dérivés côté serveur par `normalize_protocol()`.
+  Peau sensible ou couperose → luminosité 1 et séances ≤ 10 min + mot de prudence ;
+  rides → rouge/violet, 15-20 min.
+- **Bibliothèque des 7 lumières** : réglages du boîtier + séances par semaine + niveau de certitude
+  honnête (solide / soutenu / piste exploratoire).
+- **Skincoach** : posture d'experte, jamais de diagnostic, première question toujours
+  « Your concern », 7 champs de résultats, refus net des photos non conformes (`[REJECT]` →
+  `rejected: true`, aucune trace dans l'historique) et des provocations, actifs et types de
+  produits uniquement.
+- **Photo caméra uniquement** (galerie retirée de `/scan`) + rappel « ni enregistrée, ni conservée,
+  ni partagée » à chaque demande.
+- **Nouveaux écrans** : `/mask` (branchement, 6 étapes, boutons, charge, entretien, rythme,
+  précautions) et `/patch-test` (test de sensibilité 10 min, reportable, non bloquant).
+- **Code d'essai `0000`** multi-usage pour la marque et les créatrices + « recommencer mon bilan »
+  dans le profil.
+
+## Étapes suivantes (déjà cadrées avec la cliente)
+- Étape 2 : Skin Analysis spectaculaire (tracé du visage animé, zones révélées, fiche de scores
+  par critère et suivi) + illustrations du livret redessinées.
+- Étape 3 : écran de séance plein écran (minuteur synchronisé, signal de fin, enregistrement
+  automatique) puis retrait du code `0000` avant publication sur les stores.

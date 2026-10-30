@@ -1,101 +1,203 @@
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
-export const theme = {
-  color: {
-    // Deep "At-Home Clinic" dark palette (brand charter: nurprotocol.com)
-    surface: '#050505',
-    onSurface: '#FBF7F0',
-    surfaceSecondary: '#141414',
-    onSurfaceSecondary: '#8F8A80',
-    surfaceTertiary: '#1E1E1E',
-    onSurfaceTertiary: '#E8E3DA',
-    surfaceElevated: '#1A1A1A',
-    // Champagne gold from the logo
-    brand: '#C9A961',
-    brandLight: '#E6CC85',
-    brandSoft: '#8C713B',
-    brandTint: '#1C1710',
-    brandDeep: '#C9A961',
-    onBrand: '#050505',
-    onCamera: '#FFF8EA',
-    success: '#7AA17A',
-    error: '#C75D5D',
-    border: '#2A2A2A',
-    borderStrong: '#3A3A3A',
-    borderGold: 'rgba(201,169,97,0.25)',
-    divider: '#1A1A1A',
-    // 7 LED modes of the Nūr mask
-    ledRed: '#FF4A4A',
-    ledBlue: '#3399FF',
-    ledGreen: '#34C759',
-    ledYellow: '#FFCC00',
-    ledCyan: '#32ADE6',
-    ledViolet: '#BF5AF2',
-    ledWhite: '#FFF6E0',
+/**
+ * Nūr Protocol design system — beauty tech.
+ *
+ * Two ambiences: deep black (brand default) and clinical white, driven by the
+ * phone's own appearance setting. Styles are declared through `makeStyles`,
+ * which builds BOTH palettes up front and serves the active one, so screens
+ * keep writing `styles.foo` and `theme.color.bar` exactly as before.
+ *
+ * Only the 7 LED colours are vivid — everything else is black, white, grey and
+ * a thin line of champagne gold.
+ */
+
+export type Scheme = 'dark' | 'light';
+
+const LED = {
+  ledRed: '#FF4A4A',
+  ledBlue: '#3399FF',
+  ledGreen: '#34C759',
+  ledYellow: '#FFCC00',
+  ledCyan: '#32ADE6',
+  ledViolet: '#BF5AF2',
+  ledWhite: '#FFF6E0',
+};
+
+const DARK = {
+  surface: '#000000',
+  onSurface: '#FFFFFF',
+  surfaceSecondary: '#0E0E0E',
+  onSurfaceSecondary: '#8E8E8E',
+  surfaceTertiary: '#171717',
+  onSurfaceTertiary: '#D8D8D8',
+  surfaceElevated: '#121212',
+  brand: '#C9A961',
+  brandLight: '#E6CC85',
+  brandSoft: '#8C713B',
+  brandTint: 'rgba(201,169,97,0.10)',
+  brandDeep: '#C9A961',
+  onBrand: '#000000',
+  onCamera: '#FFFFFF',
+  success: '#5FA86B',
+  error: '#D06A6A',
+  border: '#1F1F1F',
+  borderStrong: '#303030',
+  borderGold: 'rgba(201,169,97,0.22)',
+  divider: '#161616',
+  scrim: 'rgba(0,0,0,0.88)',
+  ...LED,
+};
+
+const LIGHT: typeof DARK = {
+  surface: '#FFFFFF',
+  onSurface: '#0A0A0A',
+  surfaceSecondary: '#F6F5F2',
+  onSurfaceSecondary: '#6F6B64',
+  surfaceTertiary: '#EDEBE6',
+  onSurfaceTertiary: '#2B2B2B',
+  surfaceElevated: '#FFFFFF',
+  brand: '#8A6D2B',
+  brandLight: '#A98636',
+  brandSoft: '#C9A961',
+  brandTint: 'rgba(138,109,43,0.08)',
+  brandDeep: '#73591F',
+  onBrand: '#FFFFFF',
+  onCamera: '#FFFFFF',
+  success: '#3F7A4C',
+  error: '#B04A4A',
+  border: '#E5E2DC',
+  borderStrong: '#CFCAC0',
+  borderGold: 'rgba(138,109,43,0.26)',
+  divider: '#EEECE7',
+  scrim: 'rgba(255,255,255,0.92)',
+  ...LED,
+};
+
+export type Palette = typeof DARK;
+
+const PALETTES: Record<Scheme, Palette> = { dark: DARK, light: LIGHT };
+
+// Palette currently being read (style building + live render share this)
+let active: Scheme = 'dark';
+let current: Scheme = 'dark';
+
+const color = {} as Palette;
+(Object.keys(DARK) as (keyof Palette)[]).forEach((k) => {
+  Object.defineProperty(color, k, { get: () => PALETTES[active][k], enumerable: true });
+});
+
+const GRADIENTS: Record<Scheme, Record<string, readonly string[]>> = {
+  dark: {
+    page: ['#050505', '#000000', '#000000'],
+    gold: ['#E6CC85', '#C9A961'],
+    goldSoft: ['rgba(201,169,97,0.16)', 'rgba(201,169,97,0)'],
+    scrim: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.96)'],
   },
-  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48, huge: 64 },
-  radius: { sm: 6, md: 12, lg: 20, xl: 28, pill: 999 },
-  // Type scale — letterSpacing is only allowed on FULL-WIDTH labels (never inside narrow cards)
-  type: {
-    display: { fontFamily: 'Cormorant-Medium', fontSize: 32, lineHeight: 38 },
-    h1: { fontFamily: 'Cormorant-Medium', fontSize: 26, lineHeight: 32 },
-    h2: { fontFamily: 'Cormorant-Medium', fontSize: 21, lineHeight: 27 },
-    stat: { fontFamily: 'Cormorant-SemiBold', fontSize: 28, lineHeight: 32 },
-    body: { fontFamily: 'DMSans-Regular', fontSize: 14, lineHeight: 21 },
-    bodySm: { fontFamily: 'DMSans-Regular', fontSize: 12.5, lineHeight: 19 },
-    label: { fontFamily: 'DMSans-Medium', fontSize: 11, lineHeight: 15, letterSpacing: 1.4 },
-    cardLabel: { fontFamily: 'DMSans-Medium', fontSize: 11, lineHeight: 15 },
-    button: { fontFamily: 'DMSans-Medium', fontSize: 13, lineHeight: 17, letterSpacing: 0.6 },
-    micro: { fontFamily: 'DMSans-Regular', fontSize: 10.5, lineHeight: 15 },
-  },
-  font: {
-    // Display: Cormorant Garamond · UI: DM Sans (brand charter)
-    serif: 'Cormorant-Medium',
-    serifRegular: 'Cormorant-Regular',
-    serifBold: 'Cormorant-SemiBold',
-    sans: 'DMSans-Regular',
-    sansMedium: 'DMSans-Medium',
-    mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' })!,
-  },
-  gradient: {
-    page: ['#0C0A06', '#050505', '#030303'] as const,
-    gold: ['#E6CC85', '#C9A961'] as const,
-    goldSoft: ['rgba(201,169,97,0.18)', 'rgba(201,169,97,0)'] as const,
-    scrim: ['rgba(5,5,5,0)', 'rgba(5,5,5,0.96)'] as const,
-  },
-  shadow: {
-    card: {
-      shadowColor: '#000000',
-      shadowOpacity: 0.45,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 3,
-    },
-    cta: {
-      shadowColor: '#C9A961',
-      shadowOpacity: 0.45,
-      shadowRadius: 22,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 4,
-    },
-    soft: {
-      shadowColor: '#000000',
-      shadowOpacity: 0.3,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 2,
-    },
+  light: {
+    page: ['#FFFFFF', '#FBFAF8', '#F4F2ED'],
+    gold: ['#A98636', '#8A6D2B'],
+    goldSoft: ['rgba(138,109,43,0.10)', 'rgba(138,109,43,0)'],
+    scrim: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.97)'],
   },
 };
 
+const gradient = {} as Record<'page' | 'gold' | 'goldSoft' | 'scrim', readonly string[]>;
+(['page', 'gold', 'goldSoft', 'scrim'] as const).forEach((k) => {
+  Object.defineProperty(gradient, k, { get: () => GRADIENTS[active][k], enumerable: true });
+});
+
+const shadow = {
+  get card() {
+    return active === 'dark'
+      ? { shadowColor: '#000000', shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 3 }
+      : { shadowColor: '#2B2B2B', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 };
+  },
+  get cta() {
+    return active === 'dark'
+      ? { shadowColor: '#C9A961', shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 6 }, elevation: 4 }
+      : { shadowColor: '#8A6D2B', shadowOpacity: 0.22, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 3 };
+  },
+  get soft() {
+    return active === 'dark'
+      ? { shadowColor: '#000000', shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 }
+      : { shadowColor: '#2B2B2B', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 };
+  },
+};
+
+export const theme = {
+  color,
+  gradient,
+  shadow,
+  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48, huge: 64 },
+  radius: { sm: 4, md: 10, lg: 16, xl: 24, pill: 999 },
+  /**
+   * Engineering-grade scale: Manrope for titles, figures and buttons,
+   * Inter for everything that is read as a sentence.
+   * letterSpacing is only allowed on FULL-WIDTH labels (never in narrow cards).
+   */
+  type: {
+    display: { fontFamily: 'Manrope-SemiBold', fontSize: 27, lineHeight: 33, letterSpacing: -0.3 },
+    h1: { fontFamily: 'Manrope-SemiBold', fontSize: 21, lineHeight: 27, letterSpacing: -0.2 },
+    h2: { fontFamily: 'Manrope-Medium', fontSize: 16.5, lineHeight: 23 },
+    stat: { fontFamily: 'Manrope-SemiBold', fontSize: 25, lineHeight: 30, letterSpacing: -0.4 },
+    body: { fontFamily: 'Inter-Regular', fontSize: 14, lineHeight: 21 },
+    bodySm: { fontFamily: 'Inter-Regular', fontSize: 12.5, lineHeight: 19 },
+    label: { fontFamily: 'Inter-Medium', fontSize: 10.5, lineHeight: 15, letterSpacing: 1.3 },
+    cardLabel: { fontFamily: 'Inter-Medium', fontSize: 10.5, lineHeight: 14 },
+    button: { fontFamily: 'Manrope-SemiBold', fontSize: 13, lineHeight: 17, letterSpacing: 0.4 },
+    micro: { fontFamily: 'Inter-Regular', fontSize: 10.5, lineHeight: 15 },
+  },
+  font: {
+    display: 'Manrope-Medium',
+    displayBold: 'Manrope-SemiBold',
+    sans: 'Inter-Regular',
+    sansMedium: 'Inter-Medium',
+    sansBold: 'Inter-SemiBold',
+    mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' })!,
+  },
+};
+
+/**
+ * Drop-in replacement for StyleSheet.create: the factory runs once per
+ * ambience, and `styles.x` always returns the entry for the active one.
+ */
+export function makeStyles<T extends Record<string, any>>(factory: () => T): T {
+  const previous = active;
+  active = 'dark';
+  const darkSheet = StyleSheet.create(factory());
+  active = 'light';
+  const lightSheet = StyleSheet.create(factory());
+  active = previous;
+
+  const out = {} as T;
+  (Object.keys(darkSheet) as (keyof T)[]).forEach((k) => {
+    Object.defineProperty(out, k, {
+      get: () => (current === 'light' ? (lightSheet as any)[k] : (darkSheet as any)[k]),
+      enumerable: true,
+    });
+  });
+  return out;
+}
+
+/** Called once by the root layout from the phone's appearance setting. */
+export function setScheme(scheme: Scheme) {
+  current = scheme;
+  active = scheme;
+}
+
+export function getScheme(): Scheme {
+  return current;
+}
+
 export const LED_COLORS: Record<string, { name: string; hex: string }> = {
-  red: { name: 'Rouge', hex: theme.color.ledRed },
-  blue: { name: 'Bleue', hex: theme.color.ledBlue },
-  green: { name: 'Verte', hex: theme.color.ledGreen },
-  yellow: { name: 'Jaune', hex: theme.color.ledYellow },
-  cyan: { name: 'Cyan', hex: theme.color.ledCyan },
-  violet: { name: 'Violette', hex: theme.color.ledViolet },
-  white: { name: 'Blanche', hex: theme.color.ledWhite },
+  red: { name: 'Rouge', hex: LED.ledRed },
+  blue: { name: 'Bleue', hex: LED.ledBlue },
+  green: { name: 'Verte', hex: LED.ledGreen },
+  yellow: { name: 'Jaune', hex: LED.ledYellow },
+  cyan: { name: 'Cyan', hex: LED.ledCyan },
+  violet: { name: 'Violette', hex: LED.ledViolet },
+  white: { name: 'Blanche', hex: LED.ledWhite },
 };
 
 export const LED_NAMES_BY_LANG: Record<string, Record<string, string>> = {
@@ -107,3 +209,6 @@ export const LED_NAMES_BY_LANG: Record<string, Record<string, string>> = {
   ru: { red: 'Красный', blue: 'Синий', green: 'Зелёный', yellow: 'Жёлтый', cyan: 'Голубой', violet: 'Фиолетовый', white: 'Белый' },
   ar: { red: 'الأحمر', blue: 'الأزرق', green: 'الأخضر', yellow: 'الأصفر', cyan: 'السماوي', violet: 'البنفسجي', white: 'الأبيض' },
 };
+
+/** The 4 modes silk-screened on the real remote — never translated. */
+export const DEVICE_MODES = ['Skin Beautification', 'Cleansing', 'Wrinkle Reduction', 'Oil Control'] as const;
