@@ -104,7 +104,6 @@
       "expo-secure-store",
       "expo-status-bar",
       "expo-web-browser",
-      "@react-native-vector-icons/feather",
       "expo-asset"
     ],
     "experiments": {

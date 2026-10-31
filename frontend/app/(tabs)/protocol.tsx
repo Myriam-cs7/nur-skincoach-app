@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Feather from '@react-native-vector-icons/feather';
+import { Feather } from '@expo/vector-icons';
 import { theme, makeStyles } from '../../src/theme';
 import { GoldDivider, BrandHeader } from '../../src/ui';
 import { LED_META, ledText, LedId, ledInk, ledRim } from '../../src/led';

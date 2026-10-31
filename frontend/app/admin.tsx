@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Feather from '@react-native-vector-icons/feather';
+import { Feather } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { theme, makeStyles } from '../src/theme';
 import { SectionLabel, GoldDivider, BrandHeader } from '../src/ui';

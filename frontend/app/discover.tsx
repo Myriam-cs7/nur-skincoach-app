@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, KeyboardAvoid
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Feather from '@react-native-vector-icons/feather';
+import { Feather } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { theme, makeStyles } from '../src/theme';
 import { Wordmark, GoldDivider, SectionLabel } from '../src/ui';

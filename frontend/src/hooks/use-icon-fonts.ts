@@ -1,12 +1,11 @@
-// Icon font loader. @react-native-vector-icons ships the .ttf inside the
-// package, so we preload it with expo-font under the exact PostScript name the
-// Feather component queries ("Feather"). This keeps icons available straight
-// away in Expo Go, dev builds, production builds and on the web.
+// Icon font loader. @expo/vector-icons ships every icon set's .ttf inside the
+// package and resolves correctly on native AND web (unlike the scoped
+// @react-native-vector-icons packages, whose icon fonts never register as a
+// usable @font-face on web — the cause of icons rendering as blank squares there).
 // Usage: const [loaded, error] = useIconFonts();
 
 import { useFonts } from "expo-font";
+import Feather from "@expo/vector-icons/Feather";
 
 export const useIconFonts = (): readonly [boolean, Error | null] =>
-  useFonts({
-    Feather: require("@react-native-vector-icons/feather/fonts/Feather.ttf"),
-  });
+  useFonts({ ...Feather.font });

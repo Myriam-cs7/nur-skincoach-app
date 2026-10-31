@@ -6,7 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Feather from '@react-native-vector-icons/feather';
+import { Feather } from '@expo/vector-icons';
 import { theme, makeStyles } from '../src/theme';
 import { GoldDivider, BrandHeader } from '../src/ui';
 import { api, getStoredUserId } from '../src/api';
