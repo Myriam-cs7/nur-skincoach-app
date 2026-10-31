@@ -615,8 +615,17 @@ async def _activate_with_code(raw_code: str) -> ActivateResponse:
         raise HTTPException(status_code=400, detail="activation_code_required")
 
     valid = await db.activation_codes.find_one({"code": code}, {"_id": 0})
+    if not valid:
+        # Separators (dashes/spaces) are cosmetic: a code typed without them still matches,
+        # since ambassadors on different keyboards shouldn't need to hunt for the hyphen key.
+        normalized = re.sub(r"[^A-Z0-9]", "", code)
+        async for doc in db.activation_codes.find({}, {"_id": 0}):
+            if re.sub(r"[^A-Z0-9]", "", doc["code"]) == normalized:
+                valid = doc
+                break
     if not valid or valid.get("active") is False:
         raise HTTPException(status_code=403, detail="invalid_activation_code")
+    code = valid["code"]
 
     # Partner / press / after-sales codes are multi-use: each activation gets its own profile
     if not valid.get("multi_use"):
