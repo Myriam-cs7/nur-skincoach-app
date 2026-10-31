@@ -133,7 +133,7 @@ export default function Diagnosis() {
           </Pressable>
           <Pressable style={styles.refine} onPress={() => router.replace('/(tabs)/coach')} testID="goto-coach">
             <Feather name="message-circle" size={14} color={theme.color.brand} />
-            <Text style={styles.refineTxt}>Affiner avec mon Skincoach</Text>
+            <Text style={styles.refineTxt}>Approfondir avec mon Skincoach</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -187,7 +187,11 @@ const styles = makeStyles(() => ({
   expected: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, marginTop: theme.spacing.md, lineHeight: 20, fontStyle: 'italic' },
   adviceRow: { flexDirection: 'row', gap: theme.spacing.sm, paddingVertical: 8, alignItems: 'flex-start' },
   adviceTxt: { color: theme.color.onSurfaceTertiary, fontSize: 13, fontFamily: theme.font.sans, lineHeight: 20, flex: 1 },
-  ctaWrap: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.md, paddingBottom: theme.spacing.xl, backgroundColor: 'rgba(9,9,12,0.92)' },
+  ctaWrap: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.md, paddingBottom: theme.spacing.xl,
+    backgroundColor: theme.color.surface, borderTopColor: theme.color.border, borderTopWidth: 0.5,
+  },
   cta: { backgroundColor: theme.color.brand, borderRadius: theme.radius.pill, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: theme.spacing.sm },
   ctaText: { color: theme.color.onBrand, fontWeight: '700', fontSize: 15, fontFamily: theme.font.sansMedium, letterSpacing: 0.3 },
   errorTxt: { color: theme.color.error },
