@@ -158,9 +158,6 @@ export default function Activate() {
             <Feather name="chevron-left" size={24} color={theme.color.onSurface} />
           </Pressable>
 
-          <View style={styles.iconCircle}>
-            <Feather name={step === 'email' ? 'mail' : 'key'} size={23} color={theme.color.brand} />
-          </View>
           <BrandHeader title={titles[step]} />
           <GoldDivider marginV={theme.spacing.md} />
           <Text style={styles.sub}>{subs[step]}</Text>
@@ -280,12 +277,6 @@ const styles = makeStyles(() => ({
   root: { flex: 1, backgroundColor: theme.color.surface },
   scroll: { padding: theme.spacing.xl, flexGrow: 1, justifyContent: 'center' },
   back: { position: 'absolute', top: 0, left: theme.spacing.xl },
-  iconCircle: {
-    alignSelf: 'center', width: 66, height: 66, borderRadius: 999,
-    backgroundColor: theme.color.brandTint, borderWidth: 1, borderColor: theme.color.brand,
-    alignItems: 'center', justifyContent: 'center', marginBottom: theme.spacing.lg,
-    shadowColor: theme.color.brand, shadowOpacity: 0.5, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
-  },
   sub: { color: theme.color.onSurfaceSecondary, fontSize: 13, fontFamily: theme.font.sans, textAlign: 'center', lineHeight: 20 },
   input: {
     backgroundColor: theme.color.surfaceSecondary, borderWidth: 1, borderColor: theme.color.borderGold,
@@ -316,8 +307,8 @@ const styles = makeStyles(() => ({
   },
   ghostTxt: { color: theme.color.brandDeep, fontSize: 13, fontFamily: theme.font.sansMedium, fontWeight: '600', letterSpacing: 0.4 },
   hint: { color: theme.color.onSurfaceSecondary, fontSize: 11, fontFamily: theme.font.sans, textAlign: 'center', marginTop: theme.spacing.md },
-  linkWrap: { marginTop: theme.spacing.lg, paddingVertical: 4 },
-  link: { color: theme.color.onSurfaceSecondary, fontSize: 12, fontFamily: theme.font.sans, textAlign: 'center', textDecorationLine: 'underline' },
+  linkWrap: { marginTop: theme.spacing.xl, paddingVertical: 10 },
+  link: { color: theme.color.onSurface, fontSize: 13, fontFamily: theme.font.sansMedium, textAlign: 'center', textDecorationLine: 'underline' },
   whyRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.md },
   whyTxt: { color: theme.color.onSurfaceSecondary, fontSize: 10, fontFamily: theme.font.sans, opacity: 0.85, flex: 1, lineHeight: 15 },
 }));
