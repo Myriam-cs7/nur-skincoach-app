@@ -2136,7 +2136,7 @@ async def seed_activation_codes():
         )
     # Partner codes (multi use, revocable): press, creators, after-sales, VIP gifts
     partner_codes = {
-        "NUR-CREATOR": "Créatrices & influenceuses",
+        "NUR-7777": "Créatrices & influenceuses",
         "NUR-PRESSE": "Presse & médias",
         "NUR-SAV": "Service client",
         "NUR-CADEAU": "Cadeaux VIP",
@@ -2148,6 +2148,11 @@ async def seed_activation_codes():
                               "label": label, "multi_use": True, "active": True, "uses": 0}},
             upsert=True,
         )
+    # Retired creator code, replaced by NUR-7777
+    await db.activation_codes.update_one(
+        {"code": "NUR-CREATOR"},
+        {"$set": {"active": False}},
+    )
     # Trial code for the brand and its creators — removed before the store release
     await db.activation_codes.update_one(
         {"code": TRIAL_CODE},
