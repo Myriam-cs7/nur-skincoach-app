@@ -19,9 +19,11 @@ from fastapi import HTTPException
 load_dotenv(Path(__file__).parent / ".env")
 logger = logging.getLogger(__name__)
 
-EMAIL_BASE_URL = "https://integrations.emergentagent.com"
-EMAIL_KEY = os.environ["EMERGENT_EMAIL_KEY"]
+EMAIL_BASE_URL = "https://api.resend.com"
+EMAIL_KEY = os.environ["RESEND_API_KEY"]
 EMAIL_FROM_NAME = os.environ["EMAIL_FROM_NAME"]
+# Until the sending domain is verified in Resend, fall back to their shared test address.
+EMAIL_FROM_ADDRESS = os.environ.get("EMAIL_FROM_ADDRESS", "onboarding@resend.dev")
 EMAIL_REPLY_TO = os.environ.get("EMAIL_REPLY_TO")
 
 _SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
@@ -98,14 +100,19 @@ def _assert_safe_email(subject: str, html: str) -> None:
 
 async def send_email(*, to: str, subject: str, html: str, reply_to: str | None = None) -> str | None:
     _assert_safe_email(subject, html)
-    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+    payload = {
+        "to": [to],
+        "subject": subject,
+        "html": html,
+        "from": f"{EMAIL_FROM_NAME} <{EMAIL_FROM_ADDRESS}>",
+    }
     if reply_to or EMAIL_REPLY_TO:
-        payload["contact_email"] = reply_to or EMAIL_REPLY_TO
+        payload["reply_to"] = reply_to or EMAIL_REPLY_TO
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
-                f"{EMAIL_BASE_URL}/api/v1/email/send",
-                headers={"X-Email-Key": EMAIL_KEY},
+                f"{EMAIL_BASE_URL}/emails",
+                headers={"Authorization": f"Bearer {EMAIL_KEY}"},
                 json=payload,
             )
             if resp.status_code == 429:
@@ -113,8 +120,8 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
                 # seeing a failure when two codes are requested at the same second.
                 await asyncio.sleep(2)
                 resp = await client.post(
-                    f"{EMAIL_BASE_URL}/api/v1/email/send",
-                    headers={"X-Email-Key": EMAIL_KEY},
+                    f"{EMAIL_BASE_URL}/emails",
+                    headers={"Authorization": f"Bearer {EMAIL_KEY}"},
                     json=payload,
                 )
             if resp.status_code == 429:

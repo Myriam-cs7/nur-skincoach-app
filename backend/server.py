@@ -31,8 +31,7 @@ from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
-from emergentintegrations.llm.openai import OpenAISpeechToText, OpenAITextToSpeech
+from llm_client import claude_message, transcribe_audio_openai, tts_openai
 
 from emailer import send_otp_email, send_order_codes_email
 
@@ -41,7 +40,6 @@ load_dotenv(ROOT_DIR / ".env")
 
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
-EMERGENT_LLM_KEY = os.environ["EMERGENT_LLM_KEY"]
 
 SHOPIFY_STORE_DOMAIN = (os.environ.get("SHOPIFY_STORE_DOMAIN") or "").strip()
 SHOPIFY_ADMIN_TOKEN = (os.environ.get("SHOPIFY_ADMIN_TOKEN") or "").strip()
@@ -567,11 +565,6 @@ def normalize_protocol(data: dict, intake: Optional[dict]) -> dict:
 async def run_diagnosis(intake: dict, image_b64: Optional[str], mime_type: str, session_id: str,
                         lang: str = "fr", consultation: Optional[str] = None) -> dict:
     system_prompt = SYSTEM_PROMPTS.get(lang, SYSTEM_PROMPTS["fr"])
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=session_id,
-        system_message=system_prompt,
-    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
     intro = {
         "fr": "Voici les informations du client (questionnaire beauté)" + (" et sa photo de visage" if image_b64 else " — pas de photo fournie, base ton bilan uniquement sur le questionnaire") + ".\n",
@@ -585,13 +578,7 @@ async def run_diagnosis(intake: dict, image_b64: Optional[str], mime_type: str, 
             "(à prendre en compte en priorité) :\n" + consultation[:4000]
         )
 
-    file_contents = []
-    if image_b64:
-        file_contents.append(ImageContent(image_base64=image_b64))
-
-    msg = UserMessage(text=user_text, file_contents=file_contents if file_contents else None)
-
-    raw = await chat.send_message(msg)
+    raw = await claude_message(system_prompt, user_text, image_b64=image_b64)
     text = raw if isinstance(raw, str) else str(raw)
     text = text.strip()
     if text.startswith("```"):
@@ -1743,11 +1730,6 @@ async def lead_prescription(req: LeadRequest):
 
     # Call Claude
     system_prompt = LEAD_PROMPTS.get(req.lang, LEAD_PROMPTS["fr"])
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"lead-{lead_doc['id']}",
-        system_message=system_prompt,
-    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
     intro = {
         "fr": "Voici les 3 réponses du pré-bilan clinique :",
@@ -1767,7 +1749,7 @@ async def lead_prescription(req: LeadRequest):
         f"Profil: prénom={req.name or 'N/A'}, âge={req.age_range or 'N/A'}"
     )
 
-    raw = await chat.send_message(UserMessage(text=user_text))
+    raw = await claude_message(system_prompt, user_text)
     text = (raw if isinstance(raw, str) else str(raw)).strip()
     if text.startswith("```"):
         text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
@@ -1835,9 +1817,8 @@ async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form("fr")
     try:
         tmp.write(data)
         tmp.close()
-        stt = OpenAISpeechToText(api_key=EMERGENT_LLM_KEY)
         with open(tmp.name, "rb") as fh:
-            resp = await stt.transcribe(
+            resp = await transcribe_audio_openai(
                 file=fh,
                 model="gpt-4o-mini-transcribe",
                 response_format="json",
@@ -1907,11 +1888,10 @@ async def tts_generate(req: TTSRequest):
     path = TTS_DIR / f"{key}.mp3"
 
     if not path.exists():
-        tts = OpenAITextToSpeech(api_key=EMERGENT_LLM_KEY)
         try:
             audio = await asyncio.wait_for(
-                tts.generate_speech(text=text, model=TTS_MODEL, voice=TTS_VOICE,
-                                    speed=TTS_SPEED, response_format="mp3"),
+                tts_openai(text=text, model=TTS_MODEL, voice=TTS_VOICE,
+                           speed=TTS_SPEED, response_format="mp3"),
                 timeout=45,
             )
         except Exception:
@@ -2086,12 +2066,6 @@ async def skincoach_chat(user_id: str, req: ChatRequest, user: dict = Depends(re
               "avant une séance LED."
         )
 
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"coach-{user_id}",
-        system_message=system_prompt,
-    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
-
     # History is rebuilt from the server's own record — a client cannot forge coach turns
     history_text = ""
     stored = await db.chat_turns.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(length=10)
@@ -2106,11 +2080,7 @@ async def skincoach_chat(user_id: str, req: ChatRequest, user: dict = Depends(re
         )
 
     try:
-        message = UserMessage(
-            text=full,
-            file_contents=[ImageContent(image_base64=photo_b64)] if photo_b64 else None,
-        )
-        raw = await chat.send_message(message)
+        raw = await claude_message(system_prompt, full, image_b64=photo_b64)
         reply = (raw if isinstance(raw, str) else str(raw)).strip()
     except Exception:
         logger.exception("Coach chat error")
