@@ -1004,7 +1004,7 @@ export const CONCERN_LABELS: Record<Lang, Record<string, string>> = {
 const ES: Dict = {
   'welcome.kicker': 'YOUR SKIN, YOUR PROTOCOL',
   'welcome.title': 'Nūr Skincoach',
-  'welcome.subtitle': 'Tu espacio de belleza privado.\nDiagnóstico IA y ritual LED a medida.',
+  'welcome.subtitle': 'Tu espacio de belleza privado.\nDiagnóstico IA y rutina LED a medida.',
   'welcome.cta': 'Activar mi Skincoach & Nūr Protocol',
   'welcome.link': 'Introducir un código de activación',
   'welcome.footnote': 'EXCLUSIVO PARA PROPIETARIOS DEL DISPOSITIVO NŪR',
@@ -1061,7 +1061,7 @@ const ES: Dict = {
 const IT: Dict = {
   'welcome.kicker': 'YOUR SKIN, YOUR PROTOCOL',
   'welcome.title': 'Nūr Skincoach',
-  'welcome.subtitle': 'Il tuo spazio bellezza privato.\nDiagnosi IA e rituale LED su misura.',
+  'welcome.subtitle': 'Il tuo spazio bellezza privato.\nDiagnosi IA e routine LED su misura.',
   'welcome.cta': 'Attiva il mio Skincoach & Nūr Protocol',
   'welcome.link': 'Inserire un codice di attivazione',
   'welcome.footnote': 'ESCLUSIVO PER POSSESSORI DI DISPOSITIVO NŪR',
@@ -1118,7 +1118,7 @@ const IT: Dict = {
 const DE: Dict = {
   'welcome.kicker': 'YOUR SKIN, YOUR PROTOCOL',
   'welcome.title': 'Nūr Skincoach',
-  'welcome.subtitle': 'Ihr privater Beauty-Raum.\nKI-Diagnose und maßgeschneidertes LED-Ritual.',
+  'welcome.subtitle': 'Ihr privater Beauty-Raum.\nKI-Diagnose und maßgeschneiderte LED-Routine.',
   'welcome.cta': 'Skincoach & Nūr Protocol aktivieren',
   'welcome.link': 'Aktivierungscode eingeben',
   'welcome.footnote': 'EXKLUSIV FÜR NŪR-GERÄTEBESITZER',
@@ -1175,7 +1175,7 @@ const DE: Dict = {
 const RU: Dict = {
   'welcome.kicker': 'YOUR SKIN, YOUR PROTOCOL',
   'welcome.title': 'Nūr Skincoach',
-  'welcome.subtitle': 'Ваше приватное пространство красоты.\nИИ-диагностика и LED-ритуал на заказ.',
+  'welcome.subtitle': 'Ваше приватное пространство красоты.\nИИ-диагностика и LED-рутина на заказ.',
   'welcome.cta': 'Активировать Skincoach и Nūr Protocol',
   'welcome.link': 'Ввести код активации',
   'welcome.footnote': 'ТОЛЬКО ДЛЯ ВЛАДЕЛЬЦЕВ УСТРОЙСТВА NŪR',
