@@ -82,7 +82,7 @@ export default function Diagnosis() {
             ))}
           </View>
 
-          <Text style={styles.section}>Rituel LED hebdomadaire</Text>
+          <Text style={styles.section}>Routine LED hebdomadaire</Text>
           <View style={styles.weekRow}>
             {protocol.weekly_schedule.map((d) => {
               const c = d.led_color_id ? LED_COLORS[d.led_color_id] : null;
@@ -107,7 +107,7 @@ export default function Diagnosis() {
             Résultats attendus en {protocol.total_weeks || 8} semaines : {protocol.expected_results}
           </Text>
 
-          <Text style={styles.section}>Conseils rituel</Text>
+          <Text style={styles.section}>Conseils routine</Text>
           {routine_advice?.map((a, i) => (
             <View key={i} style={styles.adviceRow}>
               <Feather name="droplet" size={14} color={theme.color.brand} />
@@ -128,7 +128,7 @@ export default function Diagnosis() {
 
         <View style={styles.ctaWrap}>
           <Pressable style={styles.cta} onPress={() => router.replace('/(tabs)/home')} testID="goto-home">
-            <Text style={styles.ctaText}>Démarrer mon rituel</Text>
+            <Text style={styles.ctaText}>Démarrer ma routine</Text>
             <Feather name="arrow-right" size={18} color={theme.color.onBrand} />
           </Pressable>
           <Pressable style={styles.refine} onPress={() => router.replace('/(tabs)/coach')} testID="goto-coach">
