@@ -74,15 +74,15 @@ const FR: Dict = {
   'library.indications': 'Indications',
   'library.session': '{n} min par séance',
 
-  'proto.kicker': 'VOTRE RITUEL',
-  'proto.title': 'Rituel hebdomadaire',
+  'proto.kicker': 'VOTRE ROUTINE',
+  'proto.title': 'Routine hebdomadaire',
   'proto.sub': 'Programme beauté sur {weeks} semaines, adapté à votre profil.',
   'proto.light': 'Lumière {name}',
   'proto.pause': 'Pause',
   'proto.pause_sub': 'Journée sans séance',
   'proto.expected': 'Résultats attendus',
   'proto.weeks': 'Sur {weeks} semaines',
-  'proto.empty': 'Aucun rituel disponible pour le moment.',
+  'proto.empty': 'Aucune routine disponible pour le moment.',
 
   'scanqr.title': 'Scannez votre carte gold',
   'scanqr.sub': 'Placez le QR code de votre carte Nūr dans le cadre lumineux.',
@@ -172,7 +172,7 @@ const FR: Dict = {
   'diag.expected': 'Résultats attendus en {weeks} semaines',
 
   'tab.today': "AUJOURD'HUI",
-  'tab.protocol': 'RITUEL',
+  'tab.protocol': 'ROUTINE',
   'tab.library': 'LUMIÈRES',
   'tab.coach': 'COACH',
   'tab.profile': 'PROFIL',
